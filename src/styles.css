@@ -1,6 +1,7 @@
 /* =========================================================
-   KAFOO RESPONSIVE FIX
-   Layout stable desktop / tablette / mobile
+   KAFOO RESPONSIVE FIX SIMPLE
+   Corrige les débordements sans forcer artificiellement
+   les tailles du hero ou des conteneurs Tailwind.
    ========================================================= */
 
 @layer base {
@@ -14,7 +15,7 @@
   body,
   #root {
     width: 100%;
-    min-width: 0;
+    min-width: 100%;
     min-height: 100vh;
     margin: 0;
     padding: 0;
@@ -26,9 +27,10 @@
   }
 
   main,
-  section,
-  div {
+  section {
+    width: 100%;
     min-width: 0;
+    overflow-x: hidden;
   }
 
   img,
@@ -54,55 +56,26 @@
 
 @layer utilities {
   .kafoo-container {
-    width: min(100% - 2rem, 1180px);
-    margin-inline: auto;
-  }
-
-  .kafoo-wide-container {
     width: min(100% - 2rem, 1280px);
     margin-inline: auto;
   }
 
-  .kafoo-category-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr));
-    gap: 0.75rem;
-  }
-
-  .kafoo-listing-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
-    gap: 1rem;
-  }
-
   @media (min-width: 640px) {
-    .kafoo-container,
-    .kafoo-wide-container {
+    .kafoo-container {
       width: min(100% - 3rem, 1280px);
-    }
-
-    .kafoo-category-grid {
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 1rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .kafoo-category-grid {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
 }
 
+/* Mobile */
 @media (max-width: 640px) {
   h1 {
     overflow-wrap: break-word;
     word-break: normal;
   }
 
-  .kafoo-container,
-  .kafoo-wide-container {
-    width: min(100% - 1rem, 100%);
+  .grid {
+    min-width: 0;
   }
 
   select,
@@ -110,78 +83,4 @@
   button {
     min-width: 0;
   }
-}
-
-/* =========================================================
-   KAFOO RESPONSIVE OVERRIDE
-   ========================================================= */
-@layer utilities {
-  .max-w-7xl { max-width: min(94vw, 1680px) !important; }
-  .max-w-6xl { max-width: min(94vw, 1500px) !important; }
-  .max-w-5xl { max-width: min(94vw, 1400px) !important; }
-}
-
-@layer base {
-  html, body, #root {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: 100vh;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow-x: hidden !important;
-  }
-  body { background: #f5f7fb; }
-  main {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-  }
-  section { width: 100% !important; }
-}
-
-@media (min-width: 1024px) {
-  main > section:first-child > div {
-    max-width: min(94vw, 1680px) !important;
-    grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr) !important;
-    gap: 4rem !important;
-  }
-}
-
-@media (min-width: 1440px) {
-  main > section:first-child > div { max-width: min(92vw, 1760px) !important; }
-  main > section:first-child h1 {
-    font-size: clamp(3.5rem, 4.4vw, 5.8rem) !important;
-    line-height: 1.02 !important;
-  }
-}
-
-@media (max-width: 1023px) {
-  main > section:first-child > div {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    max-width: 92vw !important;
-    text-align: center !important;
-  }
-  main > section:first-child h1,
-  main > section:first-child p {
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-}
-
-@media (max-width: 640px) {
-  main > section:first-child { padding-top: 0 !important; }
-  main > section:first-child > div {
-    max-width: 100% !important;
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-    padding-top: 2rem !important;
-    padding-bottom: 3rem !important;
-  }
-  main > section:first-child h1 {
-    font-size: clamp(2rem, 10vw, 3rem) !important;
-    line-height: 1.08 !important;
-  }
-  main > section:first-child form { width: 100% !important; }
-  .grid { min-width: 0 !important; }
 }
