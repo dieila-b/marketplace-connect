@@ -138,7 +138,7 @@ function AnnoncesPage() {
             <select
               className="mt-1 w-full rounded-md border bg-background px-2 py-2 text-sm"
               value={search.category ?? ""}
-              onChange={(e) => navigate({ search: (p) => ({ ...p, category: e.target.value || undefined }) })}
+              onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, category: e.target.value || undefined }) })}
             >
               <option value="">Toutes</option>
               {cats.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
@@ -149,7 +149,7 @@ function AnnoncesPage() {
             <select
               className="mt-1 w-full rounded-md border bg-background px-2 py-2 text-sm"
               value={search.region ?? ""}
-              onChange={(e) => navigate({ search: (p) => ({ ...p, region: e.target.value || undefined, city: undefined, commune: undefined }) })}
+              onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, region: e.target.value || undefined, city: undefined, commune: undefined })) as never })}
             >
               <option value="">Toutes</option>
               {regions.map((r) => <option key={r.id} value={r.slug}>{r.name}</option>)}
@@ -161,7 +161,7 @@ function AnnoncesPage() {
               <select
                 className="mt-1 w-full rounded-md border bg-background px-2 py-2 text-sm"
                 value={search.city ?? ""}
-                onChange={(e) => navigate({ search: (p) => ({ ...p, city: e.target.value || undefined, commune: undefined }) })}
+                onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, city: e.target.value || undefined, commune: undefined })) as never })}
               >
                 <option value="">Toutes</option>
                 {cities.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
@@ -174,7 +174,7 @@ function AnnoncesPage() {
               <select
                 className="mt-1 w-full rounded-md border bg-background px-2 py-2 text-sm"
                 value={search.commune ?? ""}
-                onChange={(e) => navigate({ search: (p) => ({ ...p, commune: e.target.value || undefined }) })}
+                onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, commune: e.target.value || undefined }) })}
               >
                 <option value="">Toutes</option>
                 {communes.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
@@ -190,7 +190,7 @@ function AnnoncesPage() {
             <select
               className="mt-1 w-full rounded-md border bg-background px-2 py-2 text-sm"
               value={search.sort ?? "recent"}
-              onChange={(e) => navigate({ search: (p) => ({ ...p, sort: e.target.value as "recent" | "price_asc" | "price_desc" }) })}
+              onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, sort: e.target.value as "recent" | "price_asc" | "price_desc" }) })}
             >
               <option value="recent">Plus récentes</option>
               <option value="price_asc">Prix croissant</option>
