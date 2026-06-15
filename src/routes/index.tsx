@@ -262,24 +262,24 @@ function HomePage() {
       <section className="relative w-full overflow-hidden bg-slate-950 text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.48),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.40),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.32),transparent_38%)]" />
 
-        <div className="relative kafoo-wide-container grid min-h-[520px] gap-8 py-8 sm:py-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,520px)] lg:items-center lg:py-16 xl:gap-16 2xl:min-h-[620px]">
-          <div className="flex min-w-0 flex-col justify-center text-center lg:text-left">
-            <div className="mx-auto mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur lg:mx-0">
+        <div className="relative kafoo-wide-container py-10 sm:py-12 lg:py-14 xl:py-16">
+          <div className="mx-auto flex max-w-6xl flex-col items-center text-center">
+            <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur">
               <Sparkles className="h-4 w-4 text-yellow-300" />
               Nouvelle marketplace locale en Guinée
             </div>
 
-            <h1 className="mx-auto max-w-4xl text-3xl font-black leading-tight sm:text-5xl lg:mx-0 lg:text-6xl xl:text-7xl">
+            <h1 className="max-w-5xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl">
               Vendez et trouvez vos bonnes affaires près de chez vous
             </h1>
 
-            <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-slate-200 sm:text-base lg:mx-0 xl:text-lg">
+            <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-200 sm:text-base xl:text-lg">
               Téléphones, véhicules, immobilier, meubles, mode, électroménager
-              et services. Publiez gratuitement et échangez directement avec
-              les acheteurs partout en Guinée.
+              et services. Publiez gratuitement et échangez directement avec les
+              acheteurs partout en Guinée.
             </p>
 
-            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
               <Button
                 asChild
                 size="lg"
@@ -304,32 +304,39 @@ function HomePage() {
               </Button>
             </div>
 
-            <div className="mx-auto mt-7 grid w-full max-w-2xl grid-cols-3 gap-3 lg:mx-0">
+            <div className="mt-7 grid w-full max-w-2xl grid-cols-3 gap-3">
               <MiniStat value={categories.length} label="Catégories" />
               <MiniStat value={recent.length} label="Annonces" />
               <MiniStat value="GN" label="Local" />
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-[560px] lg:mx-0 lg:justify-self-end">
+          <div className="mx-auto mt-9 w-full max-w-6xl">
             <form
               onSubmit={onSearch}
               className="rounded-3xl border border-white/15 bg-white p-4 text-slate-950 shadow-2xl sm:p-5 xl:p-6"
             >
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-fuchsia-600 text-white">
-                  <Search className="h-5 w-5" />
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-600 text-white">
+                    <Search className="h-5 w-5" />
+                  </div>
+
+                  <div className="min-w-0 text-left">
+                    <h2 className="font-black">Rechercher une annonce</h2>
+                    <p className="text-xs text-slate-500">
+                      Filtrez par catégorie, ville et budget.
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <h2 className="font-black">Rechercher une annonce</h2>
-                  <p className="text-xs text-slate-500">
-                    Filtrez par catégorie, ville et budget.
-                  </p>
+
+                <div className="hidden rounded-full bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600 sm:block">
+                  Recherche rapide
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="relative">
+              <div className="grid gap-3 lg:grid-cols-5">
+                <div className="relative lg:col-span-2">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
                     value={q}
@@ -339,68 +346,74 @@ function HomePage() {
                   />
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <SelectField value={category} onChange={setCategory} label="Catégorie">
-                    <option value="">Toutes</option>
-                    {categories.map((item) => (
-                      <option key={item.id} value={item.slug}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </SelectField>
+                <SelectField
+                  value={category}
+                  onChange={setCategory}
+                  label="Catégorie"
+                >
+                  <option value="">Toutes</option>
+                  {categories.map((item) => (
+                    <option key={item.id} value={item.slug}>
+                      {item.name}
+                    </option>
+                  ))}
+                </SelectField>
 
-                  <SelectField value={region} onChange={setRegion} label="Région">
-                    <option value="">Toutes</option>
-                    {regions.map((item) => (
-                      <option key={item.id} value={item.slug}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </SelectField>
+                <SelectField value={region} onChange={setRegion} label="Région">
+                  <option value="">Toutes</option>
+                  {regions.map((item) => (
+                    <option key={item.id} value={item.slug}>
+                      {item.name}
+                    </option>
+                  ))}
+                </SelectField>
 
-                  <SelectField value={city} onChange={setCity} label="Ville">
-                    <option value="">Toutes</option>
-                    {cities.map((item) => (
-                      <option key={item.id} value={item.slug}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </SelectField>
+                <SelectField value={city} onChange={setCity} label="Ville">
+                  <option value="">Toutes</option>
+                  {cities.map((item) => (
+                    <option key={item.id} value={item.slug}>
+                      {item.name}
+                    </option>
+                  ))}
+                </SelectField>
+              </div>
 
-                  <SelectField value={commune} onChange={setCommune} label="Commune">
-                    <option value="">Toutes</option>
-                    {communes.map((item) => (
-                      <option key={item.id} value={item.slug}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </SelectField>
-                </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto]">
+                <SelectField
+                  value={commune}
+                  onChange={setCommune}
+                  label="Commune"
+                >
+                  <option value="">Toutes</option>
+                  {communes.map((item) => (
+                    <option key={item.id} value={item.slug}>
+                      {item.name}
+                    </option>
+                  ))}
+                </SelectField>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    type="number"
-                    min="0"
-                    placeholder="Prix min"
-                    className="h-12 rounded-xl bg-slate-50"
-                  />
+                <Input
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  type="number"
+                  min="0"
+                  placeholder="Prix min"
+                  className="h-12 rounded-xl bg-slate-50"
+                />
 
-                  <Input
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    type="number"
-                    min="0"
-                    placeholder="Prix max"
-                    className="h-12 rounded-xl bg-slate-50"
-                  />
-                </div>
+                <Input
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  type="number"
+                  min="0"
+                  placeholder="Prix max"
+                  className="h-12 rounded-xl bg-slate-50"
+                />
 
                 <Button
                   type="submit"
                   size="lg"
-                  className="h-12 w-full rounded-xl bg-linear-to-r from-blue-600 via-indigo-600 to-fuchsia-600 font-black text-white"
+                  className="h-12 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 px-8 font-black text-white"
                 >
                   <SlidersHorizontal className="mr-2 h-5 w-5" />
                   Rechercher
@@ -559,12 +572,16 @@ function HomePage() {
               Vous avez quelque chose à vendre ?
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              Publiez gratuitement votre annonce avec photos, prix et localisation.
-              Les acheteurs pourront vous contacter directement.
+              Publiez gratuitement votre annonce avec photos, prix et
+              localisation. Les acheteurs pourront vous contacter directement.
             </p>
           </div>
 
-          <Button asChild size="lg" className="rounded-full bg-white text-slate-950 hover:bg-slate-100">
+          <Button
+            asChild
+            size="lg"
+            className="rounded-full bg-white text-slate-950 hover:bg-slate-100"
+          >
             <Link to="/publier">
               <PlusCircle className="mr-2 h-5 w-5" />
               Publier maintenant
@@ -584,7 +601,8 @@ function HomePage() {
                 Conseils sécurité
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Vérifiez toujours le produit avant paiement et privilégiez les lieux publics.
+                Vérifiez toujours le produit avant paiement et privilégiez les
+                lieux publics.
               </p>
             </div>
 
@@ -680,14 +698,14 @@ function TrustItem({
 }) {
   return (
     <div className="flex min-w-0 items-start gap-3 rounded-2xl bg-slate-50 p-4">
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${color}`}>
+      <div
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${color}`}
+      >
         <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0">
         <h3 className="text-sm font-black text-slate-950">{title}</h3>
-        <p className="mt-1 text-xs leading-5 text-slate-500">
-          {description}
-        </p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
       </div>
     </div>
   );
