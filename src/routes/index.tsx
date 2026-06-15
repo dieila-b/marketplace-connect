@@ -13,7 +13,7 @@ import {
   Dumbbell,
   Gem,
   Heart,
-  HomeIcon,
+  Home,
   Laptop,
   MapPin,
   MessageCircle,
@@ -47,7 +47,7 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  component: Home,
+  component: HomePage,
 });
 
 type Category = {
@@ -69,14 +69,14 @@ const iconMap: Record<string, LucideIcon> = {
   tv: Tv,
   car: Car,
   bike: Bike,
-  home: HomeIcon,
-  sofa: HomeIcon,
-  refrigerator: HomeIcon,
+  home: Home,
+  sofa: Home,
+  refrigerator: Home,
   shirt: Shirt,
   footprints: Shirt,
   gem: Gem,
   baby: Baby,
-  flower: HomeIcon,
+  flower: Home,
   dumbbell: Dumbbell,
   briefcase: Briefcase,
   wrench: Wrench,
@@ -87,12 +87,12 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 const categoryGradients = [
-  "from-blue-500/20 via-cyan-500/10 to-white text-blue-700 border-blue-200",
-  "from-emerald-500/20 via-teal-500/10 to-white text-emerald-700 border-emerald-200",
-  "from-orange-500/20 via-amber-500/10 to-white text-orange-700 border-orange-200",
-  "from-purple-500/20 via-fuchsia-500/10 to-white text-purple-700 border-purple-200",
-  "from-rose-500/20 via-pink-500/10 to-white text-rose-700 border-rose-200",
-  "from-indigo-500/20 via-violet-500/10 to-white text-indigo-700 border-indigo-200",
+  "from-blue-50 via-cyan-50 to-white border-blue-100 text-blue-700",
+  "from-emerald-50 via-teal-50 to-white border-emerald-100 text-emerald-700",
+  "from-orange-50 via-amber-50 to-white border-orange-100 text-orange-700",
+  "from-purple-50 via-fuchsia-50 to-white border-purple-100 text-purple-700",
+  "from-rose-50 via-pink-50 to-white border-rose-100 text-rose-700",
+  "from-indigo-50 via-violet-50 to-white border-indigo-100 text-indigo-700",
 ];
 
 function getCategoryIcon(icon: string | null) {
@@ -100,7 +100,7 @@ function getCategoryIcon(icon: string | null) {
   return iconMap[icon] ?? Box;
 }
 
-function Home() {
+function HomePage() {
   const { supabase } = useSupabase();
   const navigate = useNavigate();
 
@@ -199,19 +199,21 @@ function Home() {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-slate-50">
-      <section className="relative isolate overflow-hidden bg-slate-950 text-white">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(37,99,235,0.45),transparent_30%),radial-gradient(circle_at_85%_15%,rgba(217,70,239,0.35),transparent_30%),radial-gradient(circle_at_45%_90%,rgba(16,185,129,0.28),transparent_35%)]" />
-        <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-slate-50 to-transparent" />
+    <main className="min-h-screen overflow-hidden bg-[#f6f8fb]">
+      {/* HERO */}
+      <section className="relative isolate overflow-hidden bg-[#07111f] text-white">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_15%,rgba(37,99,235,0.50),transparent_28%),radial-gradient(circle_at_85%_15%,rgba(192,38,211,0.38),transparent_28%),radial-gradient(circle_at_50%_95%,rgba(20,184,166,0.32),transparent_34%)]" />
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(115deg,rgba(15,23,42,0.45),rgba(15,23,42,0.15),rgba(88,28,135,0.25))]" />
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-[#f6f8fb] to-transparent" />
 
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:py-14 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-20">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-20 pt-10 sm:px-6 md:pt-14 lg:grid-cols-[1fr_0.95fr] lg:px-8 lg:pb-28 lg:pt-20">
           <div className="flex flex-col justify-center">
             <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 shadow-lg backdrop-blur">
               <Sparkles className="h-4 w-4 text-yellow-300" />
-              Nouvelle marketplace locale en Guinée
+              Marketplace locale pour particuliers et professionnels
             </div>
 
-            <h1 className="max-w-3xl text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="max-w-3xl text-4xl font-black leading-[1.04] tracking-tight sm:text-5xl lg:text-6xl">
               Achetez, vendez et trouvez les meilleures annonces près de chez vous
             </h1>
 
@@ -221,7 +223,7 @@ function Home() {
               partout en Guinée.
             </p>
 
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button
                 asChild
                 size="lg"
@@ -254,7 +256,7 @@ function Home() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/15 bg-white/10 p-3 shadow-2xl backdrop-blur-xl sm:p-5">
+          <div className="w-full rounded-[2rem] border border-white/15 bg-white/10 p-3 shadow-2xl backdrop-blur-xl sm:p-5 lg:my-auto">
             <div className="rounded-[1.5rem] bg-white p-4 text-slate-950 shadow-2xl sm:p-5">
               <div className="mb-5 flex items-center gap-3">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-fuchsia-600 text-white shadow-lg">
@@ -361,8 +363,9 @@ function Home() {
         </div>
       </section>
 
-      <section className="relative z-10 -mt-6 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-3 rounded-3xl border bg-white p-4 shadow-xl sm:grid-cols-3">
+      {/* TRUST STRIP */}
+      <section className="relative z-10 -mt-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-6xl gap-3 rounded-[2rem] border bg-white p-4 shadow-2xl sm:grid-cols-3">
           <TrustItem
             icon={Zap}
             title="Publication rapide"
@@ -384,13 +387,14 @@ function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      {/* CATEGORIES */}
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <SectionHeader
           eyebrow="Explorer"
           title="Catégories populaires"
           description="Accédez rapidement aux rubriques les plus recherchées sur Kafoo."
           action={
-            <Button asChild variant="outline" className="rounded-full">
+            <Button asChild variant="outline" className="rounded-full bg-white">
               <Link to="/annonces">
                 Toutes les annonces
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -405,7 +409,7 @@ function Home() {
             description="Les catégories seront affichées dès qu’elles seront ajoutées dans Supabase."
           />
         ) : (
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {categories.map((item, index) => {
               const Icon = getCategoryIcon(item.icon);
               const gradient = categoryGradients[index % categoryGradients.length];
@@ -415,7 +419,7 @@ function Home() {
                   key={item.id}
                   to="/annonces"
                   search={{ category: item.slug } as never}
-                  className={`group min-h-[145px] rounded-3xl border bg-gradient-to-br p-4 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl ${gradient}`}
+                  className={`group min-h-[150px] rounded-[1.6rem] border bg-gradient-to-br p-4 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl ${gradient}`}
                 >
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm transition group-hover:scale-105">
                     <Icon className="h-6 w-6" />
@@ -423,7 +427,7 @@ function Home() {
                   <h3 className="line-clamp-2 text-sm font-black leading-snug text-slate-950">
                     {item.name}
                   </h3>
-                  <p className="mt-2 flex items-center text-xs font-semibold text-slate-500">
+                  <p className="mt-3 flex items-center text-xs font-semibold text-slate-500">
                     Voir les annonces
                     <ArrowRight className="ml-1 h-3 w-3 transition group-hover:translate-x-1" />
                   </p>
@@ -434,8 +438,9 @@ function Home() {
         )}
       </section>
 
+      {/* FEATURED */}
       {featuredListings.length > 0 && (
-        <section className="bg-gradient-to-br from-amber-50 via-white to-orange-50 py-12">
+        <section className="bg-gradient-to-br from-amber-50 via-white to-orange-50 py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <SectionHeader
               eyebrow="Sélection"
@@ -448,7 +453,7 @@ function Home() {
               }
             />
 
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               {featuredListings.map((item) => (
                 <ListingCard key={item.id} listing={item} />
               ))}
@@ -457,13 +462,14 @@ function Home() {
         </section>
       )}
 
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      {/* RECENT */}
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <SectionHeader
           eyebrow="Nouveautés"
           title="Annonces récentes"
           description="Les dernières annonces publiées par les vendeurs particuliers et professionnels."
           action={
-            <Button asChild variant="outline" className="rounded-full">
+            <Button asChild variant="outline" className="rounded-full bg-white">
               <Link to="/annonces">
                 Tout voir
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -473,7 +479,7 @@ function Home() {
         />
 
         {recent.length === 0 ? (
-          <div className="mt-6 rounded-[2rem] border border-dashed bg-white p-8 text-center shadow-sm sm:p-12">
+          <div className="mt-7 rounded-[2rem] border border-dashed bg-white p-8 text-center shadow-sm sm:p-12">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-100 to-fuchsia-100 text-blue-700">
               <PlusCircle className="h-8 w-8" />
             </div>
@@ -488,7 +494,7 @@ function Home() {
             </Button>
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
             {recent.map((item) => (
               <ListingCard key={item.id} listing={item} />
             ))}
@@ -496,6 +502,7 @@ function Home() {
         )}
       </section>
 
+      {/* STEPS */}
       <section className="bg-white py-14">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
@@ -533,6 +540,7 @@ function Home() {
         </div>
       </section>
 
+      {/* WHY KAFOO */}
       <section className="bg-slate-950 py-14 text-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
           <div>
@@ -580,6 +588,7 @@ function Home() {
         </div>
       </section>
 
+      {/* SECURITY */}
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-[2rem] border bg-gradient-to-br from-white via-blue-50 to-emerald-50 p-6 shadow-sm sm:p-8">
           <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
