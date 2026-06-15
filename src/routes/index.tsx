@@ -303,16 +303,6 @@ function HomePage() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-
-              <Button
-                type="button"
-                size="lg"
-                onClick={() => setShowAdvancedSearch((current) => !current)}
-                className="h-12 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 px-6 font-black text-white shadow-lg shadow-blue-950/20 hover:opacity-95"
-              >
-                <Search className="mr-2 h-5 w-5" />
-                {showAdvancedSearch ? "Masquer la recherche" : "Recherche avancée"}
-              </Button>
             </div>
 
             <div className="mt-7 grid w-full max-w-2xl grid-cols-3 gap-3">
@@ -322,123 +312,107 @@ function HomePage() {
             </div>
           </div>
 
-          {showAdvancedSearch ? (
-            <div className="mx-auto mt-9 w-full max-w-6xl">
-              <form
-                onSubmit={onSearch}
-                className="rounded-3xl border border-white/15 bg-white p-4 text-slate-950 shadow-2xl sm:p-5 xl:p-6"
-              >
-                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-600 text-white">
-                      <Search className="h-5 w-5" />
-                    </div>
-
-                    <div className="min-w-0 text-left">
-                      <h2 className="font-black">Rechercher une annonce</h2>
-                      <p className="text-xs text-slate-500">
-                        Filtrez par catégorie, ville et budget.
-                      </p>
-                    </div>
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowAdvancedSearch(false)}
-                    className="rounded-full bg-slate-100 px-5 font-bold text-slate-700 hover:bg-slate-200"
-                  >
-                    Fermer
-                  </Button>
+          <div className="mx-auto mt-9 w-full max-w-5xl">
+            <form
+              onSubmit={onSearch}
+              className="rounded-3xl border border-white/15 bg-white p-3 text-slate-950 shadow-2xl sm:p-4"
+            >
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <div className="relative min-w-0">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Que recherchez-vous ?"
+                    className="h-12 w-full rounded-xl bg-slate-50 pl-10"
+                  />
                 </div>
 
-                <div className="grid gap-3 lg:grid-cols-5">
-                  <div className="relative lg:col-span-2">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="h-12 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 px-6 font-black text-white"
+                >
+                  <Search className="mr-2 h-5 w-5" />
+                  Rechercher
+                </Button>
+
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowAdvancedSearch((c) => !c)}
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50 px-5 font-bold text-slate-700 hover:bg-slate-100"
+                >
+                  <SlidersHorizontal className="mr-2 h-5 w-5" />
+                  {showAdvancedSearch ? "Fermer" : "Recherche avancée"}
+                </Button>
+              </div>
+
+              {showAdvancedSearch ? (
+                <div className="mt-4 border-t border-slate-100 pt-4">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <SelectField value={category} onChange={setCategory} label="Catégorie">
+                      <option value="">Toutes</option>
+                      {categories.map((item) => (
+                        <option key={item.id} value={item.slug}>{item.name}</option>
+                      ))}
+                    </SelectField>
+
+                    <SelectField value={region} onChange={setRegion} label="Région">
+                      <option value="">Toutes</option>
+                      {regions.map((item) => (
+                        <option key={item.id} value={item.slug}>{item.name}</option>
+                      ))}
+                    </SelectField>
+
+                    <SelectField value={city} onChange={setCity} label="Ville">
+                      <option value="">Toutes</option>
+                      {cities.map((item) => (
+                        <option key={item.id} value={item.slug}>{item.name}</option>
+                      ))}
+                    </SelectField>
+
+                    <SelectField value={commune} onChange={setCommune} label="Commune">
+                      <option value="">Toutes</option>
+                      {communes.map((item) => (
+                        <option key={item.id} value={item.slug}>{item.name}</option>
+                      ))}
+                    </SelectField>
+
                     <Input
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                      placeholder="Que recherchez-vous ?"
-                      className="h-12 rounded-xl bg-slate-50 pl-10"
+                      value={minPrice}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                      type="number"
+                      min="0"
+                      placeholder="Prix min"
+                      className="h-12 rounded-xl bg-slate-50"
+                    />
+
+                    <Input
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                      type="number"
+                      min="0"
+                      placeholder="Prix max"
+                      className="h-12 rounded-xl bg-slate-50"
                     />
                   </div>
 
-                  <SelectField
-                    value={category}
-                    onChange={setCategory}
-                    label="Catégorie"
-                  >
-                    <option value="">Toutes</option>
-                    {categories.map((item) => (
-                      <option key={item.id} value={item.slug}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </SelectField>
-
-                  <SelectField value={region} onChange={setRegion} label="Région">
-                    <option value="">Toutes</option>
-                    {regions.map((item) => (
-                      <option key={item.id} value={item.slug}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </SelectField>
-
-                  <SelectField value={city} onChange={setCity} label="Ville">
-                    <option value="">Toutes</option>
-                    {cities.map((item) => (
-                      <option key={item.id} value={item.slug}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </SelectField>
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowAdvancedSearch(false)}
+                      className="rounded-full bg-slate-100 px-5 font-bold text-slate-700 hover:bg-slate-200"
+                    >
+                      Fermer
+                    </Button>
+                  </div>
                 </div>
-
-                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto]">
-                  <SelectField
-                    value={commune}
-                    onChange={setCommune}
-                    label="Commune"
-                  >
-                    <option value="">Toutes</option>
-                    {communes.map((item) => (
-                      <option key={item.id} value={item.slug}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </SelectField>
-
-                  <Input
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    type="number"
-                    min="0"
-                    placeholder="Prix min"
-                    className="h-12 rounded-xl bg-slate-50"
-                  />
-
-                  <Input
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    type="number"
-                    min="0"
-                    placeholder="Prix max"
-                    className="h-12 rounded-xl bg-slate-50"
-                  />
-
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="h-12 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 px-8 font-black text-white"
-                  >
-                    <SlidersHorizontal className="mr-2 h-5 w-5" />
-                    Rechercher
-                  </Button>
-                </div>
-              </form>
-            </div>
-          ) : null}
+              ) : null}
+            </form>
+          </div>
         </div>
       </section>
 
