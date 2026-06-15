@@ -1,7 +1,6 @@
 @import "tailwindcss" source(none);
-@import "tw-animate-css";
-
 @source "../src";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -180,6 +179,7 @@
    KAFOO RESPONSIVE GRAND ÉCRAN / TABLETTE / MOBILE
    ========================================================= */
 
+@layer utilities {
   .kafoo-container {
     width: min(100% - 1rem, 1440px);
     margin-inline: auto;
@@ -314,6 +314,7 @@
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
+}
 
 /* =========================================================
    MOBILE FIX
