@@ -22,9 +22,12 @@ function FavorisPage() {
         images:listing_images(image_url,is_main)
       )`).eq("user_id", user.id)
       .then(({ data }) => {
-        const rows = (data ?? []).map((d: { listing: ListingRow }) => d.listing).filter(Boolean);
-        setItems(rows as ListingRow[]);
+        const rows = ((data ?? []) as unknown as { listing: ListingRow | null }[])
+          .map((d) => d.listing)
+          .filter((l): l is ListingRow => !!l);
+        setItems(rows);
       });
+
   }, [supabase, user]);
   if (!user) return null;
   return (

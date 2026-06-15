@@ -138,7 +138,7 @@ function AnnoncesPage() {
             <select
               className="mt-1 w-full rounded-md border bg-background px-2 py-2 text-sm"
               value={search.category ?? ""}
-              onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, category: e.target.value || undefined }) })}
+              onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, category: e.target.value || undefined })) as never })}
             >
               <option value="">Toutes</option>
               {cats.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
@@ -174,7 +174,7 @@ function AnnoncesPage() {
               <select
                 className="mt-1 w-full rounded-md border bg-background px-2 py-2 text-sm"
                 value={search.commune ?? ""}
-                onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, commune: e.target.value || undefined }) })}
+                onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, commune: e.target.value || undefined })) as never })}
               >
                 <option value="">Toutes</option>
                 {communes.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
@@ -190,7 +190,7 @@ function AnnoncesPage() {
             <select
               className="mt-1 w-full rounded-md border bg-background px-2 py-2 text-sm"
               value={search.sort ?? "recent"}
-              onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, sort: e.target.value as "recent" | "price_asc" | "price_desc" }) })}
+              onChange={(e) => navigate({ search: ((p: Record<string, unknown>) => ({ ...p, sort: e.target.value as "recent" | "price_asc" | "price_desc" })) as never })}
             >
               <option value="recent">Plus récentes</option>
               <option value="price_asc">Prix croissant</option>
