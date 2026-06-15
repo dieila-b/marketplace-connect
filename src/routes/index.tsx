@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowRight,
   Baby,
@@ -8,6 +8,7 @@ import {
   Box,
   Briefcase,
   Car,
+  CheckCircle2,
   Dog,
   Dumbbell,
   Gem,
@@ -86,12 +87,12 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 const categoryGradients = [
-  "from-blue-500/15 to-cyan-500/15 text-blue-700 border-blue-200",
-  "from-emerald-500/15 to-teal-500/15 text-emerald-700 border-emerald-200",
-  "from-orange-500/15 to-amber-500/15 text-orange-700 border-orange-200",
-  "from-purple-500/15 to-fuchsia-500/15 text-purple-700 border-purple-200",
-  "from-rose-500/15 to-pink-500/15 text-rose-700 border-rose-200",
-  "from-indigo-500/15 to-violet-500/15 text-indigo-700 border-indigo-200",
+  "from-blue-500/20 via-cyan-500/10 to-white text-blue-700 border-blue-200",
+  "from-emerald-500/20 via-teal-500/10 to-white text-emerald-700 border-emerald-200",
+  "from-orange-500/20 via-amber-500/10 to-white text-orange-700 border-orange-200",
+  "from-purple-500/20 via-fuchsia-500/10 to-white text-purple-700 border-purple-200",
+  "from-rose-500/20 via-pink-500/10 to-white text-rose-700 border-rose-200",
+  "from-indigo-500/20 via-violet-500/10 to-white text-indigo-700 border-indigo-200",
 ];
 
 function getCategoryIcon(icon: string | null) {
@@ -114,6 +115,7 @@ function Home() {
   const [region, setRegion] = useState("");
   const [city, setCity] = useState("");
   const [commune, setCommune] = useState("");
+  const [distance, setDistance] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
 
@@ -181,48 +183,53 @@ function Home() {
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
 
-    const searchParams = {
-      q: q || undefined,
-      category: category || undefined,
-      region: region || undefined,
-      city: city || undefined,
-      commune: commune || undefined,
-      minPrice: minPrice || undefined,
-      maxPrice: maxPrice || undefined,
-    };
-
-    navigate({ to: "/annonces", search: searchParams as never });
+    navigate({
+      to: "/annonces",
+      search: {
+        q: q || undefined,
+        category: category || undefined,
+        region: region || undefined,
+        city: city || undefined,
+        commune: commune || undefined,
+        distance: distance || undefined,
+        minPrice: minPrice || undefined,
+        maxPrice: maxPrice || undefined,
+      } as never,
+    });
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      {/* HERO */}
-      <section className="relative overflow-hidden bg-slate-950 text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.35),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(236,72,153,0.25),_transparent_30%),radial-gradient(circle_at_bottom,_rgba(16,185,129,0.22),_transparent_35%)]" />
-        <div className="absolute -left-24 top-20 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
-        <div className="absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-pink-500/20 blur-3xl" />
+    <main className="min-h-screen overflow-hidden bg-slate-50">
+      <section className="relative isolate overflow-hidden bg-slate-950 text-white">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(37,99,235,0.45),transparent_30%),radial-gradient(circle_at_85%_15%,rgba(217,70,239,0.35),transparent_30%),radial-gradient(circle_at_45%_90%,rgba(16,185,129,0.28),transparent_35%)]" />
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-slate-50 to-transparent" />
 
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:py-16">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:py-14 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-20">
           <div className="flex flex-col justify-center">
-            <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-medium text-white/90 backdrop-blur">
+            <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 shadow-lg backdrop-blur">
               <Sparkles className="h-4 w-4 text-yellow-300" />
-              Marketplace locale pour particuliers et professionnels
+              Nouvelle marketplace locale en Guinée
             </div>
 
-            <h1 className="max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="max-w-3xl text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
               Achetez, vendez et trouvez les meilleures annonces près de chez vous
             </h1>
 
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
-              Publiez gratuitement vos annonces de téléphones, véhicules,
-              immobilier, mode, électroménager et bien plus encore en Guinée.
+              Publiez gratuitement vos annonces de téléphones, véhicules, immobilier,
+              mode, électroménager et services. Kafoo connecte particuliers et professionnels
+              partout en Guinée.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="h-12 rounded-full bg-white px-6 font-semibold text-slate-950 hover:bg-slate-100">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 rounded-full bg-white px-6 font-bold text-slate-950 shadow-xl hover:bg-slate-100"
+              >
                 <Link to="/publier">
                   <PlusCircle className="mr-2 h-5 w-5" />
-                  Publier une annonce
+                  Publier gratuitement
                 </Link>
               </Button>
 
@@ -230,7 +237,7 @@ function Home() {
                 asChild
                 size="lg"
                 variant="outline"
-                className="h-12 rounded-full border-white/30 bg-white/10 px-6 font-semibold text-white backdrop-blur hover:bg-white/20 hover:text-white"
+                className="h-12 rounded-full border-white/30 bg-white/10 px-6 font-bold text-white backdrop-blur hover:bg-white/20 hover:text-white"
               >
                 <Link to="/annonces">
                   Explorer les annonces
@@ -241,22 +248,22 @@ function Home() {
 
             <div className="mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
               <StatCard value={categories.length} label="Catégories" />
-              <StatCard value={recent.length} label="Annonces récentes" />
+              <StatCard value={recent.length} label="Annonces" />
               <StatCard value="100%" label="Supabase" />
-              <StatCard value="24/7" label="Accessible" />
+              <StatCard value="GN" label="Local" />
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl sm:p-6">
-            <div className="rounded-2xl bg-white p-4 text-slate-950 shadow-xl sm:p-5">
-              <div className="mb-4 flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-600 text-white">
+          <div className="rounded-[2rem] border border-white/15 bg-white/10 p-3 shadow-2xl backdrop-blur-xl sm:p-5">
+            <div className="rounded-[1.5rem] bg-white p-4 text-slate-950 shadow-2xl sm:p-5">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-fuchsia-600 text-white shadow-lg">
                   <Search className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold">Trouvez rapidement</h2>
+                  <h2 className="text-lg font-black">Recherche avancée</h2>
                   <p className="text-sm text-slate-500">
-                    Recherchez par catégorie, ville, commune ou prix.
+                    Catégorie, localisation, distance et budget.
                   </p>
                 </div>
               </div>
@@ -267,7 +274,7 @@ function Home() {
                   <Input
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
-                    placeholder="Que recherchez-vous ?"
+                    placeholder="Téléphone, voiture, maison, ordinateur..."
                     className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-10"
                   />
                 </div>
@@ -310,13 +317,23 @@ function Home() {
                   </SelectField>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <SelectField value={distance} onChange={setDistance} label="Distance">
+                    <option value="">Toute distance</option>
+                    <option value="1">1 km</option>
+                    <option value="5">5 km</option>
+                    <option value="10">10 km</option>
+                    <option value="20">20 km</option>
+                    <option value="50">50 km</option>
+                    <option value="100">100 km</option>
+                  </SelectField>
+
                   <Input
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                     type="number"
                     min="0"
-                    placeholder="Prix minimum"
+                    placeholder="Prix min"
                     className="h-12 rounded-xl border-slate-200 bg-slate-50"
                   />
 
@@ -325,12 +342,16 @@ function Home() {
                     onChange={(e) => setMaxPrice(e.target.value)}
                     type="number"
                     min="0"
-                    placeholder="Prix maximum"
+                    placeholder="Prix max"
                     className="h-12 rounded-xl border-slate-200 bg-slate-50"
                   />
                 </div>
 
-                <Button type="submit" size="lg" className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 font-bold text-white hover:opacity-95">
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 font-black text-white shadow-lg hover:opacity-95"
+                >
                   <SlidersHorizontal className="mr-2 h-5 w-5" />
                   Rechercher maintenant
                 </Button>
@@ -340,52 +361,43 @@ function Home() {
         </div>
       </section>
 
-      {/* TRUST STRIP */}
-      <section className="border-b bg-white">
-        <div className="mx-auto grid max-w-7xl gap-3 px-4 py-5 sm:grid-cols-3 sm:px-6 lg:px-8">
+      <section className="relative z-10 -mt-6 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-3 rounded-3xl border bg-white p-4 shadow-xl sm:grid-cols-3">
           <TrustItem
             icon={Zap}
             title="Publication rapide"
-            description="Mettez votre annonce en ligne en quelques minutes."
+            description="Créez une annonce avec photos, prix et localisation en quelques minutes."
             color="bg-orange-100 text-orange-700"
           />
           <TrustItem
             icon={MapPin}
             title="Recherche locale"
-            description="Trouvez les annonces par ville, commune ou quartier."
+            description="Filtrez par région, ville, commune, quartier, distance et prix."
             color="bg-emerald-100 text-emerald-700"
           />
           <TrustItem
             icon={MessageCircle}
             title="Contact direct"
-            description="Échangez facilement par message, appel ou WhatsApp."
+            description="Échangez avec les vendeurs par message, téléphone ou WhatsApp."
             color="bg-blue-100 text-blue-700"
           />
         </div>
       </section>
 
-      {/* CATÉGORIES */}
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-              Explorer
-            </p>
-            <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">
-              Catégories populaires
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Trouvez rapidement ce que vous cherchez parmi les principales rubriques.
-            </p>
-          </div>
-
-          <Button asChild variant="outline" className="w-fit rounded-full">
-            <Link to="/annonces">
-              Toutes les annonces
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow="Explorer"
+          title="Catégories populaires"
+          description="Accédez rapidement aux rubriques les plus recherchées sur Kafoo."
+          action={
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/annonces">
+                Toutes les annonces
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          }
+        />
 
         {categories.length === 0 ? (
           <EmptyState
@@ -393,7 +405,7 @@ function Home() {
             description="Les catégories seront affichées dès qu’elles seront ajoutées dans Supabase."
           />
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {categories.map((item, index) => {
               const Icon = getCategoryIcon(item.icon);
               const gradient = categoryGradients[index % categoryGradients.length];
@@ -403,15 +415,15 @@ function Home() {
                   key={item.id}
                   to="/annonces"
                   search={{ category: item.slug } as never}
-                  className={`group rounded-2xl border bg-gradient-to-br p-4 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl ${gradient}`}
+                  className={`group min-h-[145px] rounded-3xl border bg-gradient-to-br p-4 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl ${gradient}`}
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80 shadow-sm transition group-hover:scale-105">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm transition group-hover:scale-105">
                     <Icon className="h-6 w-6" />
                   </div>
-                  <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900">
+                  <h3 className="line-clamp-2 text-sm font-black leading-snug text-slate-950">
                     {item.name}
                   </h3>
-                  <p className="mt-2 flex items-center text-xs font-medium text-slate-500">
+                  <p className="mt-2 flex items-center text-xs font-semibold text-slate-500">
                     Voir les annonces
                     <ArrowRight className="ml-1 h-3 w-3 transition group-hover:translate-x-1" />
                   </p>
@@ -422,26 +434,21 @@ function Home() {
         )}
       </section>
 
-      {/* FEATURED LISTINGS */}
       {featuredListings.length > 0 && (
-        <section className="bg-gradient-to-br from-amber-50 via-white to-orange-50 py-10">
+        <section className="bg-gradient-to-br from-amber-50 via-white to-orange-50 py-12">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-orange-600">
-                  Sélection
-                </p>
-                <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">
-                  Annonces à la une
-                </h2>
-              </div>
+            <SectionHeader
+              eyebrow="Sélection"
+              title="Annonces à la une"
+              description="Découvrez les annonces mises en avant par les vendeurs."
+              action={
+                <Link to="/annonces" className="text-sm font-bold text-orange-700 hover:underline">
+                  Tout voir
+                </Link>
+              }
+            />
 
-              <Link to="/annonces" className="text-sm font-semibold text-orange-700 hover:underline">
-                Tout voir
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               {featuredListings.map((item) => (
                 <ListingCard key={item.id} listing={item} />
               ))}
@@ -450,35 +457,27 @@ function Home() {
         </section>
       )}
 
-      {/* RECENT LISTINGS */}
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-600">
-              Nouveautés
-            </p>
-            <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">
-              Annonces récentes
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Les dernières annonces publiées par les vendeurs.
-            </p>
-          </div>
-
-          <Button asChild variant="outline" className="w-fit rounded-full">
-            <Link to="/annonces">
-              Tout voir
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow="Nouveautés"
+          title="Annonces récentes"
+          description="Les dernières annonces publiées par les vendeurs particuliers et professionnels."
+          action={
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/annonces">
+                Tout voir
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          }
+        />
 
         {recent.length === 0 ? (
-          <div className="rounded-3xl border border-dashed bg-white p-8 text-center shadow-sm sm:p-12">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-fuchsia-100 text-blue-700">
-              <PlusCircle className="h-7 w-7" />
+          <div className="mt-6 rounded-[2rem] border border-dashed bg-white p-8 text-center shadow-sm sm:p-12">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-100 to-fuchsia-100 text-blue-700">
+              <PlusCircle className="h-8 w-8" />
             </div>
-            <h3 className="text-lg font-bold text-slate-950">
+            <h3 className="text-xl font-black text-slate-950">
               Aucune annonce publiée pour le moment
             </h3>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
@@ -489,7 +488,7 @@ function Home() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
             {recent.map((item) => (
               <ListingCard key={item.id} listing={item} />
             ))}
@@ -497,14 +496,13 @@ function Home() {
         )}
       </section>
 
-      {/* HOW IT WORKS */}
-      <section className="bg-white py-12">
+      <section className="bg-white py-14">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-wide text-fuchsia-600">
+            <p className="text-sm font-black uppercase tracking-wide text-fuchsia-600">
               Simple et rapide
             </p>
-            <h2 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
+            <h2 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
               Vendez en quelques minutes
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-500">
@@ -535,11 +533,10 @@ function Home() {
         </div>
       </section>
 
-      {/* WHY KAFOO */}
-      <section className="bg-slate-950 py-12 text-white">
+      <section className="bg-slate-950 py-14 text-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
+            <p className="text-sm font-black uppercase tracking-wide text-cyan-300">
               Pourquoi Kafoo ?
             </p>
             <h2 className="mt-2 text-3xl font-black leading-tight sm:text-4xl">
@@ -583,9 +580,8 @@ function Home() {
         </div>
       </section>
 
-      {/* SECURITY */}
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-3xl border bg-gradient-to-br from-white via-blue-50 to-emerald-50 p-6 shadow-sm sm:p-8">
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="overflow-hidden rounded-[2rem] border bg-gradient-to-br from-white via-blue-50 to-emerald-50 p-6 shadow-sm sm:p-8">
           <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
@@ -612,6 +608,35 @@ function Home() {
   );
 }
 
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-sm font-black uppercase tracking-wide text-blue-600">
+          {eyebrow}
+        </p>
+        <h2 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">
+          {title}
+        </h2>
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+          {description}
+        </p>
+      </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+  );
+}
+
 function SelectField({
   label,
   value,
@@ -621,11 +646,11 @@ function SelectField({
   label: string;
   value: string;
   onChange: (value: string) => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold text-slate-600">{label}</span>
+      <span className="mb-1 block text-xs font-bold text-slate-600">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -639,9 +664,9 @@ function SelectField({
 
 function StatCard({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
+    <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center shadow-lg backdrop-blur">
       <div className="text-xl font-black text-white">{value}</div>
-      <div className="mt-1 text-[11px] font-medium text-slate-300">{label}</div>
+      <div className="mt-1 text-[11px] font-semibold text-slate-300">{label}</div>
     </div>
   );
 }
@@ -663,7 +688,7 @@ function TrustItem({
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <h3 className="text-sm font-bold text-slate-950">{title}</h3>
+        <h3 className="text-sm font-black text-slate-950">{title}</h3>
         <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
       </div>
     </div>
@@ -682,8 +707,10 @@ function StepCard({
   color: string;
 }) {
   return (
-    <div className="rounded-3xl border bg-slate-50 p-6 transition hover:-translate-y-1 hover:shadow-xl">
-      <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${color} text-lg font-black text-white shadow-lg`}>
+    <div className="rounded-[2rem] border bg-slate-50 p-6 transition hover:-translate-y-1 hover:shadow-xl">
+      <div
+        className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${color} text-lg font-black text-white shadow-lg`}
+      >
         {number}
       </div>
       <h3 className="text-lg font-black text-slate-950">{title}</h3>
@@ -702,11 +729,11 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur transition hover:bg-white/15">
+    <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 backdrop-blur transition hover:bg-white/15">
       <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-950">
         <Icon className="h-5 w-5" />
       </div>
-      <h3 className="font-bold text-white">{title}</h3>
+      <h3 className="font-black text-white">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-300">{description}</p>
     </div>
   );
@@ -715,8 +742,8 @@ function FeatureCard({
 function SecurityTip({ text }: { text: string }) {
   return (
     <div className="flex items-start gap-3 rounded-2xl bg-white/80 p-4 shadow-sm">
-      <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-      <p className="text-sm font-medium leading-6 text-slate-700">{text}</p>
+      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+      <p className="text-sm font-semibold leading-6 text-slate-700">{text}</p>
     </div>
   );
 }
@@ -729,11 +756,11 @@ function EmptyState({
   description: string;
 }) {
   return (
-    <div className="rounded-3xl border border-dashed bg-white p-8 text-center shadow-sm">
+    <div className="rounded-[2rem] border border-dashed bg-white p-8 text-center shadow-sm">
       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
         <Box className="h-7 w-7" />
       </div>
-      <h3 className="text-lg font-bold text-slate-950">{title}</h3>
+      <h3 className="text-lg font-black text-slate-950">{title}</h3>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
         {description}
       </p>
