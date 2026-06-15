@@ -43,6 +43,8 @@ function AnnoncesPage() {
   const [max, setMax] = useState<string>(search.max != null ? String(search.max) : "");
 
   useEffect(() => {
+    if (!supabase) return;
+
     void (async () => {
       const [{ data: c }, { data: r }] = await Promise.all([
         supabase.from("categories").select("id,name,slug").is("parent_id", null).eq("is_active", true).order("sort_order"),
@@ -53,6 +55,7 @@ function AnnoncesPage() {
   }, [supabase]);
 
   useEffect(() => {
+    if (!supabase) return;
     if (!search.region) { setCities([]); return; }
     void (async () => {
       const { data: reg } = await supabase.from("regions").select("id").eq("slug", search.region!).maybeSingle();
@@ -63,6 +66,7 @@ function AnnoncesPage() {
   }, [supabase, search.region]);
 
   useEffect(() => {
+    if (!supabase) return;
     if (!search.city) { setCommunes([]); return; }
     void (async () => {
       const { data: city } = await supabase.from("cities").select("id").eq("slug", search.city!).maybeSingle();
@@ -73,6 +77,11 @@ function AnnoncesPage() {
   }, [supabase, search.city]);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     void (async () => {
       setLoading(true);
       let qry = supabase

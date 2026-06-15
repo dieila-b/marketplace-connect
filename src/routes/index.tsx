@@ -177,6 +177,8 @@ function HomePage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
 
   useEffect(() => {
+    if (!supabase) return;
+
     void (async () => {
       const [
         { data: cats },
@@ -260,14 +262,14 @@ function HomePage() {
       <section className="relative w-full overflow-hidden bg-slate-950 text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.48),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.40),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.32),transparent_38%)]" />
 
-        <div className="relative kafoo-wide-container grid min-h-[520px] gap-10 py-10 sm:py-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(380px,520px)] lg:items-center lg:py-16 xl:gap-16 2xl:min-h-[620px]">
+        <div className="relative kafoo-wide-container grid min-h-[520px] gap-8 py-8 sm:py-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,520px)] lg:items-center lg:py-16 xl:gap-16 2xl:min-h-[620px]">
           <div className="flex min-w-0 flex-col justify-center text-center lg:text-left">
             <div className="mx-auto mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur lg:mx-0">
               <Sparkles className="h-4 w-4 text-yellow-300" />
               Nouvelle marketplace locale en Guinée
             </div>
 
-            <h1 className="mx-auto max-w-4xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:mx-0 lg:text-6xl xl:text-7xl">
+            <h1 className="mx-auto max-w-4xl text-3xl font-black leading-tight sm:text-5xl lg:mx-0 lg:text-6xl xl:text-7xl">
               Vendez et trouvez vos bonnes affaires près de chez vous
             </h1>
 
@@ -315,7 +317,7 @@ function HomePage() {
               className="rounded-3xl border border-white/15 bg-white p-4 text-slate-950 shadow-2xl sm:p-5 xl:p-6"
             >
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-600 text-white">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-fuchsia-600 text-white">
                   <Search className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
@@ -398,7 +400,7 @@ function HomePage() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 font-black text-white"
+                  className="h-12 w-full rounded-xl bg-linear-to-r from-blue-600 via-indigo-600 to-fuchsia-600 font-black text-white"
                 >
                   <SlidersHorizontal className="mr-2 h-5 w-5" />
                   Rechercher
