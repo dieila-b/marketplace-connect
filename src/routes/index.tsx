@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowRight,
   Baby,
@@ -12,8 +12,7 @@ import {
   Dog,
   Dumbbell,
   Gem,
-  Heart,
-  Home,
+  HomeIcon,
   Laptop,
   MapPin,
   MessageCircle,
@@ -27,7 +26,6 @@ import {
   Store,
   Tv,
   Wrench,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -39,11 +37,11 @@ import { Input } from "@/components/ui/input";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Kafoo — Achetez et vendez près de chez vous" },
+      { title: "Kafoo — Petites annonces en Guinée" },
       {
         name: "description",
         content:
-          "Kafoo Marketplace : petites annonces en Guinée pour acheter, vendre et échanger entre particuliers et professionnels.",
+          "Kafoo Marketplace : achetez, vendez et publiez vos annonces en Guinée.",
       },
     ],
   }),
@@ -63,20 +61,78 @@ type LocationOption = {
   slug: string;
 };
 
+type DemoListing = {
+  id: string;
+  title: string;
+  price: string;
+  location: string;
+  category: string;
+  condition: string;
+  image: string;
+  badge?: string;
+};
+
+const demoListings: DemoListing[] = [
+  {
+    id: "demo-1",
+    title: "iPhone 13 Pro 128 Go",
+    price: "4 500 000 GNF",
+    location: "Conakry, Ratoma",
+    category: "Téléphones",
+    condition: "Très bon état",
+    image:
+      "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&w=900&q=80",
+    badge: "Exemple",
+  },
+  {
+    id: "demo-2",
+    title: "Toyota Corolla automatique",
+    price: "85 000 000 GNF",
+    location: "Conakry, Dixinn",
+    category: "Véhicules",
+    condition: "Occasion",
+    image:
+      "https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=900&q=80",
+    badge: "Exemple",
+  },
+  {
+    id: "demo-3",
+    title: "Canapé moderne 5 places",
+    price: "3 200 000 GNF",
+    location: "Conakry, Matoto",
+    category: "Meubles",
+    condition: "Bon état",
+    image:
+      "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=900&q=80",
+    badge: "Exemple",
+  },
+  {
+    id: "demo-4",
+    title: "Ordinateur HP Core i5",
+    price: "2 800 000 GNF",
+    location: "Conakry, Kaloum",
+    category: "Ordinateurs",
+    condition: "Très bon état",
+    image:
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+    badge: "Exemple",
+  },
+];
+
 const iconMap: Record<string, LucideIcon> = {
   smartphone: Smartphone,
   laptop: Laptop,
   tv: Tv,
   car: Car,
   bike: Bike,
-  home: Home,
-  sofa: Home,
-  refrigerator: Home,
+  home: HomeIcon,
+  sofa: HomeIcon,
+  refrigerator: HomeIcon,
   shirt: Shirt,
   footprints: Shirt,
   gem: Gem,
   baby: Baby,
-  flower: Home,
+  flower: HomeIcon,
   dumbbell: Dumbbell,
   briefcase: Briefcase,
   wrench: Wrench,
@@ -86,13 +142,13 @@ const iconMap: Record<string, LucideIcon> = {
   box: Box,
 };
 
-const categoryGradients = [
-  "from-blue-50 via-cyan-50 to-white border-blue-100 text-blue-700",
-  "from-emerald-50 via-teal-50 to-white border-emerald-100 text-emerald-700",
-  "from-orange-50 via-amber-50 to-white border-orange-100 text-orange-700",
-  "from-purple-50 via-fuchsia-50 to-white border-purple-100 text-purple-700",
-  "from-rose-50 via-pink-50 to-white border-rose-100 text-rose-700",
-  "from-indigo-50 via-violet-50 to-white border-indigo-100 text-indigo-700",
+const categoryStyles = [
+  "bg-blue-50 text-blue-700 border-blue-100",
+  "bg-emerald-50 text-emerald-700 border-emerald-100",
+  "bg-orange-50 text-orange-700 border-orange-100",
+  "bg-violet-50 text-violet-700 border-violet-100",
+  "bg-rose-50 text-rose-700 border-rose-100",
+  "bg-cyan-50 text-cyan-700 border-cyan-100",
 ];
 
 function getCategoryIcon(icon: string | null) {
@@ -115,7 +171,6 @@ function HomePage() {
   const [region, setRegion] = useState("");
   const [city, setCity] = useState("");
   const [commune, setCommune] = useState("");
-  const [distance, setDistance] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
 
@@ -164,7 +219,7 @@ function HomePage() {
           .order("is_sponsored", { ascending: false })
           .order("is_featured", { ascending: false })
           .order("created_at", { ascending: false })
-          .limit(24),
+          .limit(12),
       ]);
 
       setCategories((cats ?? []) as Category[]);
@@ -174,11 +229,6 @@ function HomePage() {
       setRecent((list ?? []) as unknown as ListingRow[]);
     })();
   }, [supabase]);
-
-  const featuredListings = useMemo(
-    () => recent.filter((item) => item.is_featured || item.is_sponsored).slice(0, 8),
-    [recent],
-  );
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -191,7 +241,6 @@ function HomePage() {
         region: region || undefined,
         city: city || undefined,
         commune: commune || undefined,
-        distance: distance || undefined,
         minPrice: minPrice || undefined,
         maxPrice: maxPrice || undefined,
       } as never,
@@ -199,35 +248,32 @@ function HomePage() {
   };
 
   return (
-    <main className="min-h-screen w-full overflow-x-hidden bg-[#f5f7fb]">
+    <main className="min-h-screen w-full overflow-x-hidden bg-slate-50">
       {/* HERO */}
-      <section className="relative isolate w-full overflow-hidden bg-[#07111f] text-white">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_12%_18%,rgba(37,99,235,0.55),transparent_30%),radial-gradient(circle_at_88%_12%,rgba(192,38,211,0.42),transparent_30%),radial-gradient(circle_at_48%_96%,rgba(20,184,166,0.35),transparent_36%)]" />
-        <div className="absolute inset-0 -z-10 bg-[linear-gradient(115deg,rgba(2,6,23,0.60),rgba(15,23,42,0.20),rgba(76,29,149,0.38))]" />
-        <div className="absolute inset-x-0 bottom-0 -z-10 h-28 bg-gradient-to-t from-[#f5f7fb] to-transparent" />
+      <section className="relative w-full overflow-hidden bg-slate-950 text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(37,99,235,0.45),transparent_32%),radial-gradient(circle_at_80%_10%,rgba(168,85,247,0.38),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.30),transparent_35%)]" />
 
-        <div className="mx-auto grid w-full max-w-[1600px] gap-8 px-4 pb-20 pt-10 sm:px-6 md:pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(420px,560px)] lg:items-center lg:px-10 lg:pb-28 lg:pt-20 2xl:px-14">
-          <div className="mx-auto w-full max-w-4xl text-center lg:mx-0 lg:text-left">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 shadow-lg backdrop-blur">
+        <div className="relative mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_440px] lg:px-8 lg:py-16 xl:grid-cols-[1fr_500px]">
+          <div className="flex flex-col justify-center text-center lg:text-left">
+            <div className="mx-auto mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur lg:mx-0">
               <Sparkles className="h-4 w-4 text-yellow-300" />
               Nouvelle marketplace locale en Guinée
             </div>
 
-            <h1 className="text-balance text-[2.35rem] font-black leading-[1.04] tracking-tight sm:text-5xl md:text-6xl xl:text-7xl">
-              Achetez, vendez et trouvez les meilleures annonces près de chez vous
+            <h1 className="mx-auto max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:mx-0 lg:text-6xl">
+              Vendez et trouvez vos bonnes affaires près de chez vous
             </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base md:text-lg lg:mx-0">
-              Publiez gratuitement vos annonces de téléphones, véhicules, immobilier,
-              mode, électroménager et services. Kafoo connecte particuliers et professionnels
-              partout en Guinée.
+            <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base lg:mx-0">
+              Téléphones, véhicules, immobilier, meubles, mode, électroménager et services.
+              Publiez gratuitement et échangez directement avec les acheteurs.
             </p>
 
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
               <Button
                 asChild
                 size="lg"
-                className="h-12 rounded-full bg-white px-6 font-bold text-slate-950 shadow-xl hover:bg-slate-100"
+                className="h-12 rounded-full bg-white px-6 font-bold text-slate-950 hover:bg-slate-100"
               >
                 <Link to="/publier">
                   <PlusCircle className="mr-2 h-5 w-5" />
@@ -239,51 +285,54 @@ function HomePage() {
                 asChild
                 size="lg"
                 variant="outline"
-                className="h-12 rounded-full border-white/30 bg-white/10 px-6 font-bold text-white backdrop-blur hover:bg-white/20 hover:text-white"
+                className="h-12 rounded-full border-white/30 bg-white/10 px-6 font-bold text-white hover:bg-white/20 hover:text-white"
               >
                 <Link to="/annonces">
-                  Explorer les annonces
+                  Explorer
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
             </div>
 
-            <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4 lg:mx-0">
-              <StatCard value={categories.length} label="Catégories" />
-              <StatCard value={recent.length} label="Annonces" />
-              <StatCard value="100%" label="Supabase" />
-              <StatCard value="GN" label="Local" />
+            <div className="mx-auto mt-8 grid max-w-xl grid-cols-3 gap-3 lg:mx-0">
+              <MiniStat value={categories.length} label="Catégories" />
+              <MiniStat value={recent.length} label="Annonces" />
+              <MiniStat value="GN" label="Local" />
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-xl rounded-[2rem] border border-white/15 bg-white/10 p-3 shadow-2xl backdrop-blur-xl sm:p-5 lg:mx-0">
-            <div className="rounded-[1.5rem] bg-white p-4 text-slate-950 shadow-2xl sm:p-5">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-fuchsia-600 text-white shadow-lg">
+          {/* SEARCH CARD */}
+          <div className="mx-auto w-full max-w-xl lg:mx-0">
+            <form
+              onSubmit={onSearch}
+              className="rounded-3xl border border-white/15 bg-white p-4 text-slate-950 shadow-2xl sm:p-5"
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-600 text-white">
                   <Search className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black">Recherche avancée</h2>
-                  <p className="text-sm text-slate-500">
-                    Catégorie, localisation, distance et budget.
+                  <h2 className="font-black">Rechercher une annonce</h2>
+                  <p className="text-xs text-slate-500">
+                    Filtrez par catégorie, ville et budget.
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={onSearch} className="space-y-3">
+              <div className="space-y-3">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
-                    placeholder="Téléphone, voiture, maison, ordinateur..."
-                    className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-10"
+                    placeholder="Que recherchez-vous ?"
+                    className="h-12 rounded-xl bg-slate-50 pl-10"
                   />
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <SelectField value={category} onChange={setCategory} label="Catégorie">
-                    <option value="">Toutes les catégories</option>
+                    <option value="">Toutes</option>
                     {categories.map((item) => (
                       <option key={item.id} value={item.slug}>
                         {item.name}
@@ -292,7 +341,7 @@ function HomePage() {
                   </SelectField>
 
                   <SelectField value={region} onChange={setRegion} label="Région">
-                    <option value="">Toutes les régions</option>
+                    <option value="">Toutes</option>
                     {regions.map((item) => (
                       <option key={item.id} value={item.slug}>
                         {item.name}
@@ -301,7 +350,7 @@ function HomePage() {
                   </SelectField>
 
                   <SelectField value={city} onChange={setCity} label="Ville">
-                    <option value="">Toutes les villes</option>
+                    <option value="">Toutes</option>
                     {cities.map((item) => (
                       <option key={item.id} value={item.slug}>
                         {item.name}
@@ -310,7 +359,7 @@ function HomePage() {
                   </SelectField>
 
                   <SelectField value={commune} onChange={setCommune} label="Commune">
-                    <option value="">Toutes les communes</option>
+                    <option value="">Toutes</option>
                     {communes.map((item) => (
                       <option key={item.id} value={item.slug}>
                         {item.name}
@@ -319,24 +368,14 @@ function HomePage() {
                   </SelectField>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <SelectField value={distance} onChange={setDistance} label="Distance">
-                    <option value="">Toute distance</option>
-                    <option value="1">1 km</option>
-                    <option value="5">5 km</option>
-                    <option value="10">10 km</option>
-                    <option value="20">20 km</option>
-                    <option value="50">50 km</option>
-                    <option value="100">100 km</option>
-                  </SelectField>
-
+                <div className="grid gap-3 sm:grid-cols-2">
                   <Input
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                     type="number"
                     min="0"
                     placeholder="Prix min"
-                    className="h-12 rounded-xl border-slate-200 bg-slate-50"
+                    className="h-12 rounded-xl bg-slate-50"
                   />
 
                   <Input
@@ -345,129 +384,54 @@ function HomePage() {
                     type="number"
                     min="0"
                     placeholder="Prix max"
-                    className="h-12 rounded-xl border-slate-200 bg-slate-50"
+                    className="h-12 rounded-xl bg-slate-50"
                   />
                 </div>
 
                 <Button
                   type="submit"
                   size="lg"
-                  className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 font-black text-white shadow-lg hover:opacity-95"
+                  className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 font-black text-white"
                 >
                   <SlidersHorizontal className="mr-2 h-5 w-5" />
-                  Rechercher maintenant
+                  Rechercher
                 </Button>
-              </form>
-            </div>
+              </div>
+            </form>
           </div>
         </div>
       </section>
 
-      {/* TRUST STRIP */}
-      <section className="relative z-10 -mt-12 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto grid w-full max-w-[1320px] gap-3 rounded-[2rem] border bg-white p-4 shadow-2xl sm:grid-cols-3">
+      {/* TRUST */}
+      <section className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid gap-3 rounded-3xl bg-white p-3 shadow-sm sm:grid-cols-3">
           <TrustItem
-            icon={Zap}
-            title="Publication rapide"
-            description="Créez une annonce avec photos, prix et localisation en quelques minutes."
-            color="bg-orange-100 text-orange-700"
+            icon={PlusCircle}
+            title="Publier rapidement"
+            description="Ajoutez photos, prix et localisation en quelques minutes."
+            color="bg-blue-100 text-blue-700"
           />
           <TrustItem
             icon={MapPin}
-            title="Recherche locale"
-            description="Filtrez par région, ville, commune, quartier, distance et prix."
+            title="Acheter localement"
+            description="Recherchez par région, ville, commune ou quartier."
             color="bg-emerald-100 text-emerald-700"
           />
           <TrustItem
             icon={MessageCircle}
-            title="Contact direct"
-            description="Échangez avec les vendeurs par message, téléphone ou WhatsApp."
-            color="bg-blue-100 text-blue-700"
+            title="Contacter facilement"
+            description="Échangez par message, téléphone ou WhatsApp."
+            color="bg-orange-100 text-orange-700"
           />
         </div>
       </section>
 
       {/* CATEGORIES */}
-      <section className="mx-auto w-full max-w-[1600px] px-4 py-14 sm:px-6 lg:px-10 2xl:px-14">
+      <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <SectionHeader
           eyebrow="Explorer"
           title="Catégories populaires"
-          description="Accédez rapidement aux rubriques les plus recherchées sur Kafoo."
-          action={
-            <Button asChild variant="outline" className="rounded-full bg-white">
-              <Link to="/annonces">
-                Toutes les annonces
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          }
-        />
-
-        {categories.length === 0 ? (
-          <EmptyState
-            title="Aucune catégorie disponible"
-            description="Les catégories seront affichées dès qu’elles seront ajoutées dans Supabase."
-          />
-        ) : (
-          <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4">
-            {categories.map((item, index) => {
-              const Icon = getCategoryIcon(item.icon);
-              const gradient = categoryGradients[index % categoryGradients.length];
-
-              return (
-                <Link
-                  key={item.id}
-                  to="/annonces"
-                  search={{ category: item.slug } as never}
-                  className={`group min-h-[150px] rounded-[1.6rem] border bg-gradient-to-br p-4 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl ${gradient}`}
-                >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm transition group-hover:scale-105">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="line-clamp-2 text-sm font-black leading-snug text-slate-950">
-                    {item.name}
-                  </h3>
-                  <p className="mt-3 flex items-center text-xs font-semibold text-slate-500">
-                    Voir les annonces
-                    <ArrowRight className="ml-1 h-3 w-3 transition group-hover:translate-x-1" />
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* FEATURED */}
-      {featuredListings.length > 0 && (
-        <section className="bg-gradient-to-br from-amber-50 via-white to-orange-50 py-14">
-          <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-10 2xl:px-14">
-            <SectionHeader
-              eyebrow="Sélection"
-              title="Annonces à la une"
-              description="Découvrez les annonces mises en avant par les vendeurs."
-              action={
-                <Link to="/annonces" className="text-sm font-bold text-orange-700 hover:underline">
-                  Tout voir
-                </Link>
-              }
-            />
-
-            <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-4">
-              {featuredListings.map((item) => (
-                <ListingCard key={item.id} listing={item} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* RECENT */}
-      <section className="mx-auto w-full max-w-[1600px] px-4 py-14 sm:px-6 lg:px-10 2xl:px-14">
-        <SectionHeader
-          eyebrow="Nouveautés"
-          title="Annonces récentes"
-          description="Les dernières annonces publiées par les vendeurs particuliers et professionnels."
+          description="Choisissez une rubrique pour trouver rapidement une annonce."
           action={
             <Button asChild variant="outline" className="rounded-full bg-white">
               <Link to="/annonces">
@@ -478,23 +442,75 @@ function HomePage() {
           }
         />
 
-        {recent.length === 0 ? (
-          <div className="mt-7 rounded-[2rem] border border-dashed bg-white p-8 text-center shadow-sm sm:p-12">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-100 to-fuchsia-100 text-blue-700">
-              <PlusCircle className="h-8 w-8" />
-            </div>
-            <h3 className="text-xl font-black text-slate-950">
-              Aucune annonce publiée pour le moment
-            </h3>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-              Soyez le premier à publier une annonce gratuitement et à donner de la visibilité à vos produits.
-            </p>
-            <Button asChild className="mt-5 rounded-full">
-              <Link to="/publier">Publier une annonce</Link>
-            </Button>
-          </div>
+        {categories.length === 0 ? (
+          <EmptyState
+            title="Aucune catégorie disponible"
+            description="Les catégories seront affichées dès leur ajout dans Supabase."
+          />
         ) : (
-          <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {categories.slice(0, 10).map((item, index) => {
+              const Icon = getCategoryIcon(item.icon);
+              const style = categoryStyles[index % categoryStyles.length];
+
+              return (
+                <Link
+                  key={item.id}
+                  to="/annonces"
+                  search={{ category: item.slug } as never}
+                  className={`group rounded-2xl border p-4 transition hover:-translate-y-1 hover:shadow-lg ${style}`}
+                >
+                  <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="line-clamp-2 text-sm font-black text-slate-950">
+                    {item.name}
+                  </h3>
+                  <p className="mt-2 flex items-center text-xs font-semibold text-slate-500">
+                    Voir
+                    <ArrowRight className="ml-1 h-3 w-3 transition group-hover:translate-x-1" />
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* LISTINGS */}
+      <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow={recent.length === 0 ? "Aperçu" : "Nouveautés"}
+          title={recent.length === 0 ? "Exemples d’annonces" : "Annonces récentes"}
+          description={
+            recent.length === 0
+              ? "Voici quelques exemples pour présenter le style des annonces. Elles seront remplacées par les vraies annonces publiées."
+              : "Les dernières annonces publiées par les vendeurs."
+          }
+          action={
+            <Button asChild variant="outline" className="rounded-full bg-white">
+              <Link to="/annonces">
+                Voir les annonces
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          }
+        />
+
+        {recent.length === 0 ? (
+          <>
+            <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
+              Ces annonces sont des exemples d’affichage. Publiez une vraie annonce pour commencer à alimenter la marketplace.
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {demoListings.map((item) => (
+                <DemoListingCard key={item.id} listing={item} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {recent.map((item) => (
               <ListingCard key={item.id} listing={item} />
             ))}
@@ -502,113 +518,47 @@ function HomePage() {
         )}
       </section>
 
-      {/* STEPS */}
-      <section className="bg-white py-14">
-        <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-10 2xl:px-14">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-black uppercase tracking-wide text-fuchsia-600">
-              Simple et rapide
-            </p>
-            <h2 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
-              Vendez en quelques minutes
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-500">
-              Kafoo facilite la mise en relation entre acheteurs et vendeurs partout en Guinée.
-            </p>
-          </div>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <StepCard
-              number="01"
-              title="Créez votre compte"
-              description="Inscrivez-vous gratuitement comme particulier ou professionnel."
-              color="from-blue-600 to-cyan-500"
-            />
-            <StepCard
-              number="02"
-              title="Publiez votre annonce"
-              description="Ajoutez vos photos, votre prix, votre catégorie et votre localisation."
-              color="from-emerald-600 to-teal-500"
-            />
-            <StepCard
-              number="03"
-              title="Échangez et vendez"
-              description="Recevez des messages, appels ou contacts WhatsApp des acheteurs intéressés."
-              color="from-fuchsia-600 to-pink-500"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* WHY KAFOO */}
-      <section className="bg-slate-950 py-14 text-white">
-        <div className="mx-auto grid w-full max-w-[1600px] gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-10 2xl:px-14">
+      {/* SIMPLE CTA */}
+      <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="grid gap-6 rounded-3xl bg-slate-950 p-6 text-white sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
-            <p className="text-sm font-black uppercase tracking-wide text-cyan-300">
-              Pourquoi Kafoo ?
-            </p>
-            <h2 className="mt-2 text-3xl font-black leading-tight sm:text-4xl">
-              Une marketplace locale pensée pour vendre plus simplement
+            <h2 className="text-2xl font-black sm:text-3xl">
+              Vous avez quelque chose à vendre ?
             </h2>
-            <p className="mt-4 text-sm leading-7 text-slate-300">
-              Publiez, recherchez et échangez facilement grâce à une plateforme moderne,
-              connectée à Supabase, avec catégories, localisations, favoris et messagerie.
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+              Publiez gratuitement votre annonce avec photos, prix et localisation. Les acheteurs pourront vous contacter directement.
             </p>
-
-            <Button asChild className="mt-6 rounded-full bg-white text-slate-950 hover:bg-slate-100">
-              <Link to="/publier">
-                Commencer maintenant
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FeatureCard
-              icon={ShieldCheck}
-              title="Plus rassurant"
-              description="Signalements, modération et conseils sécurité pour limiter les abus."
-            />
-            <FeatureCard
-              icon={MapPin}
-              title="Recherche locale"
-              description="Filtrez par région, ville, commune, quartier, prix et distance."
-            />
-            <FeatureCard
-              icon={Store}
-              title="Particuliers et pros"
-              description="Chaque vendeur peut publier ses produits et gérer ses annonces."
-            />
-            <FeatureCard
-              icon={Heart}
-              title="Favoris et suivi"
-              description="Sauvegardez les annonces intéressantes pour les retrouver rapidement."
-            />
-          </div>
+          <Button asChild size="lg" className="rounded-full bg-white text-slate-950 hover:bg-slate-100">
+            <Link to="/publier">
+              <PlusCircle className="mr-2 h-5 w-5" />
+              Publier maintenant
+            </Link>
+          </Button>
         </div>
       </section>
 
       {/* SECURITY */}
-      <section className="mx-auto w-full max-w-[1600px] px-4 py-14 sm:px-6 lg:px-10 2xl:px-14">
-        <div className="overflow-hidden rounded-[2rem] border bg-gradient-to-br from-white via-blue-50 to-emerald-50 p-6 shadow-sm sm:p-8">
-          <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+      <section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                <ShieldCheck className="h-6 w-6" />
+              <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                <ShieldCheck className="h-5 w-5" />
               </div>
-              <h2 className="text-2xl font-black text-slate-950">
-                Conseils pour acheter et vendre en sécurité
+              <h2 className="text-xl font-black text-slate-950">
+                Conseils sécurité
               </h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                Kafoo facilite les échanges, mais restez toujours prudent lors des transactions.
+              <p className="mt-1 text-sm text-slate-500">
+                Vérifiez toujours le produit avant paiement et privilégiez les lieux publics.
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <SecurityTip text="Vérifiez toujours le produit avant de payer." />
-              <SecurityTip text="Privilégiez les rencontres dans des lieux publics." />
-              <SecurityTip text="Méfiez-vous des prix anormalement bas." />
-              <SecurityTip text="Ne partagez jamais vos informations sensibles." />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <SecurityTip text="Vérifier le produit" />
+              <SecurityTip text="Éviter les paiements suspects" />
+              <SecurityTip text="Rencontrer dans un lieu public" />
             </div>
           </div>
         </div>
@@ -631,7 +581,7 @@ function SectionHeader({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="text-sm font-black uppercase tracking-wide text-blue-600">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
           {eyebrow}
         </p>
         <h2 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">
@@ -659,7 +609,9 @@ function SelectField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-bold text-slate-600">{label}</span>
+      <span className="mb-1 block text-xs font-bold text-slate-600">
+        {label}
+      </span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -671,11 +623,13 @@ function SelectField({
   );
 }
 
-function StatCard({ value, label }: { value: string | number; label: string }) {
+function MiniStat({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center shadow-lg backdrop-blur">
-      <div className="text-xl font-black text-white">{value}</div>
-      <div className="mt-1 text-[11px] font-semibold text-slate-300">{label}</div>
+    <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
+      <div className="text-lg font-black text-white">{value}</div>
+      <div className="mt-1 text-[11px] font-semibold text-slate-300">
+        {label}
+      </div>
     </div>
   );
 }
@@ -698,61 +652,68 @@ function TrustItem({
       </div>
       <div>
         <h3 className="text-sm font-black text-slate-950">{title}</h3>
-        <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          {description}
+        </p>
       </div>
     </div>
   );
 }
 
-function StepCard({
-  number,
-  title,
-  description,
-  color,
-}: {
-  number: string;
-  title: string;
-  description: string;
-  color: string;
-}) {
+function DemoListingCard({ listing }: { listing: DemoListing }) {
   return (
-    <div className="rounded-[2rem] border bg-slate-50 p-6 transition hover:-translate-y-1 hover:shadow-xl">
-      <div
-        className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${color} text-lg font-black text-white shadow-lg`}
-      >
-        {number}
+    <article className="overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+        <img
+          src={listing.image}
+          alt={listing.title}
+          className="h-full w-full object-cover transition duration-300 hover:scale-105"
+          loading="lazy"
+        />
+        {listing.badge ? (
+          <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-slate-700 shadow">
+            {listing.badge}
+          </span>
+        ) : null}
       </div>
-      <h3 className="text-lg font-black text-slate-950">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
-    </div>
-  );
-}
 
-function FeatureCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 backdrop-blur transition hover:bg-white/15">
-      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-950">
-        <Icon className="h-5 w-5" />
+      <div className="p-4">
+        <p className="text-xs font-bold uppercase tracking-wide text-blue-600">
+          {listing.category}
+        </p>
+        <h3 className="mt-1 line-clamp-2 text-base font-black text-slate-950">
+          {listing.title}
+        </h3>
+        <p className="mt-2 text-lg font-black text-slate-950">
+          {listing.price}
+        </p>
+
+        <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+          <MapPin className="h-4 w-4" />
+          <span>{listing.location}</span>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between">
+          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+            {listing.condition}
+          </span>
+          <Link
+            to="/annonces"
+            className="text-xs font-bold text-blue-600 hover:underline"
+          >
+            Voir
+          </Link>
+        </div>
       </div>
-      <h3 className="font-black text-white">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-300">{description}</p>
-    </div>
+    </article>
   );
 }
 
 function SecurityTip({ text }: { text: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl bg-white/80 p-4 shadow-sm">
-      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-      <p className="text-sm font-semibold leading-6 text-slate-700">{text}</p>
+    <div className="flex items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+      {text}
     </div>
   );
 }
@@ -765,7 +726,7 @@ function EmptyState({
   description: string;
 }) {
   return (
-    <div className="rounded-[2rem] border border-dashed bg-white p-8 text-center shadow-sm">
+    <div className="mt-6 rounded-3xl border border-dashed bg-white p-8 text-center shadow-sm">
       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
         <Box className="h-7 w-7" />
       </div>
