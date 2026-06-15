@@ -1,6 +1,99 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --radius: 0.875rem;
+
+  --background: #f5f7fb;
+  --foreground: #020617;
+
+  --card: #ffffff;
+  --card-foreground: #020617;
+
+  --popover: #ffffff;
+  --popover-foreground: #020617;
+
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --accent: #eef2ff;
+  --accent-foreground: #1e293b;
+
+  --destructive: #ef4444;
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+}
+
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
+
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+
+  --primary: #60a5fa;
+  --primary-foreground: #020617;
+
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+
+  --destructive: #f87171;
+
+  --border: rgba(148, 163, 184, 0.25);
+  --input: rgba(148, 163, 184, 0.25);
+  --ring: #60a5fa;
+}
+
 /* =========================================================
-   KAFOO RESPONSIVE GRAND ÉCRAN / TABLETTE / MOBILE
-   Affichage plus large sur desktop, stable sur petits écrans
+   BASE
    ========================================================= */
 
 @layer base {
@@ -8,6 +101,7 @@
   *::before,
   *::after {
     box-sizing: border-box;
+    border-color: var(--color-border);
   }
 
   html,
@@ -26,8 +120,42 @@
   }
 
   body {
-    background: #f5f7fb;
-    overflow-x: hidden;
+    background:
+      radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 32rem),
+      radial-gradient(circle at top right, rgba(217, 70, 239, 0.08), transparent 30rem),
+      #f5f7fb;
+    color: var(--foreground);
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
   }
 
   main,
@@ -44,33 +172,11 @@
   main,
   section {
     width: 100%;
-    overflow-x: hidden;
-  }
-
-  img,
-  video,
-  canvas,
-  svg {
-    max-width: 100%;
-  }
-
-  button,
-  input,
-  textarea,
-  select {
-    font: inherit;
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  a {
-    color: inherit;
-    text-decoration: none;
   }
 }
 
 /* =========================================================
-   KAFOO CONTAINERS + GRIDS
+   KAFOO RESPONSIVE GRAND ÉCRAN / TABLETTE / MOBILE
    ========================================================= */
 
 @layer utilities {
@@ -96,14 +202,24 @@
     gap: 1rem;
   }
 
+  .kafoo-soft-card {
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(18px);
+  }
+
+  .kafoo-gradient-text {
+    background: linear-gradient(135deg, #2563eb, #7c3aed, #db2777);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
   @media (min-width: 480px) {
     .kafoo-container,
     .kafoo-wide-container {
       width: min(100% - 1.5rem, 1720px);
-    }
-
-    .kafoo-category-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .kafoo-listing-grid {
@@ -205,10 +321,6 @@
    ========================================================= */
 
 @media (max-width: 640px) {
-  body {
-    background: #f5f7fb;
-  }
-
   h1,
   h2,
   h3,
