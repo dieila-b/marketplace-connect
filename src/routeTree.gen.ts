@@ -9,38 +9,194 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PublierRouteImport } from './routes/publier'
+import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as FavorisRouteImport } from './routes/favoris'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AnnoncesRouteImport } from './routes/annonces'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnnoncesSlugRouteImport } from './routes/annonces.$slug'
 
+const PublierRoute = PublierRouteImport.update({
+  id: '/publier',
+  path: '/publier',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavorisRoute = FavorisRouteImport.update({
+  id: '/favoris',
+  path: '/favoris',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnnoncesRoute = AnnoncesRouteImport.update({
+  id: '/annonces',
+  path: '/annonces',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnnoncesSlugRoute = AnnoncesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => AnnoncesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/annonces': typeof AnnoncesRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
+  '/favoris': typeof FavorisRoute
+  '/messages': typeof MessagesRoute
+  '/publier': typeof PublierRoute
+  '/annonces/$slug': typeof AnnoncesSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/annonces': typeof AnnoncesRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
+  '/favoris': typeof FavorisRoute
+  '/messages': typeof MessagesRoute
+  '/publier': typeof PublierRoute
+  '/annonces/$slug': typeof AnnoncesSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/annonces': typeof AnnoncesRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
+  '/favoris': typeof FavorisRoute
+  '/messages': typeof MessagesRoute
+  '/publier': typeof PublierRoute
+  '/annonces/$slug': typeof AnnoncesSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/annonces'
+    | '/auth'
+    | '/dashboard'
+    | '/favoris'
+    | '/messages'
+    | '/publier'
+    | '/annonces/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/annonces'
+    | '/auth'
+    | '/dashboard'
+    | '/favoris'
+    | '/messages'
+    | '/publier'
+    | '/annonces/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/annonces'
+    | '/auth'
+    | '/dashboard'
+    | '/favoris'
+    | '/messages'
+    | '/publier'
+    | '/annonces/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  AnnoncesRoute: typeof AnnoncesRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  DashboardRoute: typeof DashboardRoute
+  FavorisRoute: typeof FavorisRoute
+  MessagesRoute: typeof MessagesRoute
+  PublierRoute: typeof PublierRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/publier': {
+      id: '/publier'
+      path: '/publier'
+      fullPath: '/publier'
+      preLoaderRoute: typeof PublierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/favoris': {
+      id: '/favoris'
+      path: '/favoris'
+      fullPath: '/favoris'
+      preLoaderRoute: typeof FavorisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/annonces': {
+      id: '/annonces'
+      path: '/annonces'
+      fullPath: '/annonces'
+      preLoaderRoute: typeof AnnoncesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +204,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/annonces/$slug': {
+      id: '/annonces/$slug'
+      path: '/$slug'
+      fullPath: '/annonces/$slug'
+      preLoaderRoute: typeof AnnoncesSlugRouteImport
+      parentRoute: typeof AnnoncesRoute
+    }
   }
 }
 
+interface AnnoncesRouteChildren {
+  AnnoncesSlugRoute: typeof AnnoncesSlugRoute
+}
+
+const AnnoncesRouteChildren: AnnoncesRouteChildren = {
+  AnnoncesSlugRoute: AnnoncesSlugRoute,
+}
+
+const AnnoncesRouteWithChildren = AnnoncesRoute._addFileChildren(
+  AnnoncesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  AnnoncesRoute: AnnoncesRouteWithChildren,
+  AuthRoute: AuthRoute,
+  DashboardRoute: DashboardRoute,
+  FavorisRoute: FavorisRoute,
+  MessagesRoute: MessagesRoute,
+  PublierRoute: PublierRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

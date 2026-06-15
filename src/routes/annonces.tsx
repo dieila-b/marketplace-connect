@@ -115,14 +115,15 @@ function AnnoncesPage() {
 
   const applyFilters = () => {
     navigate({
-      search: (prev) => ({
+      search: ((prev: Record<string, unknown>) => ({
         ...prev,
         q: q || undefined,
         min: min ? Number(min) : undefined,
         max: max ? Number(max) : undefined,
-      }),
+      })) as never,
     });
   };
+
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6">
