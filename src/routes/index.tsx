@@ -264,17 +264,17 @@ function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.48),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.40),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.32),transparent_38%)]" />
 
         <div className="relative kafoo-wide-container py-10 sm:py-12 lg:py-14 xl:py-16">
-          <div className="mx-auto flex max-w-6xl flex-col items-center text-center">
+          <div className="mx-auto flex max-w-[1500px] flex-col items-center text-center">
             <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur">
               <Sparkles className="h-4 w-4 text-yellow-300" />
               Nouvelle marketplace locale en Guinée
             </div>
 
-            <h1 className="max-w-5xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl">
+            <h1 className="max-w-full text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:whitespace-nowrap lg:text-[3.35rem] xl:text-[3.75rem] 2xl:text-[4.15rem]">
               Vendez et trouvez vos bonnes affaires près de chez vous
             </h1>
 
-            <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-200 sm:text-base xl:text-lg">
+            <p className="mt-4 max-w-full text-sm leading-7 text-slate-200 sm:text-base lg:whitespace-nowrap xl:text-[1.05rem]">
               Téléphones, véhicules, immobilier, meubles, mode, électroménager
               et services. Publiez gratuitement et échangez directement avec les
               acheteurs partout en Guinée.
@@ -352,31 +352,51 @@ function HomePage() {
               {showAdvancedSearch ? (
                 <div className="mt-4 border-t border-slate-100 pt-4">
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <SelectField value={category} onChange={setCategory} label="Catégorie">
+                    <SelectField
+                      value={category}
+                      onChange={setCategory}
+                      label="Catégorie"
+                    >
                       <option value="">Toutes</option>
                       {categories.map((item) => (
-                        <option key={item.id} value={item.slug}>{item.name}</option>
+                        <option key={item.id} value={item.slug}>
+                          {item.name}
+                        </option>
                       ))}
                     </SelectField>
 
-                    <SelectField value={region} onChange={setRegion} label="Région">
+                    <SelectField
+                      value={region}
+                      onChange={setRegion}
+                      label="Région"
+                    >
                       <option value="">Toutes</option>
                       {regions.map((item) => (
-                        <option key={item.id} value={item.slug}>{item.name}</option>
+                        <option key={item.id} value={item.slug}>
+                          {item.name}
+                        </option>
                       ))}
                     </SelectField>
 
                     <SelectField value={city} onChange={setCity} label="Ville">
                       <option value="">Toutes</option>
                       {cities.map((item) => (
-                        <option key={item.id} value={item.slug}>{item.name}</option>
+                        <option key={item.id} value={item.slug}>
+                          {item.name}
+                        </option>
                       ))}
                     </SelectField>
 
-                    <SelectField value={commune} onChange={setCommune} label="Commune">
+                    <SelectField
+                      value={commune}
+                      onChange={setCommune}
+                      label="Commune"
+                    >
                       <option value="">Toutes</option>
                       {communes.map((item) => (
-                        <option key={item.id} value={item.slug}>{item.name}</option>
+                        <option key={item.id} value={item.slug}>
+                          {item.name}
+                        </option>
                       ))}
                     </SelectField>
 
