@@ -176,7 +176,7 @@ function HomePage() {
   }, [supabase]);
 
   const featuredListings = useMemo(
-    () => recent.filter((item) => item.is_featured || item.is_sponsored).slice(0, 6),
+    () => recent.filter((item) => item.is_featured || item.is_sponsored).slice(0, 8),
     [recent],
   );
 
@@ -199,31 +199,31 @@ function HomePage() {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f6f8fb]">
+    <main className="min-h-screen w-full overflow-x-hidden bg-[#f5f7fb]">
       {/* HERO */}
-      <section className="relative isolate overflow-hidden bg-[#07111f] text-white">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_15%,rgba(37,99,235,0.50),transparent_28%),radial-gradient(circle_at_85%_15%,rgba(192,38,211,0.38),transparent_28%),radial-gradient(circle_at_50%_95%,rgba(20,184,166,0.32),transparent_34%)]" />
-        <div className="absolute inset-0 -z-10 bg-[linear-gradient(115deg,rgba(15,23,42,0.45),rgba(15,23,42,0.15),rgba(88,28,135,0.25))]" />
-        <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-[#f6f8fb] to-transparent" />
+      <section className="relative isolate w-full overflow-hidden bg-[#07111f] text-white">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_12%_18%,rgba(37,99,235,0.55),transparent_30%),radial-gradient(circle_at_88%_12%,rgba(192,38,211,0.42),transparent_30%),radial-gradient(circle_at_48%_96%,rgba(20,184,166,0.35),transparent_36%)]" />
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(115deg,rgba(2,6,23,0.60),rgba(15,23,42,0.20),rgba(76,29,149,0.38))]" />
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-28 bg-gradient-to-t from-[#f5f7fb] to-transparent" />
 
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-20 pt-10 sm:px-6 md:pt-14 lg:grid-cols-[1fr_0.95fr] lg:px-8 lg:pb-28 lg:pt-20">
-          <div className="flex flex-col justify-center">
-            <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 shadow-lg backdrop-blur">
+        <div className="mx-auto grid w-full max-w-[1600px] gap-8 px-4 pb-20 pt-10 sm:px-6 md:pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(420px,560px)] lg:items-center lg:px-10 lg:pb-28 lg:pt-20 2xl:px-14">
+          <div className="mx-auto w-full max-w-4xl text-center lg:mx-0 lg:text-left">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 shadow-lg backdrop-blur">
               <Sparkles className="h-4 w-4 text-yellow-300" />
-              Marketplace locale pour particuliers et professionnels
+              Nouvelle marketplace locale en Guinée
             </div>
 
-            <h1 className="max-w-3xl text-4xl font-black leading-[1.04] tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="text-balance text-[2.35rem] font-black leading-[1.04] tracking-tight sm:text-5xl md:text-6xl xl:text-7xl">
               Achetez, vendez et trouvez les meilleures annonces près de chez vous
             </h1>
 
-            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
+            <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base md:text-lg lg:mx-0">
               Publiez gratuitement vos annonces de téléphones, véhicules, immobilier,
               mode, électroménager et services. Kafoo connecte particuliers et professionnels
               partout en Guinée.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
               <Button
                 asChild
                 size="lg"
@@ -248,7 +248,7 @@ function HomePage() {
               </Button>
             </div>
 
-            <div className="mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4 lg:mx-0">
               <StatCard value={categories.length} label="Catégories" />
               <StatCard value={recent.length} label="Annonces" />
               <StatCard value="100%" label="Supabase" />
@@ -256,7 +256,7 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="w-full rounded-[2rem] border border-white/15 bg-white/10 p-3 shadow-2xl backdrop-blur-xl sm:p-5 lg:my-auto">
+          <div className="mx-auto w-full max-w-xl rounded-[2rem] border border-white/15 bg-white/10 p-3 shadow-2xl backdrop-blur-xl sm:p-5 lg:mx-0">
             <div className="rounded-[1.5rem] bg-white p-4 text-slate-950 shadow-2xl sm:p-5">
               <div className="mb-5 flex items-center gap-3">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-fuchsia-600 text-white shadow-lg">
@@ -365,7 +365,7 @@ function HomePage() {
 
       {/* TRUST STRIP */}
       <section className="relative z-10 -mt-12 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-6xl gap-3 rounded-[2rem] border bg-white p-4 shadow-2xl sm:grid-cols-3">
+        <div className="mx-auto grid w-full max-w-[1320px] gap-3 rounded-[2rem] border bg-white p-4 shadow-2xl sm:grid-cols-3">
           <TrustItem
             icon={Zap}
             title="Publication rapide"
@@ -388,7 +388,7 @@ function HomePage() {
       </section>
 
       {/* CATEGORIES */}
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full max-w-[1600px] px-4 py-14 sm:px-6 lg:px-10 2xl:px-14">
         <SectionHeader
           eyebrow="Explorer"
           title="Catégories populaires"
@@ -409,7 +409,7 @@ function HomePage() {
             description="Les catégories seront affichées dès qu’elles seront ajoutées dans Supabase."
           />
         ) : (
-          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4">
             {categories.map((item, index) => {
               const Icon = getCategoryIcon(item.icon);
               const gradient = categoryGradients[index % categoryGradients.length];
@@ -441,7 +441,7 @@ function HomePage() {
       {/* FEATURED */}
       {featuredListings.length > 0 && (
         <section className="bg-gradient-to-br from-amber-50 via-white to-orange-50 py-14">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-10 2xl:px-14">
             <SectionHeader
               eyebrow="Sélection"
               title="Annonces à la une"
@@ -453,7 +453,7 @@ function HomePage() {
               }
             />
 
-            <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-4">
               {featuredListings.map((item) => (
                 <ListingCard key={item.id} listing={item} />
               ))}
@@ -463,7 +463,7 @@ function HomePage() {
       )}
 
       {/* RECENT */}
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full max-w-[1600px] px-4 py-14 sm:px-6 lg:px-10 2xl:px-14">
         <SectionHeader
           eyebrow="Nouveautés"
           title="Annonces récentes"
@@ -494,7 +494,7 @@ function HomePage() {
             </Button>
           </div>
         ) : (
-          <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-4">
             {recent.map((item) => (
               <ListingCard key={item.id} listing={item} />
             ))}
@@ -504,7 +504,7 @@ function HomePage() {
 
       {/* STEPS */}
       <section className="bg-white py-14">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-10 2xl:px-14">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-black uppercase tracking-wide text-fuchsia-600">
               Simple et rapide
@@ -542,7 +542,7 @@ function HomePage() {
 
       {/* WHY KAFOO */}
       <section className="bg-slate-950 py-14 text-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+        <div className="mx-auto grid w-full max-w-[1600px] gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-10 2xl:px-14">
           <div>
             <p className="text-sm font-black uppercase tracking-wide text-cyan-300">
               Pourquoi Kafoo ?
@@ -589,7 +589,7 @@ function HomePage() {
       </section>
 
       {/* SECURITY */}
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full max-w-[1600px] px-4 py-14 sm:px-6 lg:px-10 2xl:px-14">
         <div className="overflow-hidden rounded-[2rem] border bg-gradient-to-br from-white via-blue-50 to-emerald-50 p-6 shadow-sm sm:p-8">
           <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
