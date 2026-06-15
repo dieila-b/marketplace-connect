@@ -64,7 +64,25 @@ function syncRuntimeEnv(env: unknown) {
 
 function isMalformedServerFnRequest(request: Request) {
   const pathname = new URL(request.url).pathname;
-  return pathname === "/_serverFn" || pathname === "/_serverFn/";
+  if (pathname === "/_serverFn" || pathname === "/_serverFn/") return true;
+  if (!pathname.startsWith("/_serverFn/")) return false;
+
+  const serverFnId = pathname.slice("/_serverFn/".length).split("/")[0];
+  if (!serverFnId) return true;
+
+  try {
+    const decoded = JSON.parse(atob(serverFnId.replace(/-/g, "+").replace(/_/g, "/"))) as unknown;
+    return !(
+      decoded != null &&
+      typeof decoded === "object" &&
+      "file" in decoded &&
+      "export" in decoded &&
+      typeof decoded.file === "string" &&
+      typeof decoded.export === "string"
+    );
+  } catch {
+    return true;
+  }
 }
 
 export default {
