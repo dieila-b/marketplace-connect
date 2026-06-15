@@ -1,111 +1,54 @@
-/* =========================================================
-   KAFOO RESPONSIVE OVERRIDE
-   Force les sections à mieux exploiter les grands écrans
-   et corrige les conteneurs trop étroits générés par défaut.
-   ========================================================= */
+import { Link } from "@tanstack/react-router";
+import { Heart, MessageCircle, PlusSquare, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-@layer utilities {
-  .max-w-7xl {
-    max-width: min(94vw, 1680px) !important;
-  }
+export function AppHeader() {
+  return (
+    <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4">
+        <Link to="/" className="flex items-center gap-2">
+          <span className="text-xl font-bold text-primary">Kafoo</span>
+        </Link>
 
-  .max-w-6xl {
-    max-width: min(94vw, 1500px) !important;
-  }
+        <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+          <Link to="/annonces" className="text-foreground/80 hover:text-foreground">
+            Annonces
+          </Link>
+          <Link to="/publier" className="text-foreground/80 hover:text-foreground">
+            Publier
+          </Link>
+          <Link to="/messages" className="text-foreground/80 hover:text-foreground">
+            Messages
+          </Link>
+          <Link to="/favoris" className="text-foreground/80 hover:text-foreground">
+            Favoris
+          </Link>
+        </nav>
 
-  .max-w-5xl {
-    max-width: min(94vw, 1400px) !important;
-  }
-}
-
-@layer base {
-  html,
-  body,
-  #root {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: 100vh;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow-x: hidden !important;
-  }
-
-  body {
-    background: #f5f7fb;
-  }
-
-  main {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-  }
-
-  section {
-    width: 100% !important;
-  }
-}
-
-/* Hero plus large et mieux réparti */
-@media (min-width: 1024px) {
-  main > section:first-child > div {
-    max-width: min(94vw, 1680px) !important;
-    grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr) !important;
-    gap: 4rem !important;
-  }
-}
-
-/* Très grands écrans */
-@media (min-width: 1440px) {
-  main > section:first-child > div {
-    max-width: min(92vw, 1760px) !important;
-  }
-
-  main > section:first-child h1 {
-    font-size: clamp(3.5rem, 4.4vw, 5.8rem) !important;
-    line-height: 1.02 !important;
-  }
-}
-
-/* Tablette */
-@media (max-width: 1023px) {
-  main > section:first-child > div {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    max-width: 92vw !important;
-    text-align: center !important;
-  }
-
-  main > section:first-child h1,
-  main > section:first-child p {
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-}
-
-/* Mobile */
-@media (max-width: 640px) {
-  main > section:first-child {
-    padding-top: 0 !important;
-  }
-
-  main > section:first-child > div {
-    max-width: 100% !important;
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-    padding-top: 2rem !important;
-    padding-bottom: 3rem !important;
-  }
-
-  main > section:first-child h1 {
-    font-size: clamp(2rem, 10vw, 3rem) !important;
-    line-height: 1.08 !important;
-  }
-
-  main > section:first-child form {
-    width: 100% !important;
-  }
-
-  .grid {
-    min-width: 0 !important;
-  }
+        <div className="flex items-center gap-2">
+          <Link to="/favoris" className="hidden md:inline-flex">
+            <Button variant="ghost" size="icon" aria-label="Favoris">
+              <Heart className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link to="/messages" className="hidden md:inline-flex">
+            <Button variant="ghost" size="icon" aria-label="Messages">
+              <MessageCircle className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link to="/dashboard">
+            <Button variant="ghost" size="icon" aria-label="Compte">
+              <User className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link to="/publier">
+            <Button size="sm" className="gap-2">
+              <PlusSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Publier</span>
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
 }
