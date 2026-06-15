@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { initSupabase } from "./client";
 
@@ -51,7 +51,7 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
     return () => unsub?.();
   }, []);
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     if (!supabase || !user) {
       setProfile(null);
       setIsAdmin(false);
@@ -68,23 +68,25 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
       .select("role")
       .eq("user_id", user.id);
     setIsAdmin(!!roles?.some((r: { role: string }) => ["admin", "super_admin", "moderator"].includes(r.role)));
-  };
+  }, [supabase, user]);
 
   useEffect(() => {
     void loadProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase, user?.id]);
+  }, [loadProfile]);
 
-  if (loading || !supabase) {
+  const canRenderWithoutBackend =
+    typeof window === "undefined" || window.location.pathname === "/";
+
+  if ((loading || !supabase) && !canRenderWithoutBackend) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="text-sm text-muted-foreground">Chargement…</div>
       </div>
     );
   }
 
   return (
-    <SupabaseCtx.Provider value={{ supabase, user, profile, isAdmin, loading, refreshProfile: loadProfile }}>
+    <SupabaseCtx.Provider value={{ supabase: supabase as SupabaseClient, user, profile, isAdmin, loading, refreshProfile: loadProfile }}>
       {children}
     </SupabaseCtx.Provider>
   );
