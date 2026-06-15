@@ -254,63 +254,105 @@ alter table public.notifications enable row level security;
 alter table public.shops enable row level security;
 alter table public.settings enable row level security;
 
+drop policy if exists "read countries" on public.countries;
 create policy "read countries" on public.countries for select using (true);
+drop policy if exists "read regions" on public.regions;
 create policy "read regions"   on public.regions   for select using (true);
+drop policy if exists "read cities" on public.cities;
 create policy "read cities"    on public.cities    for select using (true);
+drop policy if exists "read communes" on public.communes;
 create policy "read communes"  on public.communes  for select using (true);
+drop policy if exists "read districts" on public.districts;
 create policy "read districts" on public.districts for select using (true);
+drop policy if exists "read categories" on public.categories;
 create policy "read categories" on public.categories for select using (true);
+drop policy if exists "read settings" on public.settings;
 create policy "read settings"  on public.settings   for select using (true);
 
+drop policy if exists "admin write countries" on public.countries;
 create policy "admin write countries" on public.countries for all to authenticated using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
+drop policy if exists "admin write regions" on public.regions;
 create policy "admin write regions"   on public.regions   for all to authenticated using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
+drop policy if exists "admin write cities" on public.cities;
 create policy "admin write cities"    on public.cities    for all to authenticated using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
+drop policy if exists "admin write communes" on public.communes;
 create policy "admin write communes"  on public.communes  for all to authenticated using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
+drop policy if exists "admin write districts" on public.districts;
 create policy "admin write districts" on public.districts for all to authenticated using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
+drop policy if exists "admin write categories" on public.categories;
 create policy "admin write categories" on public.categories for all to authenticated using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
+drop policy if exists "admin write settings" on public.settings;
 create policy "admin write settings"  on public.settings  for all to authenticated using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
 
+drop policy if exists "profiles public read" on public.profiles;
 create policy "profiles public read" on public.profiles for select using (true);
+drop policy if exists "profiles self insert" on public.profiles;
 create policy "profiles self insert" on public.profiles for insert with check (auth.uid() = user_id);
+drop policy if exists "profiles self update" on public.profiles;
 create policy "profiles self update" on public.profiles for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "profiles admin all" on public.profiles;
 create policy "profiles admin all"   on public.profiles for all to authenticated using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
 
+drop policy if exists "roles self read" on public.user_roles;
 create policy "roles self read"  on public.user_roles for select using (auth.uid() = user_id or public.is_admin(auth.uid()));
+drop policy if exists "roles admin all" on public.user_roles;
 create policy "roles admin all"  on public.user_roles for all to authenticated using (public.has_role(auth.uid(),'super_admin')) with check (public.has_role(auth.uid(),'super_admin'));
 
+drop policy if exists "listings public read" on public.listings;
 create policy "listings public read" on public.listings for select using (status = 'published' or auth.uid() = user_id or public.is_admin(auth.uid()));
+drop policy if exists "listings owner insert" on public.listings;
 create policy "listings owner insert" on public.listings for insert to authenticated with check (auth.uid() = user_id);
+drop policy if exists "listings owner update" on public.listings;
 create policy "listings owner update" on public.listings for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "listings owner delete" on public.listings;
 create policy "listings owner delete" on public.listings for delete to authenticated using (auth.uid() = user_id);
+drop policy if exists "listings admin all" on public.listings;
 create policy "listings admin all"   on public.listings for all to authenticated using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
 
+drop policy if exists "images public read" on public.listing_images;
 create policy "images public read" on public.listing_images for select using (
   exists (select 1 from public.listings l where l.id = listing_id and (l.status = 'published' or l.user_id = auth.uid() or public.is_admin(auth.uid())))
 );
+drop policy if exists "images owner write" on public.listing_images;
 create policy "images owner write" on public.listing_images for all to authenticated using (
   exists (select 1 from public.listings l where l.id = listing_id and l.user_id = auth.uid())
 ) with check (
   exists (select 1 from public.listings l where l.id = listing_id and l.user_id = auth.uid())
 );
 
+drop policy if exists "favorites owner all" on public.favorites;
 create policy "favorites owner all" on public.favorites for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "conv participants read" on public.conversations;
 create policy "conv participants read"   on public.conversations for select to authenticated using (auth.uid() = buyer_id or auth.uid() = seller_id);
+drop policy if exists "conv buyer insert" on public.conversations;
 create policy "conv buyer insert"        on public.conversations for insert to authenticated with check (auth.uid() = buyer_id);
+drop policy if exists "conv participants update" on public.conversations;
 create policy "conv participants update" on public.conversations for update to authenticated using (auth.uid() = buyer_id or auth.uid() = seller_id);
+drop policy if exists "msg participants read" on public.messages;
 create policy "msg participants read"    on public.messages for select to authenticated using (auth.uid() = sender_id or auth.uid() = receiver_id);
+drop policy if exists "msg sender insert" on public.messages;
 create policy "msg sender insert"        on public.messages for insert to authenticated with check (auth.uid() = sender_id);
+drop policy if exists "msg receiver update" on public.messages;
 create policy "msg receiver update"      on public.messages for update to authenticated using (auth.uid() = receiver_id);
 
+drop policy if exists "reports user insert" on public.reports;
 create policy "reports user insert" on public.reports for insert to authenticated with check (auth.uid() = reporter_id);
+drop policy if exists "reports admin read" on public.reports;
 create policy "reports admin read"  on public.reports for select to authenticated using (public.is_admin(auth.uid()) or auth.uid() = reporter_id);
+drop policy if exists "reports admin update" on public.reports;
 create policy "reports admin update" on public.reports for update to authenticated using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
 
+drop policy if exists "notif self read" on public.notifications;
 create policy "notif self read"   on public.notifications for select to authenticated using (auth.uid() = user_id);
+drop policy if exists "notif self update" on public.notifications;
 create policy "notif self update" on public.notifications for update to authenticated using (auth.uid() = user_id);
 
+drop policy if exists "shops public read" on public.shops;
 create policy "shops public read" on public.shops for select using (true);
+drop policy if exists "shops owner write" on public.shops;
 create policy "shops owner write" on public.shops for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 
 -- ============== TRIGGERS ==============
 create or replace function public.handle_new_user()
