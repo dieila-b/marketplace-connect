@@ -9,6 +9,8 @@ import {
   Briefcase,
   Car,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Dog,
   Dumbbell,
   Gem,
@@ -23,7 +25,6 @@ import {
   SlidersHorizontal,
   Smartphone,
   Sparkles,
-  Store,
   Tv,
   Wrench,
   type LucideIcon,
@@ -173,6 +174,7 @@ function HomePage() {
   const [commune, setCommune] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -230,6 +232,12 @@ function HomePage() {
     })();
   }, [supabase]);
 
+  const displayedCategories = showAllCategories
+    ? categories
+    : categories.slice(0, 10);
+
+  const hasMoreCategories = categories.length > 10;
+
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
 
@@ -249,27 +257,27 @@ function HomePage() {
 
   return (
     <main className="min-h-screen w-full overflow-x-hidden bg-slate-50">
-      {/* HERO */}
       <section className="relative w-full overflow-hidden bg-slate-950 text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(37,99,235,0.45),transparent_32%),radial-gradient(circle_at_80%_10%,rgba(168,85,247,0.38),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.30),transparent_35%)]" />
 
-        <div className="relative mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_440px] lg:px-8 lg:py-16 xl:grid-cols-[1fr_500px]">
-          <div className="flex flex-col justify-center text-center lg:text-left">
-            <div className="mx-auto mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur lg:mx-0">
+        <div className="relative kafoo-container grid gap-8 py-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,440px)] lg:items-center lg:py-14">
+          <div className="flex min-w-0 flex-col justify-center text-center lg:text-left">
+            <div className="mx-auto mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur lg:mx-0">
               <Sparkles className="h-4 w-4 text-yellow-300" />
               Nouvelle marketplace locale en Guinée
             </div>
 
-            <h1 className="mx-auto max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:mx-0 lg:text-6xl">
+            <h1 className="mx-auto max-w-3xl text-3xl font-black leading-tight tracking-tight sm:text-4xl lg:mx-0 lg:text-5xl xl:text-6xl">
               Vendez et trouvez vos bonnes affaires près de chez vous
             </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base lg:mx-0">
-              Téléphones, véhicules, immobilier, meubles, mode, électroménager et services.
-              Publiez gratuitement et échangez directement avec les acheteurs.
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base lg:mx-0">
+              Téléphones, véhicules, immobilier, meubles, mode, électroménager
+              et services. Publiez gratuitement et échangez directement avec
+              les acheteurs.
             </p>
 
-            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
               <Button
                 asChild
                 size="lg"
@@ -294,24 +302,23 @@ function HomePage() {
               </Button>
             </div>
 
-            <div className="mx-auto mt-8 grid max-w-xl grid-cols-3 gap-3 lg:mx-0">
+            <div className="mx-auto mt-6 grid w-full max-w-xl grid-cols-3 gap-3 lg:mx-0">
               <MiniStat value={categories.length} label="Catégories" />
               <MiniStat value={recent.length} label="Annonces" />
               <MiniStat value="GN" label="Local" />
             </div>
           </div>
 
-          {/* SEARCH CARD */}
           <div className="mx-auto w-full max-w-xl lg:mx-0">
             <form
               onSubmit={onSearch}
               className="rounded-3xl border border-white/15 bg-white p-4 text-slate-950 shadow-2xl sm:p-5"
             >
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-600 text-white">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-600 text-white">
                   <Search className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h2 className="font-black">Rechercher une annonce</h2>
                   <p className="text-xs text-slate-500">
                     Filtrez par catégorie, ville et budget.
@@ -402,8 +409,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* TRUST */}
-      <section className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <section className="kafoo-container py-6">
         <div className="grid gap-3 rounded-3xl bg-white p-3 shadow-sm sm:grid-cols-3">
           <TrustItem
             icon={PlusCircle}
@@ -426,21 +432,45 @@ function HomePage() {
         </div>
       </section>
 
-      {/* CATEGORIES */}
-      <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <SectionHeader
-          eyebrow="Explorer"
-          title="Catégories populaires"
-          description="Choisissez une rubrique pour trouver rapidement une annonce."
-          action={
+      <section className="kafoo-container py-8">
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
+              Explorer
+            </p>
+            <h2 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">
+              Catégories populaires
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+              Choisissez une rubrique pour trouver rapidement une annonce.
+            </p>
+          </div>
+
+          <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:justify-end">
+            {hasMoreCategories && (
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full bg-white"
+                onClick={() => setShowAllCategories((current) => !current)}
+              >
+                {showAllCategories ? "Voir moins" : "Voir plus"}
+                {showAllCategories ? (
+                  <ChevronUp className="ml-2 h-4 w-4" />
+                ) : (
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                )}
+              </Button>
+            )}
+
             <Button asChild variant="outline" className="rounded-full bg-white">
               <Link to="/annonces">
                 Tout voir
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-          }
-        />
+          </div>
+        </div>
 
         {categories.length === 0 ? (
           <EmptyState
@@ -448,8 +478,8 @@ function HomePage() {
             description="Les catégories seront affichées dès leur ajout dans Supabase."
           />
         ) : (
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {categories.slice(0, 10).map((item, index) => {
+          <div className="kafoo-category-grid">
+            {displayedCategories.map((item, index) => {
               const Icon = getCategoryIcon(item.icon);
               const style = categoryStyles[index % categoryStyles.length];
 
@@ -458,15 +488,17 @@ function HomePage() {
                   key={item.id}
                   to="/annonces"
                   search={{ category: item.slug } as never}
-                  className={`group rounded-2xl border p-4 transition hover:-translate-y-1 hover:shadow-lg ${style}`}
+                  className={`group flex min-h-[132px] min-w-0 flex-col rounded-2xl border p-4 transition hover:-translate-y-1 hover:shadow-lg ${style}`}
                 >
-                  <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm">
+                  <div className="mb-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <h3 className="line-clamp-2 text-sm font-black text-slate-950">
+
+                  <h3 className="line-clamp-2 min-h-[36px] break-words text-sm font-black leading-tight text-slate-950">
                     {item.name}
                   </h3>
-                  <p className="mt-2 flex items-center text-xs font-semibold text-slate-500">
+
+                  <p className="mt-auto flex items-center pt-3 text-xs font-semibold text-slate-500">
                     Voir
                     <ArrowRight className="ml-1 h-3 w-3 transition group-hover:translate-x-1" />
                   </p>
@@ -477,8 +509,7 @@ function HomePage() {
         )}
       </section>
 
-      {/* LISTINGS */}
-      <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <section className="kafoo-container py-8">
         <SectionHeader
           eyebrow={recent.length === 0 ? "Aperçu" : "Nouveautés"}
           title={recent.length === 0 ? "Exemples d’annonces" : "Annonces récentes"}
@@ -500,17 +531,18 @@ function HomePage() {
         {recent.length === 0 ? (
           <>
             <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
-              Ces annonces sont des exemples d’affichage. Publiez une vraie annonce pour commencer à alimenter la marketplace.
+              Ces annonces sont des exemples d’affichage. Publiez une vraie
+              annonce pour commencer à alimenter la marketplace.
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="kafoo-listing-grid mt-6">
               {demoListings.map((item) => (
                 <DemoListingCard key={item.id} listing={item} />
               ))}
             </div>
           </>
         ) : (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="kafoo-listing-grid mt-6">
             {recent.map((item) => (
               <ListingCard key={item.id} listing={item} />
             ))}
@@ -518,15 +550,15 @@ function HomePage() {
         )}
       </section>
 
-      {/* SIMPLE CTA */}
-      <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <section className="kafoo-container py-10">
         <div className="grid gap-6 rounded-3xl bg-slate-950 p-6 text-white sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <h2 className="text-2xl font-black sm:text-3xl">
               Vous avez quelque chose à vendre ?
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              Publiez gratuitement votre annonce avec photos, prix et localisation. Les acheteurs pourront vous contacter directement.
+              Publiez gratuitement votre annonce avec photos, prix et localisation.
+              Les acheteurs pourront vous contacter directement.
             </p>
           </div>
 
@@ -539,8 +571,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* SECURITY */}
-      <section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+      <section className="kafoo-container pb-12">
         <div className="rounded-3xl border bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -608,14 +639,14 @@ function SelectField({
   children: ReactNode;
 }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="mb-1 block text-xs font-bold text-slate-600">
         {label}
       </span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+        className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
       >
         {children}
       </select>
@@ -646,11 +677,11 @@ function TrustItem({
   color: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
+    <div className="flex min-w-0 items-start gap-3 rounded-2xl bg-slate-50 p-4">
       <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${color}`}>
         <Icon className="h-5 w-5" />
       </div>
-      <div>
+      <div className="min-w-0">
         <h3 className="text-sm font-black text-slate-950">{title}</h3>
         <p className="mt-1 text-xs leading-5 text-slate-500">
           {description}
@@ -662,7 +693,7 @@ function TrustItem({
 
 function DemoListingCard({ listing }: { listing: DemoListing }) {
   return (
-    <article className="overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+    <article className="min-w-0 overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         <img
           src={listing.image}
@@ -689,11 +720,11 @@ function DemoListingCard({ listing }: { listing: DemoListing }) {
         </p>
 
         <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
-          <MapPin className="h-4 w-4" />
-          <span>{listing.location}</span>
+          <MapPin className="h-4 w-4 shrink-0" />
+          <span className="truncate">{listing.location}</span>
         </div>
 
-        <div className="mt-3 flex items-center justify-between">
+        <div className="mt-3 flex items-center justify-between gap-3">
           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
             {listing.condition}
           </span>
@@ -711,9 +742,9 @@ function DemoListingCard({ listing }: { listing: DemoListing }) {
 
 function SecurityTip({ text }: { text: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+    <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
       <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-      {text}
+      <span>{text}</span>
     </div>
   );
 }
