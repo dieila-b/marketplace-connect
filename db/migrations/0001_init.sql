@@ -470,18 +470,15 @@ end $$;
 insert into storage.buckets (id, name, public) values ('listings','listings', true)
 on conflict (id) do nothing;
 
-do $$ begin
-  create policy "listings storage read" on storage.objects for select using (bucket_id = 'listings');
-exception when duplicate_object then null; end $$;
-do $$ begin
-  create policy "listings storage owner write" on storage.objects for insert to authenticated
-    with check (bucket_id = 'listings' and auth.uid()::text = (storage.foldername(name))[1]);
-exception when duplicate_object then null; end $$;
-do $$ begin
-  create policy "listings storage owner update" on storage.objects for update to authenticated
-    using (bucket_id = 'listings' and auth.uid()::text = (storage.foldername(name))[1]);
-exception when duplicate_object then null; end $$;
-do $$ begin
-  create policy "listings storage owner delete" on storage.objects for delete to authenticated
-    using (bucket_id = 'listings' and auth.uid()::text = (storage.foldername(name))[1]);
-exception when duplicate_object then null; end $$;
+drop policy if exists "listings storage read" on storage.objects;
+create policy "listings storage read" on storage.objects for select using (bucket_id = 'listings');
+drop policy if exists "listings storage owner write" on storage.objects;
+create policy "listings storage owner write" on storage.objects for insert to authenticated
+  with check (bucket_id = 'listings' and auth.uid()::text = (storage.foldername(name))[1]);
+drop policy if exists "listings storage owner update" on storage.objects;
+create policy "listings storage owner update" on storage.objects for update to authenticated
+  using (bucket_id = 'listings' and auth.uid()::text = (storage.foldername(name))[1]);
+drop policy if exists "listings storage owner delete" on storage.objects;
+create policy "listings storage owner delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'listings' and auth.uid()::text = (storage.foldername(name))[1]);
+
