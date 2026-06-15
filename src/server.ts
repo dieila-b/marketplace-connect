@@ -62,9 +62,21 @@ function syncRuntimeEnv(env: unknown) {
   }
 }
 
+function isMalformedServerFnRequest(request: Request) {
+  const pathname = new URL(request.url).pathname;
+  return pathname === "/_serverFn" || pathname === "/_serverFn/";
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      if (isMalformedServerFnRequest(request)) {
+        return new Response("Invalid request parameter", {
+          status: 400,
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        });
+      }
+
       syncRuntimeEnv(env);
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
