@@ -1,13 +1,14 @@
 /* =========================================================
-   KAFOO RESPONSIVE FIX FINAL
-   Layout stable desktop / tablette / mobile
+   KAFOO RESPONSIVE FIX — version stable (sans imbrication)
    ========================================================= */
+
 @layer base {
   *,
   *::before,
   *::after {
     box-sizing: border-box;
   }
+
   html,
   body,
   #root {
@@ -18,13 +19,16 @@
     padding: 0;
     overflow-x: hidden;
   }
+
   html {
     scroll-behavior: smooth;
   }
+
   body {
     background: #f5f7fb;
     overflow-x: hidden;
   }
+
   main,
   section,
   article,
@@ -35,11 +39,13 @@
   div {
     min-width: 0;
   }
+
   main,
   section {
     width: 100%;
     overflow-x: hidden;
   }
+
   img,
   video,
   canvas,
@@ -47,6 +53,7 @@
     max-width: 100%;
     height: auto;
   }
+
   button,
   input,
   textarea,
@@ -55,6 +62,7 @@
     max-width: 100%;
     min-width: 0;
   }
+
   a {
     color: inherit;
     text-decoration: none;
@@ -64,116 +72,118 @@
 /* =========================================================
    KAFOO CUSTOM UTILITIES
    ========================================================= */
+
 @layer utilities {
 
-  /* --- Container --- */
   .kafoo-container {
-    width: min(100% - 1rem, 1180px);
-    margin-inline: auto;
-    padding-inline: 0.5rem;
-  }
-  .kafoo-wide-container {
-    width: min(100% - 1rem, 1280px);
+    width: min(calc(100% - 1rem), 1180px);
     margin-inline: auto;
     padding-inline: 0.5rem;
   }
 
-  /* --- Category grid (mobile-first: 2 cols) --- */
+  .kafoo-wide-container {
+    width: min(calc(100% - 1rem), 1280px);
+    margin-inline: auto;
+    padding-inline: 0.5rem;
+  }
+
   .kafoo-category-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.65rem;
   }
 
-  /* --- Listing grid (mobile-first: 1 col) --- */
   .kafoo-listing-grid {
     display: grid;
     grid-template-columns: repeat(1, minmax(0, 1fr));
     gap: 1rem;
   }
 
-  /* ---- 480px : petite tablette / grand smartphone ---- */
   @media (min-width: 480px) {
     .kafoo-container,
     .kafoo-wide-container {
-      width: min(100% - 1.5rem, 1280px);
+      width: min(calc(100% - 1.5rem), 1280px);
       padding-inline: 0.75rem;
     }
+
     .kafoo-listing-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  /* ---- 640px : sm (Tailwind) ---- */
   @media (min-width: 640px) {
     .kafoo-container,
     .kafoo-wide-container {
-      width: min(100% - 2rem, 1280px);
+      width: min(calc(100% - 2rem), 1280px);
       padding-inline: 1rem;
     }
+
     .kafoo-category-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 1rem;
     }
+
     .kafoo-listing-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  /* ---- 768px : md / tablette paysage ---- */
   @media (min-width: 768px) {
     .kafoo-container,
     .kafoo-wide-container {
-      width: min(100% - 3rem, 1280px);
+      width: min(calc(100% - 3rem), 1280px);
       padding-inline: 1.5rem;
     }
+
     .kafoo-category-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
+
     .kafoo-listing-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 
-  /* ---- 1024px : lg / petit laptop ---- */
   @media (min-width: 1024px) {
     .kafoo-container,
     .kafoo-wide-container {
       padding-inline: 2rem;
     }
+
     .kafoo-category-grid {
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
+
     .kafoo-listing-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
-  /* ---- 1280px : xl / grand écran ---- */
   @media (min-width: 1280px) {
     .kafoo-container {
-      width: min(100% - 4rem, 1180px);
+      width: min(calc(100% - 4rem), 1180px);
       padding-inline: 2rem;
     }
+
     .kafoo-wide-container {
-      width: min(100% - 4rem, 1280px);
+      width: min(calc(100% - 4rem), 1280px);
       padding-inline: 2rem;
     }
+
     .kafoo-category-grid {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 1.25rem;
     }
+
     .kafoo-listing-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 1.25rem;
     }
   }
 
-  /* ---- 1536px : 2xl / très grand écran ---- */
   @media (min-width: 1536px) {
     .kafoo-container {
       max-width: 1280px;
     }
+
     .kafoo-wide-container {
       max-width: 1440px;
     }
@@ -181,14 +191,17 @@
 }
 
 /* =========================================================
-   MOBILE SAFETY NET  (≤ 640px)
+   MOBILE  (≤ 640px)
    ========================================================= */
-@media (max-width: 640px) {
-  body {
-    background: #f5f7fb;
-  }
 
-  h1, h2, h3, p, span, a, button {
+@media (max-width: 640px) {
+  h1,
+  h2,
+  h3,
+  p,
+  span,
+  a,
+  button {
     overflow-wrap: break-word;
     word-break: normal;
   }
@@ -209,103 +222,23 @@
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 
-  /* Hero : empiler les colonnes proprement */
-  section.relative .grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Search form : largeur pleine */
-  form.rounded-3xl {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 1rem !important;
-  }
-
-  /* Mini-stats : 3 colonnes compactes */
-  .grid.grid-cols-3 {
-    gap: 0.4rem;
-  }
-
-  /* Boutons CTA hero */
-  .flex.flex-col.sm\:flex-row {
-    flex-direction: column !important;
-    width: 100%;
-  }
-  .flex.flex-col.sm\:flex-row > a,
-  .flex.flex-col.sm\:flex-row > button {
-    width: 100% !important;
-    justify-content: center;
-  }
-
   select,
   input,
   button {
     min-width: 0;
     width: 100%;
   }
-
-  /* Grilles 2 colonnes dans le formulaire */
-  .grid.sm\:grid-cols-2 {
-    grid-template-columns: 1fr !important;
-  }
 }
 
 /* ---- Très petits écrans (≤ 380px) ---- */
+
 @media (max-width: 380px) {
   .kafoo-category-grid {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 
   h1 {
-    font-size: 1.6rem !important;
-    line-height: 1.2 !important;
-  }
-}
-
-/* =========================================================
-   TABLETTE  (641px – 1023px)
-   ========================================================= */
-@media (min-width: 641px) and (max-width: 1023px) {
-  /* Hero : toujours en colonne sur tablette portrait */
-  @media (max-width: 767px) {
-    section.relative .grid {
-      grid-template-columns: 1fr !important;
-    }
-    form.rounded-3xl {
-      max-width: 560px;
-      margin-inline: auto;
-    }
-  }
-
-  /* Trust bar : 1 col sur petite tablette */
-  @media (max-width: 700px) {
-    .grid.sm\:grid-cols-3 {
-      grid-template-columns: 1fr !important;
-    }
-  }
-}
-
-/* =========================================================
-   GRAND ÉCRAN  (≥ 1280px) — ajustements visuels
-   ========================================================= */
-@media (min-width: 1280px) {
-  /* Hero : hauteur généreuse */
-  section.relative {
-    min-height: 520px;
-  }
-
-  /* Titres plus grands */
-  h1 {
-    font-size: clamp(2.5rem, 3.5vw, 4rem);
-  }
-
-  /* Cards catégories : hauteur minimale cohérente */
-  .kafoo-category-grid > a {
-    min-height: 148px;
-  }
-
-  /* Cards annonces : aspect ratio préservé */
-  .kafoo-listing-grid article .aspect-\[4\/3\] {
-    aspect-ratio: 4 / 3;
+    font-size: 1.6rem;
+    line-height: 1.2;
   }
 }
