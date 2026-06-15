@@ -32,7 +32,20 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
     return response;
   }
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  const capturedError = consumeLastCapturedError();
+  const capturedMessage =
+    capturedError instanceof Error ? capturedError.message : String(capturedError ?? "");
+
+  // Bad client request to /_serverFn (missing/invalid id) can be swallowed by h3 as a 500.
+  // Keep it as a client error so the preview does not replace the app with the SSR error page.
+  if (capturedMessage.includes("Invalid server action param")) {
+    return new Response(capturedMessage, {
+      status: 400,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+
+  console.error(capturedError ?? new Error(`h3 swallowed SSR error: ${body}`));
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
