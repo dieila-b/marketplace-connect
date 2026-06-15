@@ -269,13 +269,15 @@ function HomePage() {
               <Sparkles className="h-4 w-4 text-yellow-300" />
               Nouvelle marketplace locale en Guinée
             </div>
-            <h1 className="max-w-full text-3xl font-black leading-tight tracking-tight sm:text-4xl lg:whitespace-nowrap lg:text-[2.45rem] xl:text-[2.75rem] 2xl:text-[3rem]">
-            Vendez et trouvez vos bonnes affaires près de chez vous
+
+            <h1 className="max-w-full text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:whitespace-nowrap lg:text-[3.35rem] xl:text-[3.75rem] 2xl:text-[4.15rem]">
+              Vendez et trouvez vos bonnes affaires près de chez vous
             </h1>
 
-            <p className="mt-3 max-w-full text-xs leading-6 text-slate-200 sm:text-sm lg:whitespace-nowrap xl:text-[0.9rem]">
-            Téléphones, véhicules, immobilier, meubles, mode, électroménager et services.
-            Publiez gratuitement et échangez directement avec les acheteurs partout en Guinée.
+            <p className="mt-4 max-w-full text-sm leading-7 text-slate-200 sm:text-base lg:whitespace-nowrap xl:text-[1.05rem]">
+              Téléphones, véhicules, immobilier, meubles, mode, électroménager
+              et services. Publiez gratuitement et échangez directement avec les
+              acheteurs partout en Guinée.
             </p>
 
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
