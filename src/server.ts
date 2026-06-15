@@ -57,6 +57,14 @@ export default {
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // Bad client request to /_serverFn (missing/invalid id) — return 400, not the SSR error page.
+      if (message.includes("Invalid server action param")) {
+        return new Response(message, {
+          status: 400,
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        });
+      }
       console.error(error);
       return new Response(renderErrorPage(), {
         status: 500,
