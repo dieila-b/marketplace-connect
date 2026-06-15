@@ -1,7 +1,6 @@
 /* =========================================================
-   KAFOO RESPONSIVE FIX SIMPLE
-   Corrige les débordements sans forcer artificiellement
-   les tailles du hero ou des conteneurs Tailwind.
+   KAFOO RESPONSIVE GRAND ÉCRAN / TABLETTE / MOBILE
+   Affichage plus large sur desktop, stable sur petits écrans
    ========================================================= */
 
 @layer base {
@@ -15,21 +14,36 @@
   body,
   #root {
     width: 100%;
-    min-width: 100%;
+    min-width: 0;
     min-height: 100vh;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     background: #f5f7fb;
+    overflow-x: hidden;
+  }
+
+  main,
+  section,
+  article,
+  aside,
+  header,
+  footer,
+  nav,
+  div {
+    min-width: 0;
   }
 
   main,
   section {
     width: 100%;
-    min-width: 0;
     overflow-x: hidden;
   }
 
@@ -46,6 +60,7 @@
   select {
     font: inherit;
     max-width: 100%;
+    min-width: 0;
   }
 
   a {
@@ -54,28 +69,170 @@
   }
 }
 
+/* =========================================================
+   KAFOO CONTAINERS + GRIDS
+   ========================================================= */
+
 @layer utilities {
   .kafoo-container {
-    width: min(100% - 2rem, 1280px);
+    width: min(100% - 1rem, 1440px);
     margin-inline: auto;
   }
 
+  .kafoo-wide-container {
+    width: min(100% - 1rem, 1720px);
+    margin-inline: auto;
+  }
+
+  .kafoo-category-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .kafoo-listing-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  @media (min-width: 480px) {
+    .kafoo-container,
+    .kafoo-wide-container {
+      width: min(100% - 1.5rem, 1720px);
+    }
+
+    .kafoo-category-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kafoo-listing-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
   @media (min-width: 640px) {
+    .kafoo-container,
+    .kafoo-wide-container {
+      width: min(100% - 2rem, 1720px);
+    }
+
+    .kafoo-category-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .kafoo-listing-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 768px) {
     .kafoo-container {
-      width: min(100% - 3rem, 1280px);
+      width: min(100% - 3rem, 1440px);
+    }
+
+    .kafoo-wide-container {
+      width: min(100% - 3rem, 1720px);
+    }
+
+    .kafoo-category-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .kafoo-listing-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .kafoo-container {
+      width: min(100% - 4rem, 1440px);
+    }
+
+    .kafoo-wide-container {
+      width: min(100% - 4rem, 1720px);
+    }
+
+    .kafoo-category-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .kafoo-listing-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .kafoo-container {
+      width: min(100% - 5rem, 1500px);
+    }
+
+    .kafoo-wide-container {
+      width: min(100% - 5rem, 1760px);
+    }
+
+    .kafoo-category-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .kafoo-listing-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1800px) {
+    .kafoo-container {
+      width: min(100% - 6rem, 1600px);
+    }
+
+    .kafoo-wide-container {
+      width: min(100% - 6rem, 1880px);
+    }
+
+    .kafoo-category-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .kafoo-listing-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
 }
 
-/* Mobile */
+/* =========================================================
+   MOBILE FIX
+   ========================================================= */
+
 @media (max-width: 640px) {
-  h1 {
+  body {
+    background: #f5f7fb;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  span,
+  a,
+  button {
     overflow-wrap: break-word;
     word-break: normal;
   }
 
-  .grid {
-    min-width: 0;
+  .kafoo-container,
+  .kafoo-wide-container {
+    width: calc(100% - 1rem);
+    margin-inline: auto;
+  }
+
+  .kafoo-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .kafoo-listing-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 
   select,
@@ -85,73 +242,8 @@
   }
 }
 
-/* =========================================================
-   KAFOO RESPONSIVE OVERRIDE
-   ========================================================= */
-@layer utilities {
-  .max-w-7xl { max-width: min(94vw, 1680px) !important; }
-  .max-w-6xl { max-width: min(94vw, 1500px) !important; }
-  .max-w-5xl { max-width: min(94vw, 1400px) !important; }
-}
-
-@layer base {
-  html, body, #root {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: 100vh;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow-x: hidden !important;
+@media (max-width: 380px) {
+  .kafoo-category-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
-  body { background: #f5f7fb; }
-  main {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-  }
-  section { width: 100% !important; }
-}
-
-@media (min-width: 1024px) {
-  main > section:first-child > div {
-    max-width: min(94vw, 1680px) !important;
-    grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr) !important;
-    gap: 4rem !important;
-  }
-}
-
-@media (min-width: 1440px) {
-  main > section:first-child > div { max-width: min(92vw, 1760px) !important; }
-  main > section:first-child h1 {
-    font-size: clamp(3.5rem, 4.4vw, 5.8rem) !important;
-    line-height: 1.02 !important;
-  }
-}
-
-@media (max-width: 1023px) {
-  main > section:first-child > div {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    max-width: 92vw !important;
-    text-align: center !important;
-  }
-  main > section:first-child h1,
-  main > section:first-child p {
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-}
-
-@media (max-width: 640px) {
-  main > section:first-child { padding-top: 0 !important; }
-  main > section:first-child > div {
-    max-width: 100% !important;
-    padding: 2rem 1rem 3rem !important;
-  }
-  main > section:first-child h1 {
-    font-size: clamp(2rem, 10vw, 3rem) !important;
-    line-height: 1.08 !important;
-  }
-  main > section:first-child form { width: 100% !important; }
-  .grid { min-width: 0 !important; }
 }
