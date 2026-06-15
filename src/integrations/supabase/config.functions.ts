@@ -1,0 +1,15 @@
+import { createServerFn } from "@tanstack/react-start";
+
+// Renvoie la config publique de TON projet Supabase (URL + anon key).
+// Les valeurs viennent des secrets APP_SUPABASE_URL / APP_SUPABASE_ANON_KEY.
+// L'anon key est conçue pour être publique côté navigateur.
+export const getSupabaseConfig = createServerFn({ method: "GET" }).handler(async () => {
+  const url = process.env.APP_SUPABASE_URL;
+  const anonKey = process.env.APP_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    throw new Error(
+      "Secrets manquants : APP_SUPABASE_URL et/ou APP_SUPABASE_ANON_KEY ne sont pas définis.",
+    );
+  }
+  return { url, anonKey };
+});
