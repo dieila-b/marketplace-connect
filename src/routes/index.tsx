@@ -258,26 +258,26 @@ function HomePage() {
   return (
     <main className="min-h-screen w-full overflow-x-hidden bg-slate-50">
       <section className="relative w-full overflow-hidden bg-slate-950 text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.48),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.40),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.32),transparent_38%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(37,99,235,0.45),transparent_32%),radial-gradient(circle_at_80%_10%,rgba(168,85,247,0.38),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.30),transparent_35%)]" />
 
-        <div className="relative kafoo-wide-container grid min-h-[520px] gap-10 py-10 sm:py-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(380px,520px)] lg:items-center lg:py-16 xl:gap-16 2xl:min-h-[620px]">
+        <div className="relative kafoo-container grid gap-8 py-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,440px)] lg:items-center lg:py-14">
           <div className="flex min-w-0 flex-col justify-center text-center lg:text-left">
             <div className="mx-auto mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur lg:mx-0">
               <Sparkles className="h-4 w-4 text-yellow-300" />
               Nouvelle marketplace locale en Guinée
             </div>
 
-            <h1 className="mx-auto max-w-4xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:mx-0 lg:text-6xl xl:text-7xl">
+            <h1 className="mx-auto max-w-3xl text-3xl font-black leading-tight tracking-tight sm:text-4xl lg:mx-0 lg:text-5xl xl:text-6xl">
               Vendez et trouvez vos bonnes affaires près de chez vous
             </h1>
 
-            <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-slate-200 sm:text-base lg:mx-0 xl:text-lg">
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base lg:mx-0">
               Téléphones, véhicules, immobilier, meubles, mode, électroménager
               et services. Publiez gratuitement et échangez directement avec
-              les acheteurs partout en Guinée.
+              les acheteurs.
             </p>
 
-            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
               <Button
                 asChild
                 size="lg"
@@ -302,17 +302,17 @@ function HomePage() {
               </Button>
             </div>
 
-            <div className="mx-auto mt-7 grid w-full max-w-2xl grid-cols-3 gap-3 lg:mx-0">
+            <div className="mx-auto mt-6 grid w-full max-w-xl grid-cols-3 gap-3 lg:mx-0">
               <MiniStat value={categories.length} label="Catégories" />
               <MiniStat value={recent.length} label="Annonces" />
               <MiniStat value="GN" label="Local" />
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-[560px] lg:mx-0 lg:justify-self-end">
+          <div className="mx-auto w-full max-w-xl lg:mx-0">
             <form
               onSubmit={onSearch}
-              className="rounded-3xl border border-white/15 bg-white p-4 text-slate-950 shadow-2xl sm:p-5 xl:p-6"
+              className="rounded-3xl border border-white/15 bg-white p-4 text-slate-950 shadow-2xl sm:p-5"
             >
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-600 text-white">
@@ -409,7 +409,7 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="kafoo-container py-7">
+      <section className="kafoo-container py-6">
         <div className="grid gap-3 rounded-3xl bg-white p-3 shadow-sm sm:grid-cols-3">
           <TrustItem
             icon={PlusCircle}
@@ -432,7 +432,7 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="kafoo-container py-10">
+      <section className="kafoo-container py-8">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
@@ -509,7 +509,7 @@ function HomePage() {
         )}
       </section>
 
-      <section className="kafoo-container py-10">
+      <section className="kafoo-container py-8">
         <SectionHeader
           eyebrow={recent.length === 0 ? "Aperçu" : "Nouveautés"}
           title={recent.length === 0 ? "Exemples d’annonces" : "Annonces récentes"}

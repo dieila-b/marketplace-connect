@@ -1,6 +1,6 @@
 /* =========================================================
-   KAFOO RESPONSIVE GRAND ÉCRAN / TABLETTE / MOBILE
-   Affichage plus large sur desktop, stable sur petits écrans
+   KAFOO RESPONSIVE FIX FINAL
+   Layout stable desktop / tablette / mobile
    ========================================================= */
 
 @layer base {
@@ -70,17 +70,17 @@
 }
 
 /* =========================================================
-   KAFOO CONTAINERS + GRIDS
+   KAFOO CUSTOM UTILITIES
    ========================================================= */
 
 @layer utilities {
   .kafoo-container {
-    width: min(100% - 1rem, 1440px);
+    width: min(100% - 1rem, 1180px);
     margin-inline: auto;
   }
 
   .kafoo-wide-container {
-    width: min(100% - 1rem, 1720px);
+    width: min(100% - 1rem, 1280px);
     margin-inline: auto;
   }
 
@@ -99,7 +99,7 @@
   @media (min-width: 480px) {
     .kafoo-container,
     .kafoo-wide-container {
-      width: min(100% - 1.5rem, 1720px);
+      width: min(100% - 1.5rem, 1280px);
     }
 
     .kafoo-category-grid {
@@ -114,7 +114,7 @@
   @media (min-width: 640px) {
     .kafoo-container,
     .kafoo-wide-container {
-      width: min(100% - 2rem, 1720px);
+      width: min(100% - 2rem, 1280px);
     }
 
     .kafoo-category-grid {
@@ -128,12 +128,9 @@
   }
 
   @media (min-width: 768px) {
-    .kafoo-container {
-      width: min(100% - 3rem, 1440px);
-    }
-
+    .kafoo-container,
     .kafoo-wide-container {
-      width: min(100% - 3rem, 1720px);
+      width: min(100% - 3rem, 1280px);
     }
 
     .kafoo-category-grid {
@@ -146,14 +143,6 @@
   }
 
   @media (min-width: 1024px) {
-    .kafoo-container {
-      width: min(100% - 4rem, 1440px);
-    }
-
-    .kafoo-wide-container {
-      width: min(100% - 4rem, 1720px);
-    }
-
     .kafoo-category-grid {
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
@@ -163,39 +152,13 @@
     }
   }
 
-  @media (min-width: 1440px) {
+  @media (min-width: 1280px) {
     .kafoo-container {
-      width: min(100% - 5rem, 1500px);
+      width: min(100% - 4rem, 1180px);
     }
 
     .kafoo-wide-container {
-      width: min(100% - 5rem, 1760px);
-    }
-
-    .kafoo-category-grid {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-
-    .kafoo-listing-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-
-  @media (min-width: 1800px) {
-    .kafoo-container {
-      width: min(100% - 6rem, 1600px);
-    }
-
-    .kafoo-wide-container {
-      width: min(100% - 6rem, 1880px);
-    }
-
-    .kafoo-category-grid {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-
-    .kafoo-listing-grid {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      width: min(100% - 4rem, 1280px);
     }
   }
 }
@@ -242,6 +205,7 @@
   }
 }
 
+/* Très petits écrans */
 @media (max-width: 380px) {
   .kafoo-category-grid {
     grid-template-columns: repeat(1, minmax(0, 1fr));
