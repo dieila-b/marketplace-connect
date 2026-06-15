@@ -1,7 +1,6 @@
 /* =========================================================
-   KAFOO RESPONSIVE FIX SIMPLE
-   Corrige les débordements sans forcer artificiellement
-   les tailles du hero ou des conteneurs Tailwind.
+   KAFOO RESPONSIVE FIX
+   Layout stable desktop / tablette / mobile
    ========================================================= */
 
 @layer base {
@@ -15,7 +14,7 @@
   body,
   #root {
     width: 100%;
-    min-width: 100%;
+    min-width: 0;
     min-height: 100vh;
     margin: 0;
     padding: 0;
@@ -27,10 +26,9 @@
   }
 
   main,
-  section {
-    width: 100%;
+  section,
+  div {
     min-width: 0;
-    overflow-x: hidden;
   }
 
   img,
@@ -56,26 +54,55 @@
 
 @layer utilities {
   .kafoo-container {
+    width: min(100% - 2rem, 1180px);
+    margin-inline: auto;
+  }
+
+  .kafoo-wide-container {
     width: min(100% - 2rem, 1280px);
     margin-inline: auto;
   }
 
+  .kafoo-category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr));
+    gap: 0.75rem;
+  }
+
+  .kafoo-listing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+    gap: 1rem;
+  }
+
   @media (min-width: 640px) {
-    .kafoo-container {
+    .kafoo-container,
+    .kafoo-wide-container {
       width: min(100% - 3rem, 1280px);
+    }
+
+    .kafoo-category-grid {
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 1rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .kafoo-category-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
 }
 
-/* Mobile */
 @media (max-width: 640px) {
   h1 {
     overflow-wrap: break-word;
     word-break: normal;
   }
 
-  .grid {
-    min-width: 0;
+  .kafoo-container,
+  .kafoo-wide-container {
+    width: min(100% - 1rem, 100%);
   }
 
   select,
