@@ -37,7 +37,7 @@ export function AppHeader() {
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link to={session ? "/dashboard" : "/auth"}>
+            <Link to={user ? "/dashboard" : "/auth"}>
               <User className="h-4 w-4" />
             </Link>
           </Button>
