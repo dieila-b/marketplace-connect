@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SupabaseProvider } from "@/integrations/supabase/provider";
 import { AppHeader } from "@/components/AppHeader";
 import { MobileNav } from "@/components/MobileNav";
+import { SupabaseHealthCheck } from "@/components/SupabaseHealthCheck";
 
 function NotFoundComponent() {
   return (
