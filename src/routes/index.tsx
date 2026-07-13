@@ -248,32 +248,31 @@ function HomePage() {
 
   return (
     <main className="min-h-screen w-full overflow-x-hidden bg-slate-50">
-      <section className="relative w-full overflow-hidden bg-slate-950 px-4 py-14 text-white sm:px-6 sm:py-16 lg:px-8 lg:py-20 xl:py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.48),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.40),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.32),transparent_38%)]" />
+      <section className="relative w-full overflow-hidden bg-slate-950 text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.50),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.44),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.34),transparent_38%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/5 via-transparent to-slate-950/25" />
 
-        <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center text-center">
-          <div className="mb-5 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur">
+        <div className="relative mx-auto flex min-h-[620px] w-full max-w-[1800px] flex-col items-center justify-center px-4 py-16 text-center sm:px-6 lg:px-8 xl:px-10">
+          <div className="mb-6 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white/90 shadow-lg shadow-black/10 backdrop-blur">
             <Sparkles className="h-4 w-4 shrink-0 text-yellow-300" />
             <span className="truncate">
               Nouvelle marketplace locale en Guinée
             </span>
           </div>
 
-          <h1 className="mx-auto max-w-6xl break-words text-center text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl xl:text-7xl">
+          <h1 className="mx-auto max-w-[1720px] text-center text-[2.15rem] font-black leading-[1.04] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-[4rem] xl:whitespace-nowrap xl:text-[clamp(3.25rem,3.35vw,4.25rem)] 2xl:text-[clamp(3.5rem,3.55vw,4.65rem)]">
             Vendez et trouvez vos bonnes affaires près de chez vous
           </h1>
 
-          <p className="mx-auto mt-6 max-w-4xl text-center text-base leading-7 text-slate-200 sm:text-lg">
-            Téléphones, véhicules, immobilier, meubles, mode, électroménager et
-            services. Publiez gratuitement et échangez directement avec les
-            acheteurs partout en Guinée.
+          <p className="mx-auto mt-6 max-w-[1500px] text-center text-sm font-medium leading-7 text-slate-100 sm:text-base lg:text-lg xl:whitespace-nowrap xl:text-[1.05rem]">
+            Téléphones, véhicules, immobilier, meubles, mode, électroménager et services. Publiez gratuitement et échangez directement avec les acheteurs partout en Guinée.
           </p>
 
           <div className="mt-8 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
             <Button
               asChild
               size="lg"
-              className="h-12 w-full rounded-full bg-white px-6 font-bold text-slate-950 hover:bg-slate-100 sm:w-auto"
+              className="h-12 w-full rounded-full bg-white px-7 font-black text-slate-950 shadow-xl shadow-black/10 hover:bg-slate-100 sm:w-auto"
             >
               <Link to="/publier">
                 <PlusCircle className="mr-2 h-5 w-5" />
@@ -285,7 +284,7 @@ function HomePage() {
               asChild
               size="lg"
               variant="outline"
-              className="h-12 w-full rounded-full border-white/30 bg-white/10 px-6 font-bold text-white hover:bg-white/20 hover:text-white sm:w-auto"
+              className="h-12 w-full rounded-full border-white/25 bg-white/10 px-7 font-black text-white shadow-xl shadow-black/10 backdrop-blur hover:bg-white/20 hover:text-white sm:w-auto"
             >
               <Link to="/annonces">
                 Explorer
@@ -294,16 +293,16 @@ function HomePage() {
             </Button>
           </div>
 
-          <div className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="mt-10 grid w-full max-w-4xl grid-cols-1 gap-4 sm:grid-cols-3">
             <MiniStat value={categories.length} label="Catégories" />
             <MiniStat value={recent.length} label="Annonces" />
             <MiniStat value="GN" label="Local" />
           </div>
 
-          <div className="mt-12 w-full max-w-5xl">
+          <div className="mt-12 w-full max-w-6xl">
             <form
               onSubmit={onSearch}
-              className="rounded-[2rem] border border-white/15 bg-white p-3 text-slate-950 shadow-2xl sm:p-4"
+              className="rounded-[2rem] border border-white/20 bg-white/95 p-3 text-slate-950 shadow-2xl shadow-black/20 backdrop-blur sm:p-4"
             >
               <div className="flex flex-col gap-3 lg:flex-row">
                 <div className="relative min-w-0 flex-1">
@@ -312,14 +311,14 @@ function HomePage() {
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="Que recherchez-vous ?"
-                    className="h-12 w-full rounded-2xl bg-slate-50 pl-12 text-sm sm:h-14"
+                    className="h-12 w-full rounded-2xl border-slate-200 bg-slate-50 pl-12 text-sm shadow-inner sm:h-14"
                   />
                 </div>
 
                 <Button
                   type="submit"
                   size="lg"
-                  className="h-12 w-full rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 px-6 font-black text-white sm:h-14 lg:w-auto"
+                  className="h-12 w-full rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 px-8 font-black text-white shadow-lg shadow-blue-600/20 sm:h-14 lg:w-auto"
                 >
                   <Search className="mr-2 h-5 w-5" />
                   Rechercher
@@ -330,7 +329,7 @@ function HomePage() {
                   size="lg"
                   variant="outline"
                   onClick={() => setShowAdvancedSearch((current) => !current)}
-                  className="h-12 w-full rounded-2xl border-slate-200 bg-slate-50 px-5 font-bold text-slate-700 hover:bg-slate-100 sm:h-14 lg:w-auto"
+                  className="h-12 w-full rounded-2xl border-slate-200 bg-slate-50 px-6 font-black text-slate-700 shadow-sm hover:bg-slate-100 sm:h-14 lg:w-auto"
                 >
                   <SlidersHorizontal className="mr-2 h-5 w-5" />
                   {showAdvancedSearch ? "Fermer" : "Recherche avancée"}
@@ -676,9 +675,9 @@ function SelectField({
 
 function MiniStat({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/10 p-4 text-center backdrop-blur">
-      <div className="text-xl font-black text-white">{value}</div>
-      <div className="mt-1 text-xs font-semibold text-slate-300">{label}</div>
+    <div className="rounded-3xl border border-white/15 bg-white/10 p-5 text-center shadow-xl shadow-black/10 backdrop-blur transition hover:-translate-y-1 hover:bg-white/15">
+      <div className="text-2xl font-black text-white">{value}</div>
+      <div className="mt-1 text-xs font-bold text-slate-300">{label}</div>
     </div>
   );
 }
