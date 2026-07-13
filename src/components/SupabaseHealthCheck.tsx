@@ -1,117 +1,110 @@
 import { useEffect, useState } from "react";
-import { initSupabase } from "@/integrations/supabase/client";
 
-type Status =
-  | { state: "checking" }
-  | { state: "ok" }
-  | { state: "error"; title: string; detail: string; hint?: string };
+type HealthStatus = {
+  ok: boolean;
+  title: string;
+  message: string;
+  details?: string;
+};
 
-// Vérifie automatiquement que la liaison Supabase fonctionne :
-// 1) config (URL + anon key) présente,
-// 2) auth.getSession() répond,
-// 3) une requête sur une table publique (profiles) répond sans erreur réseau/permissions.
+const getSupabaseConfig = () => {
+  const url =
+    import.meta.env.VITE_SUPABASE_URL ||
+    import.meta.env.APP_SUPABASE_URL;
+
+  const anonKey =
+    import.meta.env.VITE_SUPABASE_ANON_KEY ||
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    import.meta.env.APP_SUPABASE_ANON_KEY;
+
+  return { url, anonKey };
+};
+
 export function SupabaseHealthCheck() {
-  const [status, setStatus] = useState<Status>({ state: "checking" });
-  const [dismissed, setDismissed] = useState(false);
+  const [status, setStatus] = useState<HealthStatus | null>(null);
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const checkSupabase = async () => {
+      const { url, anonKey } = getSupabaseConfig();
 
-    (async () => {
-      try {
-        const client = await initSupabase();
-
-        // 1) AUTH
-        const { error: authError } = await client.auth.getSession();
-        if (authError) {
-          throw {
-            title: "Erreur d'authentification Supabase",
-            detail: authError.message,
-            hint: "Vérifie que l'URL et la clé anon correspondent bien au projet Supabase actif.",
-          };
-        }
-
-        // 2) Accès à une table (profiles) — head+count évite de charger des lignes
-        const { error: dbError } = await client
-          .from("profiles")
-          .select("id", { head: true, count: "exact" });
-
-        if (dbError) {
-          const msg = dbError.message || "";
-          let hint =
-            "Vérifie que la table 'profiles' existe et qu'une policy RLS autorise la lecture (anon ou authenticated).";
-          if (/JWT|Invalid API key|Expected 3 parts/i.test(msg)) {
-            hint =
-              "La clé anon est invalide ou ne correspond pas au projet. Regénère/remplace APP_SUPABASE_ANON_KEY.";
-          } else if (/permission denied|not.*allowed/i.test(msg)) {
-            hint =
-              "Permissions manquantes : ajoute GRANT SELECT ON public.profiles TO anon/authenticated et une policy RLS de lecture.";
-          } else if (/relation .* does not exist|not find the table/i.test(msg)) {
-            hint =
-              "La table 'profiles' est absente du projet Supabase connecté. Vérifie que c'est bien le bon projet (OCAZ).";
-          } else if (/Failed to fetch|NetworkError/i.test(msg)) {
-            hint =
-              "Impossible de joindre Supabase. Vérifie APP_SUPABASE_URL et la connectivité réseau.";
-          }
-          throw {
-            title: "Erreur d'accès à la base Supabase",
-            detail: msg,
-            hint,
-          };
-        }
-
-        if (!cancelled) setStatus({ state: "ok" });
-      } catch (e: unknown) {
-        if (cancelled) return;
-        if (e && typeof e === "object" && "title" in e) {
-          setStatus(e as Exclude<Status, { state: "checking" } | { state: "ok" }>);
-        } else {
-          const msg = e instanceof Error ? e.message : String(e);
-          let hint =
-            "Vérifie les secrets APP_SUPABASE_URL et APP_SUPABASE_ANON_KEY dans Lovable Cloud.";
-          if (/Secrets manquants/i.test(msg)) {
-            hint =
-              "Ajoute les secrets APP_SUPABASE_URL et APP_SUPABASE_ANON_KEY, puis recharge la page.";
-          }
-          setStatus({
-            state: "error",
-            title: "Liaison Supabase indisponible",
-            detail: msg,
-            hint,
-          });
-        }
+      if (!url || !anonKey) {
+        setStatus({
+          ok: false,
+          title: "Configuration Supabase manquante",
+          message:
+            "Les variables Supabase ne sont pas configurées dans l’environnement.",
+          details:
+            "Ajoute VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY dans Netlify, puis redéploie le site.",
+        });
+        return;
       }
-    })();
 
-    return () => {
-      cancelled = true;
+      try {
+        const cleanUrl = String(url).replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
+        const response = await fetch(`${cleanUrl}/rest/v1/`, {
+          method: "GET",
+          headers: {
+            apikey: anonKey,
+            Authorization: `Bearer ${anonKey}`,
+          },
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          setStatus({
+            ok: false,
+            title: "Clé Supabase invalide",
+            message:
+              "La clé Supabase ne correspond pas au projet configuré.",
+            details:
+              "Vérifie que VITE_SUPABASE_PUBLISHABLE_KEY correspond bien à la clé anon/public du projet Supabase.",
+          });
+          return;
+        }
+
+        setStatus({
+          ok: true,
+          title: "Supabase connecté",
+          message: "La liaison Supabase fonctionne correctement.",
+        });
+      } catch (error) {
+        setStatus({
+          ok: false,
+          title: "Liaison Supabase indisponible",
+          message: "Impossible de joindre Supabase.",
+          details:
+            "Vérifie VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY et la connexion réseau.",
+        });
+      }
     };
+
+    checkSupabase();
   }, []);
 
-  if (status.state !== "error" || dismissed) return null;
+  if (!status || status.ok || hidden) {
+    return null;
+  }
 
   return (
-    <div
-      role="alert"
-      className="fixed inset-x-0 top-0 z-[100] border-b border-destructive/40 bg-destructive text-destructive-foreground shadow-lg"
-    >
-      <div className="mx-auto flex w-full max-w-6xl items-start gap-3 px-4 py-3">
-        <div className="flex-1 text-sm">
-          <div className="font-bold">⚠ {status.title}</div>
-          <div className="mt-1 opacity-90 break-words">{status.detail}</div>
-          {status.hint && (
-            <div className="mt-1 text-xs opacity-80">💡 {status.hint}</div>
-          )}
+    <div className="w-full bg-red-500 px-6 py-4 text-black">
+      <div className="mx-auto flex max-w-6xl items-start justify-between gap-4">
+        <div>
+          <p className="font-bold">⚠ {status.title}</p>
+          <p className="mt-1">{status.message}</p>
+          {status.details && <p className="mt-2 text-sm">💡 {status.details}</p>}
         </div>
+
         <button
           type="button"
-          onClick={() => setDismissed(true)}
-          className="rounded-md px-2 py-1 text-xs font-bold hover:bg-black/20"
+          onClick={() => setHidden(true)}
+          className="text-xl font-bold"
           aria-label="Fermer"
         >
-          ✕
+          ×
         </button>
       </div>
     </div>
   );
 }
+
+export default SupabaseHealthCheck;
