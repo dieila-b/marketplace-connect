@@ -252,19 +252,19 @@ function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.50),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.44),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.34),transparent_38%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/5 via-transparent to-slate-950/25" />
 
-        <div className="relative mx-auto flex min-h-[620px] w-full max-w-[1800px] flex-col items-center justify-center px-4 py-16 text-center sm:px-6 lg:px-8 xl:px-10">
-          <div className="mb-6 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white/90 shadow-lg shadow-black/10 backdrop-blur">
-            <Sparkles className="h-4 w-4 shrink-0 text-yellow-300" />
+        <div className="relative mx-auto flex min-h-[590px] w-full max-w-[1680px] flex-col items-center justify-center px-4 py-14 text-center sm:px-6 sm:py-16 lg:px-8 xl:px-10">
+          <div className="mb-5 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-bold text-white/90 shadow-lg shadow-black/10 backdrop-blur sm:text-xs">
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-yellow-300" />
             <span className="truncate">
               Nouvelle marketplace locale en Guinée
             </span>
           </div>
 
-          <h1 className="mx-auto max-w-[1720px] text-center text-[2.15rem] font-black leading-[1.04] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-[4rem] xl:whitespace-nowrap xl:text-[clamp(3.25rem,3.35vw,4.25rem)] 2xl:text-[clamp(3.5rem,3.55vw,4.65rem)]">
+          <h1 className="mx-auto max-w-[1500px] text-center text-[2rem] font-black leading-[1.08] tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.55rem] 2xl:text-[3.9rem]">
             Vendez et trouvez vos bonnes affaires près de chez vous
           </h1>
 
-          <p className="mx-auto mt-6 max-w-[1500px] text-center text-sm font-medium leading-7 text-slate-100 sm:text-base lg:text-lg xl:whitespace-nowrap xl:text-[1.05rem]">
+          <p className="mx-auto mt-5 max-w-[1280px] text-center text-sm font-medium leading-7 text-slate-100 sm:text-base lg:text-[1.05rem] xl:whitespace-nowrap">
             Téléphones, véhicules, immobilier, meubles, mode, électroménager et services. Publiez gratuitement et échangez directement avec les acheteurs partout en Guinée.
           </p>
 
