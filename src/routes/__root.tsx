@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SupabaseProvider } from "@/integrations/supabase/provider";
 import { AppHeader } from "@/components/AppHeader";
 import { MobileNav } from "@/components/MobileNav";
+import { SupabaseHealthCheck } from "@/components/SupabaseHealthCheck";
 
 function NotFoundComponent() {
   return (
@@ -127,6 +128,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <SupabaseProvider>
+        <SupabaseHealthCheck />
         <div className="flex min-h-screen w-full min-w-0 flex-col overflow-x-hidden bg-background pb-16 md:pb-0">
           <AppHeader />
 
