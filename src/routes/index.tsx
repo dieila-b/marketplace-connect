@@ -227,8 +227,8 @@ function HomePage() {
       <section className="relative w-full overflow-hidden bg-slate-950 text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.50),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.44),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.34),transparent_38%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/5 via-transparent to-slate-950/25" />
-        <div className="relative mx-auto flex w-full max-w-[1680px] flex-col items-center justify-center px-4 py-10 text-center sm:px-6 sm:py-12 lg:px-8 xl:px-10">
-          <div className="mb-4 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-bold text-white/90 shadow-lg shadow-black/10 backdrop-blur sm:text-xs">
+        <div className="relative mx-auto flex w-full max-w-[1680px] flex-col items-center justify-center px-4 py-6 text-center sm:px-6 sm:py-8 lg:px-8 xl:px-10">
+          <div className="mb-3 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-bold text-white/90 shadow-lg shadow-black/10 backdrop-blur sm:text-xs">
             <Sparkles className="h-3.5 w-3.5 shrink-0 text-yellow-300" />
             <span className="truncate">
               Nouvelle marketplace locale en Guinée
@@ -237,10 +237,10 @@ function HomePage() {
           <h1 className="mx-auto w-full text-center text-[1.6rem] font-black leading-[1.12] tracking-tight text-white sm:text-3xl md:text-4xl lg:text-[2.6rem] lg:whitespace-nowrap xl:text-[3rem] 2xl:text-[3.3rem]">
             Vendez et trouvez vos bonnes affaires près de chez vous
           </h1>
-          <p className="mx-auto mt-4 max-w-[1280px] text-center text-sm font-medium leading-6 text-slate-100 sm:text-base">
+          <p className="mx-auto mt-3 max-w-[1280px] text-center text-sm font-medium leading-6 text-slate-100 sm:text-base">
             Téléphones, véhicules, immobilier, meubles, mode, électroménager et services. Publiez gratuitement et échangez directement avec les acheteurs partout en Guinée.
           </p>
-          <div className="mt-6 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
+          <div className="mt-5 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
             <Button
               asChild
               size="lg"
@@ -263,7 +263,7 @@ function HomePage() {
               </Link>
             </Button>
           </div>
-          <div className="mt-8 w-full max-w-6xl">
+          <div className="mt-6 w-full max-w-6xl">
             <form
               onSubmit={onSearch}
               className="rounded-2xl border border-white/20 bg-white/95 p-3 text-slate-950 shadow-2xl shadow-black/20 backdrop-blur sm:rounded-[2rem] sm:p-4"
