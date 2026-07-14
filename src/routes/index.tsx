@@ -15,6 +15,7 @@ import {
   Dog,
   Dumbbell,
   Gem,
+  HelpCircle,
   HomeIcon,
   Laptop,
   MapPin,
@@ -71,14 +72,6 @@ type DemoListing = {
   image: string;
   badge?: string;
 };
-const popularSearches = [
-  "iPhone",
-  "Toyota",
-  "Appartement",
-  "Canapé",
-  "Ordinateur",
-  "Moto",
-];
 const demoListings: DemoListing[] = [
   {
     id: "demo-1",
@@ -184,6 +177,7 @@ function HomePage() {
   const [maxPrice, setMaxPrice] = useState("");
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
   useEffect(() => {
     if (!supabase) return;
     void (async () => {
@@ -242,12 +236,6 @@ function HomePage() {
       } as never,
     });
   };
-  const runQuickSearch = (term: string) => {
-    navigate({
-      to: "/annonces",
-      search: { q: term } as never,
-    });
-  };
   return (
     <main className="min-h-screen w-full overflow-x-hidden bg-slate-50">
       {/* HERO */}
@@ -262,14 +250,7 @@ function HomePage() {
           }}
         />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(59,130,246,0.35),transparent_38%),radial-gradient(circle_at_85%_20%,rgba(168,85,247,0.30),transparent_38%),radial-gradient(circle_at_50%_120%,rgba(16,185,129,0.28),transparent_42%)]" />
-        <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center justify-center px-4 py-10 text-center sm:px-6 sm:py-14 lg:py-16">
-          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-300 backdrop-blur">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-            </span>
-            Marketplace guinéenne
-          </span>
+        <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center justify-center px-4 py-6 text-center sm:px-6 sm:py-8 lg:py-10">
           <h1 className="mx-auto text-center text-base font-black leading-tight tracking-tight text-white sm:text-lg md:whitespace-nowrap md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl">
             Vendez et trouvez vos bonnes affaires près de chez vous
           </h1>
@@ -277,7 +258,7 @@ function HomePage() {
             Publiez gratuitement et échangez directement avec les acheteurs partout en Guinée.
           </p>
           {/* Search bar */}
-          <div className="mt-8 w-full max-w-4xl">
+          <div className="mt-6 w-full max-w-4xl">
             <form
               onSubmit={onSearch}
               className="rounded-3xl border border-white/20 bg-white/95 p-2 shadow-2xl shadow-black/30 backdrop-blur sm:p-2.5"
@@ -358,23 +339,9 @@ function HomePage() {
                 </div>
               ) : null}
             </form>
-            {/* Popular searches chips */}
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
-              <span className="text-slate-400">Populaire :</span>
-              {popularSearches.map((term) => (
-                <button
-                  key={term}
-                  type="button"
-                  onClick={() => runQuickSearch(term)}
-                  className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 font-medium text-slate-200 backdrop-blur transition hover:border-white/40 hover:bg-white/10 hover:text-white"
-                >
-                  {term}
-                </button>
-              ))}
-            </div>
           </div>
           {/* CTA buttons */}
-          <div className="mt-8 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
+          <div className="mt-6 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
             <Button
               asChild
               size="lg"
@@ -400,7 +367,7 @@ function HomePage() {
         </div>
         {/* Stats bar */}
         <div className="relative border-t border-white/10 bg-black/20 backdrop-blur">
-          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-4 py-5 sm:grid-cols-4 sm:px-6 sm:py-6">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 px-4 py-3 sm:grid-cols-4 sm:px-6 sm:py-4">
             <Stat icon={Tag} label="Annonces publiées" value="1 200+" />
             <Stat icon={Users} label="Vendeurs actifs" value="850+" />
             <Stat icon={MapPin} label="Villes couvertes" value="12" />
@@ -409,8 +376,8 @@ function HomePage() {
         </div>
       </section>
       {/* TRUST / VALUE PROPS */}
-      <section className="kafoo-container py-10 sm:py-12">
-        <div className="grid gap-4 sm:grid-cols-3">
+      <section className="kafoo-container py-5 sm:py-6">
+        <div className="grid gap-3 sm:grid-cols-3">
           <TrustItem
             icon={Camera}
             title="Publier en 2 minutes"
@@ -504,40 +471,6 @@ function HomePage() {
           </div>
         )}
       </section>
-      {/* HOW IT WORKS */}
-      <section className="kafoo-container py-10 sm:py-14">
-        <div className="text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-            Comment ça marche
-          </p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-            Vendez ou achetez en 3 étapes
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
-            Simple, gratuit et rapide. Que vous vendiez ou achetiez, Kafoo vous met en relation directement.
-          </p>
-        </div>
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
-          <Step
-            number="1"
-            icon={Camera}
-            title="Publiez votre annonce"
-            description="Ajoutez photos, titre, prix et description. C'est gratuit et ça prend 2 minutes."
-          />
-          <Step
-            number="2"
-            icon={MessageCircle}
-            title="Recevez des messages"
-            description="Les acheteurs vous contactent directement par chat, téléphone ou WhatsApp."
-          />
-          <Step
-            number="3"
-            icon={CheckCircle2}
-            title="Finalisez la vente"
-            description="Convenez d'un rendez-vous dans un lieu public et concluez en toute sécurité."
-          />
-        </div>
-      </section>
       {/* RECENT LISTINGS */}
       <section className="kafoo-container py-8 sm:py-10">
         <SectionHeader
@@ -612,6 +545,52 @@ function HomePage() {
             </Button>
           </div>
         </div>
+      </section>
+      {/* HOW IT WORKS (collapsible) */}
+      <section className="kafoo-container py-6">
+        <button
+          type="button"
+          onClick={() => setShowHowItWorks((c) => !c)}
+          className="flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition hover:border-blue-300 hover:shadow-md"
+          aria-expanded={showHowItWorks}
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+              <HelpCircle className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-base font-black text-slate-950">Comment ça marche ?</h3>
+              <p className="text-xs text-slate-500">Vendez ou achetez en 3 étapes simples</p>
+            </div>
+          </div>
+          {showHowItWorks ? (
+            <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" />
+          ) : (
+            <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />
+          )}
+        </button>
+        {showHowItWorks ? (
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <Step
+              number="1"
+              icon={Camera}
+              title="Publiez votre annonce"
+              description="Ajoutez photos, titre, prix et description. C'est gratuit et ça prend 2 minutes."
+            />
+            <Step
+              number="2"
+              icon={MessageCircle}
+              title="Recevez des messages"
+              description="Les acheteurs vous contactent directement par chat, téléphone ou WhatsApp."
+            />
+            <Step
+              number="3"
+              icon={CheckCircle2}
+              title="Finalisez la vente"
+              description="Convenez d'un rendez-vous dans un lieu public et concluez en toute sécurité."
+            />
+          </div>
+        ) : null}
       </section>
       {/* SECURITY TIPS */}
       <section className="kafoo-container pb-14">
@@ -756,13 +735,17 @@ function TrustItem({
   gradient: string;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-      <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br ${gradient} opacity-10 transition group-hover:opacity-20`} />
-      <div className={`relative mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white shadow-md`}>
-        <Icon className="h-6 w-6" />
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+      <div className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${gradient} opacity-10 transition group-hover:opacity-20`} />
+      <div className="relative flex items-start gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white shadow-md`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-sm font-black text-slate-950">{title}</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
+        </div>
       </div>
-      <h3 className="relative text-base font-black text-slate-950">{title}</h3>
-      <p className="relative mt-2 text-sm leading-6 text-slate-500">{description}</p>
     </div>
   );
 }
