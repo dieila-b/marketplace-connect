@@ -227,7 +227,7 @@ function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.50),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.44),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.34),transparent_38%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/5 via-transparent to-slate-950/25" />
         <div className="relative mx-auto flex w-full max-w-[1680px] flex-col items-center justify-center px-4 py-8 text-center sm:px-6 sm:py-10 lg:px-8 xl:px-10">
-          <h1 className="mx-auto w-full max-w-4xl text-center text-xl font-black leading-tight tracking-tight text-white sm:text-2xl md:text-3xl lg:text-4xl">
+          <h1 className="mx-auto text-center text-base font-black leading-tight tracking-tight text-white sm:text-lg md:whitespace-nowrap md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl">
             Vendez et trouvez vos bonnes affaires près de chez vous
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm font-medium leading-6 text-slate-100 sm:text-base">
