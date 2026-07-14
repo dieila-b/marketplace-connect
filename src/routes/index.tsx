@@ -29,12 +29,10 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-
 import { useSupabase } from "@/integrations/supabase/provider";
 import { ListingCard, type ListingRow } from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -48,20 +46,17 @@ export const Route = createFileRoute("/")({
   }),
   component: HomePage,
 });
-
 type Category = {
   id: string;
   name: string;
   slug: string;
   icon: string | null;
 };
-
 type LocationOption = {
   id: string;
   name: string;
   slug: string;
 };
-
 type DemoListing = {
   id: string;
   title: string;
@@ -72,7 +67,6 @@ type DemoListing = {
   image: string;
   badge?: string;
 };
-
 const demoListings: DemoListing[] = [
   {
     id: "demo-1",
@@ -119,7 +113,6 @@ const demoListings: DemoListing[] = [
     badge: "Exemple",
   },
 ];
-
 const iconMap: Record<string, LucideIcon> = {
   smartphone: Smartphone,
   laptop: Laptop,
@@ -142,7 +135,6 @@ const iconMap: Record<string, LucideIcon> = {
   book: BookOpen,
   box: Box,
 };
-
 const categoryStyles = [
   "bg-blue-50 text-blue-700 border-blue-100",
   "bg-emerald-50 text-emerald-700 border-emerald-100",
@@ -151,22 +143,18 @@ const categoryStyles = [
   "bg-rose-50 text-rose-700 border-rose-100",
   "bg-cyan-50 text-cyan-700 border-cyan-100",
 ];
-
 function getCategoryIcon(icon: string | null) {
   if (!icon) return Box;
   return iconMap[icon] ?? Box;
 }
-
 function HomePage() {
   const { supabase } = useSupabase();
   const navigate = useNavigate();
-
   const [categories, setCategories] = useState<Category[]>([]);
   const [regions, setRegions] = useState<LocationOption[]>([]);
   const [cities, setCities] = useState<LocationOption[]>([]);
   const [communes, setCommunes] = useState<LocationOption[]>([]);
   const [recent, setRecent] = useState<ListingRow[]>([]);
-
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
   const [region, setRegion] = useState("");
@@ -176,10 +164,8 @@ function HomePage() {
   const [maxPrice, setMaxPrice] = useState("");
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
-
   useEffect(() => {
     if (!supabase) return;
-
     void (async () => {
       const [
         { data: cats },
@@ -194,13 +180,9 @@ function HomePage() {
           .is("parent_id", null)
           .eq("is_active", true)
           .order("sort_order"),
-
         supabase.from("regions").select("id,name,slug").order("name"),
-
         supabase.from("cities").select("id,name,slug").order("name"),
-
         supabase.from("communes").select("id,name,slug").order("name"),
-
         supabase
           .from("listings")
           .select(`
@@ -214,7 +196,6 @@ function HomePage() {
           .order("created_at", { ascending: false })
           .limit(12),
       ]);
-
       setCategories((cats ?? []) as Category[]);
       setRegions((regionRows ?? []) as LocationOption[]);
       setCities((cityRows ?? []) as LocationOption[]);
@@ -222,16 +203,12 @@ function HomePage() {
       setRecent((list ?? []) as unknown as ListingRow[]);
     })();
   }, [supabase]);
-
   const displayedCategories = showAllCategories
     ? categories
     : categories.slice(0, 10);
-
   const hasMoreCategories = categories.length > 10;
-
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
-
     navigate({
       to: "/annonces",
       search: {
@@ -245,30 +222,25 @@ function HomePage() {
       } as never,
     });
   };
-
   return (
     <main className="min-h-screen w-full overflow-x-hidden bg-slate-50">
       <section className="relative w-full overflow-hidden bg-slate-950 text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.50),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.44),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.34),transparent_38%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/5 via-transparent to-slate-950/25" />
-
-        <div className="relative mx-auto flex min-h-[590px] w-full max-w-[1680px] flex-col items-center justify-center px-4 py-14 text-center sm:px-6 sm:py-16 lg:px-8 xl:px-10">
-          <div className="mb-5 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-bold text-white/90 shadow-lg shadow-black/10 backdrop-blur sm:text-xs">
+        <div className="relative mx-auto flex w-full max-w-[1680px] flex-col items-center justify-center px-4 py-10 text-center sm:px-6 sm:py-12 lg:px-8 xl:px-10">
+          <div className="mb-4 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-bold text-white/90 shadow-lg shadow-black/10 backdrop-blur sm:text-xs">
             <Sparkles className="h-3.5 w-3.5 shrink-0 text-yellow-300" />
             <span className="truncate">
               Nouvelle marketplace locale en Guinée
             </span>
           </div>
-
-          <h1 className="mx-auto max-w-[1500px] text-center text-[2rem] font-black leading-[1.08] tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.55rem] 2xl:text-[3.9rem]">
+          <h1 className="mx-auto w-full text-center text-[1.6rem] font-black leading-[1.12] tracking-tight text-white sm:text-3xl md:text-4xl lg:text-[2.6rem] lg:whitespace-nowrap xl:text-[3rem] 2xl:text-[3.3rem]">
             Vendez et trouvez vos bonnes affaires près de chez vous
           </h1>
-
-          <p className="mx-auto mt-5 max-w-[1280px] text-center text-sm font-medium leading-7 text-slate-100 sm:text-base lg:text-[1.05rem] xl:whitespace-nowrap">
+          <p className="mx-auto mt-4 max-w-[1280px] text-center text-sm font-medium leading-6 text-slate-100 sm:text-base">
             Téléphones, véhicules, immobilier, meubles, mode, électroménager et services. Publiez gratuitement et échangez directement avec les acheteurs partout en Guinée.
           </p>
-
-          <div className="mt-8 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
+          <div className="mt-6 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
             <Button
               asChild
               size="lg"
@@ -279,7 +251,6 @@ function HomePage() {
                 Publier gratuitement
               </Link>
             </Button>
-
             <Button
               asChild
               size="lg"
@@ -292,17 +263,10 @@ function HomePage() {
               </Link>
             </Button>
           </div>
-
-          <div className="mt-10 grid w-full max-w-4xl grid-cols-1 gap-4 sm:grid-cols-3">
-            <MiniStat value={categories.length} label="Catégories" />
-            <MiniStat value={recent.length} label="Annonces" />
-            <MiniStat value="GN" label="Local" />
-          </div>
-
-          <div className="mt-12 w-full max-w-6xl">
+          <div className="mt-8 w-full max-w-6xl">
             <form
               onSubmit={onSearch}
-              className="rounded-[2rem] border border-white/20 bg-white/95 p-3 text-slate-950 shadow-2xl shadow-black/20 backdrop-blur sm:p-4"
+              className="rounded-2xl border border-white/20 bg-white/95 p-3 text-slate-950 shadow-2xl shadow-black/20 backdrop-blur sm:rounded-[2rem] sm:p-4"
             >
               <div className="flex flex-col gap-3 lg:flex-row">
                 <div className="relative min-w-0 flex-1">
@@ -314,7 +278,6 @@ function HomePage() {
                     className="h-12 w-full rounded-2xl border-slate-200 bg-slate-50 pl-12 text-sm shadow-inner sm:h-14"
                   />
                 </div>
-
                 <Button
                   type="submit"
                   size="lg"
@@ -323,7 +286,6 @@ function HomePage() {
                   <Search className="mr-2 h-5 w-5" />
                   Rechercher
                 </Button>
-
                 <Button
                   type="button"
                   size="lg"
@@ -335,7 +297,6 @@ function HomePage() {
                   {showAdvancedSearch ? "Fermer" : "Recherche avancée"}
                 </Button>
               </div>
-
               {showAdvancedSearch ? (
                 <div className="mt-4 border-t border-slate-100 pt-4">
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -351,7 +312,6 @@ function HomePage() {
                         </option>
                       ))}
                     </SelectField>
-
                     <SelectField
                       value={region}
                       onChange={setRegion}
@@ -364,7 +324,6 @@ function HomePage() {
                         </option>
                       ))}
                     </SelectField>
-
                     <SelectField value={city} onChange={setCity} label="Ville">
                       <option value="">Toutes</option>
                       {cities.map((item) => (
@@ -373,7 +332,6 @@ function HomePage() {
                         </option>
                       ))}
                     </SelectField>
-
                     <SelectField
                       value={commune}
                       onChange={setCommune}
@@ -386,7 +344,6 @@ function HomePage() {
                         </option>
                       ))}
                     </SelectField>
-
                     <Input
                       value={minPrice}
                       onChange={(e) => setMinPrice(e.target.value)}
@@ -395,7 +352,6 @@ function HomePage() {
                       placeholder="Prix min"
                       className="h-12 rounded-xl bg-slate-50"
                     />
-
                     <Input
                       value={maxPrice}
                       onChange={(e) => setMaxPrice(e.target.value)}
@@ -405,7 +361,6 @@ function HomePage() {
                       className="h-12 rounded-xl bg-slate-50"
                     />
                   </div>
-
                   <div className="mt-4 flex justify-end">
                     <Button
                       type="button"
@@ -422,9 +377,8 @@ function HomePage() {
           </div>
         </div>
       </section>
-
-      <section className="kafoo-container py-7">
-        <div className="grid gap-3 rounded-3xl bg-white p-3 shadow-sm sm:grid-cols-3">
+      <section className="kafoo-container py-6 sm:py-7">
+        <div className="grid gap-3 rounded-3xl bg-white p-3 shadow-sm sm:grid-cols-2 lg:grid-cols-3">
           <TrustItem
             icon={PlusCircle}
             title="Publier rapidement"
@@ -445,27 +399,25 @@ function HomePage() {
           />
         </div>
       </section>
-
-      <section className="kafoo-container py-10">
+      <section className="kafoo-container py-8 sm:py-10">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
               Explorer
             </p>
-            <h2 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">
+            <h2 className="mt-1 text-xl font-black text-slate-950 sm:text-2xl lg:text-3xl">
               Catégories populaires
             </h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
               Choisissez une rubrique pour trouver rapidement une annonce.
             </p>
           </div>
-
           <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:justify-end">
             {hasMoreCategories && (
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-full bg-white"
+                className="w-full rounded-full bg-white sm:w-auto"
                 onClick={() => setShowAllCategories((current) => !current)}
               >
                 {showAllCategories ? "Voir moins" : "Voir plus"}
@@ -476,8 +428,11 @@ function HomePage() {
                 )}
               </Button>
             )}
-
-            <Button asChild variant="outline" className="rounded-full bg-white">
+            <Button
+              asChild
+              variant="outline"
+              className="w-full rounded-full bg-white sm:w-auto"
+            >
               <Link to="/annonces">
                 Tout voir
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -485,18 +440,16 @@ function HomePage() {
             </Button>
           </div>
         </div>
-
         {categories.length === 0 ? (
           <EmptyState
             title="Aucune catégorie disponible"
             description="Les catégories seront affichées dès leur ajout dans Supabase."
           />
         ) : (
-          <div className="kafoo-category-grid">
+          <div className="kafoo-category-grid grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {displayedCategories.map((item, index) => {
               const Icon = getCategoryIcon(item.icon);
               const style = categoryStyles[index % categoryStyles.length];
-
               return (
                 <Link
                   key={item.id}
@@ -507,11 +460,9 @@ function HomePage() {
                   <div className="mb-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
                     <Icon className="h-5 w-5" />
                   </div>
-
                   <h3 className="line-clamp-2 min-h-[36px] break-words text-sm font-black leading-tight text-slate-950">
                     {item.name}
                   </h3>
-
                   <p className="mt-auto flex items-center pt-3 text-xs font-semibold text-slate-500">
                     Voir
                     <ArrowRight className="ml-1 h-3 w-3 transition group-hover:translate-x-1" />
@@ -522,8 +473,7 @@ function HomePage() {
           </div>
         )}
       </section>
-
-      <section className="kafoo-container py-10">
+      <section className="kafoo-container py-8 sm:py-10">
         <SectionHeader
           eyebrow={recent.length === 0 ? "Aperçu" : "Nouveautés"}
           title={recent.length === 0 ? "Exemples d’annonces" : "Annonces récentes"}
@@ -533,7 +483,11 @@ function HomePage() {
               : "Les dernières annonces publiées par les vendeurs."
           }
           action={
-            <Button asChild variant="outline" className="rounded-full bg-white">
+            <Button
+              asChild
+              variant="outline"
+              className="w-full rounded-full bg-white sm:w-auto"
+            >
               <Link to="/annonces">
                 Voir les annonces
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -541,33 +495,30 @@ function HomePage() {
             </Button>
           }
         />
-
         {recent.length === 0 ? (
           <>
             <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
               Ces annonces sont des exemples d’affichage. Publiez une vraie
               annonce pour commencer à alimenter la marketplace.
             </div>
-
-            <div className="kafoo-listing-grid mt-6">
+            <div className="kafoo-listing-grid mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {demoListings.map((item) => (
                 <DemoListingCard key={item.id} listing={item} />
               ))}
             </div>
           </>
         ) : (
-          <div className="kafoo-listing-grid mt-6">
+          <div className="kafoo-listing-grid mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {recent.map((item) => (
               <ListingCard key={item.id} listing={item} />
             ))}
           </div>
         )}
       </section>
-
-      <section className="kafoo-container py-10">
-        <div className="grid gap-6 rounded-3xl bg-slate-950 p-6 text-white sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div>
-            <h2 className="text-2xl font-black sm:text-3xl">
+      <section className="kafoo-container py-8 sm:py-10">
+        <div className="grid gap-6 rounded-3xl bg-slate-950 p-5 text-white sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="min-w-0">
+            <h2 className="text-xl font-black sm:text-2xl lg:text-3xl">
               Vous avez quelque chose à vendre ?
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
@@ -575,11 +526,10 @@ function HomePage() {
               localisation. Les acheteurs pourront vous contacter directement.
             </p>
           </div>
-
           <Button
             asChild
             size="lg"
-            className="rounded-full bg-white text-slate-950 hover:bg-slate-100"
+            className="w-full rounded-full bg-white text-slate-950 hover:bg-slate-100 sm:w-auto"
           >
             <Link to="/publier">
               <PlusCircle className="mr-2 h-5 w-5" />
@@ -588,11 +538,10 @@ function HomePage() {
           </Button>
         </div>
       </section>
-
       <section className="kafoo-container pb-12">
-        <div className="rounded-3xl border bg-white p-6 shadow-sm">
+        <div className="rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
+            <div className="min-w-0">
               <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
                 <ShieldCheck className="h-5 w-5" />
               </div>
@@ -604,7 +553,6 @@ function HomePage() {
                 lieux publics.
               </p>
             </div>
-
             <div className="grid gap-3 sm:grid-cols-3">
               <SecurityTip text="Vérifier le produit" />
               <SecurityTip text="Éviter les paiements suspects" />
@@ -616,7 +564,6 @@ function HomePage() {
     </main>
   );
 }
-
 function SectionHeader({
   eyebrow,
   title,
@@ -630,22 +577,21 @@ function SectionHeader({
 }) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
+      <div className="min-w-0">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
           {eyebrow}
         </p>
-        <h2 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">
+        <h2 className="mt-1 text-xl font-black text-slate-950 sm:text-2xl lg:text-3xl">
           {title}
         </h2>
         <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
           {description}
         </p>
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="w-full shrink-0 sm:w-auto">{action}</div> : null}
     </div>
   );
 }
-
 function SelectField({
   label,
   value,
@@ -672,16 +618,6 @@ function SelectField({
     </label>
   );
 }
-
-function MiniStat({ value, label }: { value: string | number; label: string }) {
-  return (
-    <div className="rounded-3xl border border-white/15 bg-white/10 p-5 text-center shadow-xl shadow-black/10 backdrop-blur transition hover:-translate-y-1 hover:bg-white/15">
-      <div className="text-2xl font-black text-white">{value}</div>
-      <div className="mt-1 text-xs font-bold text-slate-300">{label}</div>
-    </div>
-  );
-}
-
 function TrustItem({
   icon: Icon,
   title,
@@ -707,7 +643,6 @@ function TrustItem({
     </div>
   );
 }
-
 function DemoListingCard({ listing }: { listing: DemoListing }) {
   return (
     <article className="min-w-0 overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
@@ -724,7 +659,6 @@ function DemoListingCard({ listing }: { listing: DemoListing }) {
           </span>
         ) : null}
       </div>
-
       <div className="p-4">
         <p className="text-xs font-bold uppercase tracking-wide text-blue-600">
           {listing.category}
@@ -735,12 +669,10 @@ function DemoListingCard({ listing }: { listing: DemoListing }) {
         <p className="mt-2 text-lg font-black text-slate-950">
           {listing.price}
         </p>
-
         <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
           <MapPin className="h-4 w-4 shrink-0" />
           <span className="truncate">{listing.location}</span>
         </div>
-
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
             {listing.condition}
@@ -756,7 +688,6 @@ function DemoListingCard({ listing }: { listing: DemoListing }) {
     </article>
   );
 }
-
 function SecurityTip({ text }: { text: string }) {
   return (
     <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
@@ -765,7 +696,6 @@ function SecurityTip({ text }: { text: string }) {
     </div>
   );
 }
-
 function EmptyState({
   title,
   description,
