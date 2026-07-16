@@ -79,11 +79,30 @@ export const Route = createFileRoute("/api/public/health")({
 
         if (!checks.env.ok) {
           log("error", "response:sent", { ok: false, reason: "missing-env" });
+          const failedSteps = [
+            { step: "env", status: null as number | null, message: checks.env.message },
+          ];
           return Response.json(
-            { ok: false, checks, requestId },
-            { status: 200, headers: { "cache-control": "no-store" } },
+            {
+              ok: false,
+              status: "unhealthy",
+              summary: {
+                ok: false,
+                status: "unhealthy",
+                failedSteps,
+                requestId,
+                logHint: `Filtrez les logs serveur par requestId="${requestId}" ou par tag [health-check].`,
+              },
+              checks,
+              requestId,
+            },
+            {
+              status: 200,
+              headers: { "cache-control": "no-store", "x-request-id": requestId },
+            },
           );
         }
+
 
         const cleanUrl = url.replace(/\/+$/, "");
 
