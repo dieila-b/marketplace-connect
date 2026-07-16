@@ -18,6 +18,7 @@ import { Route as AnnoncesRouteImport } from './routes/annonces'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnnoncesSlugRouteImport } from './routes/annonces.$slug'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 
 const PublierRoute = PublierRouteImport.update({
   id: '/publier',
@@ -64,6 +65,11 @@ const AnnoncesSlugRoute = AnnoncesSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => AnnoncesRoute,
 } as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/messages': typeof MessagesRoute
   '/publier': typeof PublierRoute
   '/annonces/$slug': typeof AnnoncesSlugRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/messages': typeof MessagesRoute
   '/publier': typeof PublierRoute
   '/annonces/$slug': typeof AnnoncesSlugRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/messages': typeof MessagesRoute
   '/publier': typeof PublierRoute
   '/annonces/$slug': typeof AnnoncesSlugRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/publier'
     | '/annonces/$slug'
+    | '/api/public/health'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/publier'
     | '/annonces/$slug'
+    | '/api/public/health'
   id:
     | '__root__'
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/publier'
     | '/annonces/$slug'
+    | '/api/public/health'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   FavorisRoute: typeof FavorisRoute
   MessagesRoute: typeof MessagesRoute
   PublierRoute: typeof PublierRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnnoncesSlugRouteImport
       parentRoute: typeof AnnoncesRoute
     }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -235,6 +255,7 @@ const rootRouteChildren: RootRouteChildren = {
   FavorisRoute: FavorisRoute,
   MessagesRoute: MessagesRoute,
   PublierRoute: PublierRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
