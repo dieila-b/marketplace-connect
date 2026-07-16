@@ -37,7 +37,7 @@ export const Route = createFileRoute("/api/public/health")({
         if (!checks.env.ok) {
           return Response.json(
             { ok: false, checks },
-            { status: 500, headers: { "cache-control": "no-store" } },
+            { status: 200, headers: { "cache-control": "no-store" } },
           );
         }
 
