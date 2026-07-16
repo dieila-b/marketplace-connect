@@ -103,7 +103,7 @@ export const Route = createFileRoute("/api/public/health")({
             timestamp: new Date().toISOString(),
           },
           {
-            status: ok ? 200 : 503,
+            status: 200,
             headers: { "cache-control": "no-store" },
           },
         );
