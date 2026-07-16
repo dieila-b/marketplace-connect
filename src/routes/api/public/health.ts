@@ -79,11 +79,30 @@ export const Route = createFileRoute("/api/public/health")({
 
         if (!checks.env.ok) {
           log("error", "response:sent", { ok: false, reason: "missing-env" });
+          const failedSteps = [
+            { step: "env", status: null as number | null, message: checks.env.message },
+          ];
           return Response.json(
-            { ok: false, checks, requestId },
-            { status: 200, headers: { "cache-control": "no-store" } },
+            {
+              ok: false,
+              status: "unhealthy",
+              summary: {
+                ok: false,
+                status: "unhealthy",
+                failedSteps,
+                requestId,
+                logHint: `Filtrez les logs serveur par requestId="${requestId}" ou par tag [health-check].`,
+              },
+              checks,
+              requestId,
+            },
+            {
+              status: 200,
+              headers: { "cache-control": "no-store", "x-request-id": requestId },
+            },
           );
         }
+
 
         const cleanUrl = url.replace(/\/+$/, "");
 
@@ -164,6 +183,10 @@ export const Route = createFileRoute("/api/public/health")({
         }
 
         const ok = Object.values(checks).every((c) => c.ok);
+        const failedSteps = Object.entries(checks)
+          .filter(([, c]) => !c.ok)
+          .map(([step, c]) => ({ step, status: c.status ?? null, message: c.message }));
+
         log(ok ? "info" : "warn", "response:sent", {
           ok,
           checks: Object.fromEntries(
@@ -175,6 +198,15 @@ export const Route = createFileRoute("/api/public/health")({
           {
             ok,
             status: ok ? "healthy" : "unhealthy",
+            summary: {
+              ok,
+              status: ok ? "healthy" : "unhealthy",
+              failedSteps,
+              requestId,
+              logHint: ok
+                ? "Aucune étape échouée."
+                : `Filtrez les logs serveur par requestId="${requestId}" ou par tag [health-check].`,
+            },
             supabaseUrl: cleanUrl,
             checks,
             requestId,
@@ -182,12 +214,10 @@ export const Route = createFileRoute("/api/public/health")({
           },
           {
             status: 200,
-            headers: {
-              "cache-control": "no-store",
-              "x-request-id": requestId,
-            },
+            headers: { "cache-control": "no-store", "x-request-id": requestId },
           },
         );
+
       },
     },
   },

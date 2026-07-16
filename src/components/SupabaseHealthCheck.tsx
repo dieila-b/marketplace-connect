@@ -1,169 +1,123 @@
 import { useEffect, useState } from "react";
 
-type HealthStatus = {
+type FailedStep = { step: string; status: number | null; message: string };
+
+type HealthResponse = {
   ok: boolean;
-  title: string;
-  message: string;
-  details?: string;
-};
-
-const normalizeSupabaseUrl = (value?: string) => {
-  if (!value) return "";
-
-  return String(value)
-    .trim()
-    .replace(/\/rest\/v1\/?$/i, "")
-    .replace(/\/+$/, "");
-};
-
-const normalizeSupabaseKey = (value?: string) => {
-  if (!value) return "";
-
-  return String(value).trim();
-};
-
-const isValidSupabaseKeyFormat = (key: string) => {
-  if (!key) return false;
-
-  // Ancienne clé anon JWT Supabase : commence généralement par eyJ...
-  if (key.startsWith("eyJ")) return true;
-
-  // Nouvelle clé publishable Supabase : commence souvent par sb_publishable_...
-  if (key.startsWith("sb_publishable_")) return true;
-
-  return false;
-};
-
-const getSupabaseConfig = () => {
-  const url = normalizeSupabaseUrl(
-    import.meta.env.VITE_SUPABASE_URL ||
-      import.meta.env.APP_SUPABASE_URL ||
-      import.meta.env.SUPABASE_URL,
-  );
-
-  const possibleKeys = [
-    import.meta.env.VITE_SUPABASE_ANON_KEY,
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    import.meta.env.APP_SUPABASE_ANON_KEY,
-    import.meta.env.SUPABASE_ANON_KEY,
-    import.meta.env.SUPABASE_PUBLISHABLE_KEY,
-  ]
-    .map((key) => normalizeSupabaseKey(key))
-    .filter(Boolean)
-    .filter((key) => !key.includes("supabase.co"))
-    .filter((key) => !key.includes("/rest/v1"))
-    .filter(isValidSupabaseKeyFormat);
-
-  const anonKey = possibleKeys[0] || "";
-
-  return { url, anonKey };
+  status: "healthy" | "unhealthy";
+  summary: {
+    ok: boolean;
+    status: "healthy" | "unhealthy";
+    failedSteps: FailedStep[];
+    requestId: string;
+    logHint: string;
+  };
+  checks?: Record<string, { ok: boolean; status?: number; message: string }>;
+  supabaseUrl?: string;
+  requestId: string;
+  timestamp?: string;
 };
 
 export function SupabaseHealthCheck() {
-  const [status, setStatus] = useState<HealthStatus | null>(null);
+  const [data, setData] = useState<HealthResponse | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    const checkSupabase = async () => {
-      const { url, anonKey } = getSupabaseConfig();
-
-      if (!url || !anonKey) {
-        setStatus({
-          ok: false,
-          title: "Configuration Supabase manquante",
-          message:
-            "Les variables Supabase ne sont pas correctement configurées dans l’environnement.",
-          details:
-            "Vérifie dans Netlify : VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY. L’URL doit être sans /rest/v1/ et la clé doit commencer par eyJ... ou sb_publishable_...",
-        });
-        return;
-      }
-
+    let cancelled = false;
+    (async () => {
       try {
-        const response = await fetch(
-          `${url}/rest/v1/categories?select=id&limit=1`,
-          {
-            method: "GET",
-            headers: {
-              apikey: anonKey,
-              Authorization: `Bearer ${anonKey}`,
-              Accept: "application/json",
-            },
-          },
-        );
-
-        if (response.ok) {
-          setStatus({
-            ok: true,
-            title: "Supabase connecté",
-            message: "La liaison Supabase fonctionne correctement.",
-          });
-          return;
-        }
-
-        if (response.status === 404) {
-          setStatus({
-            ok: false,
-            title: "Tables Supabase manquantes",
-            message: "La table categories n’existe pas encore dans Supabase.",
-            details:
-              "Crée les tables dans Supabase via SQL Editor, puis redéploie le site.",
-          });
-          return;
-        }
-
-        if (response.status === 401 || response.status === 403) {
-          setStatus({
-            ok: false,
-            title: "Clé Supabase invalide",
-            message:
-              "La clé Supabase ne correspond pas au projet configuré ou n’a pas les droits nécessaires.",
-            details:
-              "Dans Netlify, vérifie que VITE_SUPABASE_URL vaut https://pvedsyclugdunyodkpob.supabase.co et que VITE_SUPABASE_PUBLISHABLE_KEY contient uniquement la clé anon/public du même projet.",
-          });
-          return;
-        }
-
-        const errorText = await response.text();
-
-        setStatus({
-          ok: false,
-          title: "Réponse Supabase inattendue",
-          message: `Supabase a répondu avec le statut ${response.status}.`,
-          details:
-            errorText ||
-            "Vérifie l’URL, la clé anon/public et l’existence de la table categories.",
+        const res = await fetch("/api/public/health", {
+          headers: { Accept: "application/json" },
         });
-      } catch (error) {
-        setStatus({
-          ok: false,
-          title: "Liaison Supabase indisponible",
-          message: "Impossible de joindre Supabase.",
-          details:
-            "Vérifie VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY et la connexion réseau.",
-        });
+        const json = (await res.json()) as HealthResponse;
+        if (!cancelled) setData(json);
+      } catch (e) {
+        if (!cancelled)
+          setFetchError((e as Error).message || "Erreur inconnue");
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-
-    checkSupabase();
   }, []);
 
-  if (!status || status.ok || hidden) {
-    return null;
+  if (hidden) return null;
+
+  if (fetchError) {
+    return (
+      <Banner
+        ok={false}
+        title="Health-check indisponible"
+        onClose={() => setHidden(true)}
+      >
+        <p className="mt-1">Impossible d'appeler /api/public/health.</p>
+        <p className="mt-2 text-sm">Détail : {fetchError}</p>
+      </Banner>
+    );
   }
 
+  if (!data) return null;
+  if (data.ok) return null;
+
+  const { summary, requestId } = data;
+
   return (
-    <div className="w-full bg-red-500 px-6 py-4 text-black">
+    <Banner
+      ok={false}
+      title={`Supabase — statut : ${summary.status}`}
+      onClose={() => setHidden(true)}
+    >
+      <p className="mt-1">
+        {summary.failedSteps.length} étape(s) en échec sur le health-check.
+      </p>
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+        {summary.failedSteps.map((s) => (
+          <li key={s.step}>
+            <span className="font-semibold">{s.step}</span>
+            {s.status != null ? ` (HTTP ${s.status})` : ""} — {s.message}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs opacity-90">
+        requestId :{" "}
+        <code className="rounded bg-black/10 px-1 py-0.5">{requestId}</code>
+      </p>
+      <p className="mt-1 text-xs opacity-90">💡 {summary.logHint}</p>
+      <p className="mt-1 text-xs opacity-90">
+        Voir aussi :{" "}
+        <a href="/api/public/health" className="underline" target="_blank" rel="noreferrer">
+          /api/public/health
+        </a>
+      </p>
+    </Banner>
+  );
+}
+
+function Banner({
+  ok,
+  title,
+  onClose,
+  children,
+}: {
+  ok: boolean;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`w-full px-6 py-4 text-black ${ok ? "bg-green-400" : "bg-red-500"}`}
+      role="alert"
+    >
       <div className="mx-auto flex max-w-6xl items-start justify-between gap-4">
         <div>
-          <p className="font-bold">⚠ {status.title}</p>
-          <p className="mt-1">{status.message}</p>
-          {status.details && <p className="mt-2 text-sm">💡 {status.details}</p>}
+          <p className="font-bold">{ok ? "✓" : "⚠"} {title}</p>
+          {children}
         </div>
-
         <button
           type="button"
-          onClick={() => setHidden(true)}
+          onClick={onClose}
           className="text-xl font-bold"
           aria-label="Fermer"
         >
