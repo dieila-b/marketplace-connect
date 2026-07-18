@@ -1,26 +1,106 @@
 import process from "node:process";
 
-// Server-only config. The .server.ts suffix prevents Vite from bundling
-// this file into the client — values here never reach the browser.
-//
-// On Cloudflare Workers, env binds at REQUEST time. Module-scope reads
-// (e.g. `const x = process.env.X`) resolve to undefined — always read
-// process.env INSIDE a function or handler.
-//
-// When to use which env-access pattern:
-//   - .server.ts module (this file): server-only helpers reused across
-//     handlers. Wrap reads in a function so they run per-request.
-//   - inline process.env inside a createServerFn handler: one-off reads
-//     not reused elsewhere.
-//   - import.meta.env.VITE_FOO: PUBLIC config readable from both client
-//     and server (analytics IDs, public URLs). Define in .env with the
-//     VITE_ prefix. Never put secrets here — they ship to the browser.
+/**
+ * Configuration serveur centralisée.
+ *
+ * Ce fichier est server-only grâce au suffixe .server.ts.
+ * Les valeurs sont lues à chaque requête afin d'être compatibles
+ * avec les environnements serverless / Netlify.
+ */
 
+type EnvResult = {
+  value: string;
+  source: string | null;
+};
+
+/**
+ * Retourne la première variable d'environnement définie et non vide.
+ */
+function getFirstEnv(
+  candidates: Array<[string, string | undefined]>,
+): EnvResult {
+  for (const [name, value] of candidates) {
+    if (typeof value === "string" && value.trim() !== "") {
+      return {
+        value: value.trim(),
+        source: name,
+      };
+    }
+  }
+
+  return {
+    value: "",
+    source: null,
+  };
+}
+
+/**
+ * Nettoie l'URL Supabase.
+ *
+ * Accepte par exemple :
+ * https://xxx.supabase.co
+ * https://xxx.supabase.co/
+ * https://xxx.supabase.co/rest/v1/
+ *
+ * Retourne toujours :
+ * https://xxx.supabase.co
+ */
+function normalizeSupabaseUrl(value: string): string {
+  if (!value) return "";
+
+  return value
+    .trim()
+    .replace(/\/rest\/v1\/?$/i, "")
+    .replace(/\/+$/, "");
+}
+
+/**
+ * Retourne la configuration serveur.
+ *
+ * IMPORTANT :
+ * Les variables VITE actuellement utilisées par Kafoo sont prioritaires.
+ * Cela évite qu'une ancienne variable APP_SUPABASE_URL ou SUPABASE_URL
+ * pointe encore vers un ancien projet Supabase.
+ */
 export function getServerConfig() {
+  const supabaseUrlResult = getFirstEnv([
+    ["VITE_SUPABASE_URL", process.env.VITE_SUPABASE_URL],
+    ["APP_SUPABASE_URL", process.env.APP_SUPABASE_URL],
+    ["SUPABASE_URL", process.env.SUPABASE_URL],
+  ]);
+
+  const supabaseKeyResult = getFirstEnv([
+    [
+      "VITE_SUPABASE_PUBLISHABLE_KEY",
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    ],
+    ["VITE_SUPABASE_ANON_KEY", process.env.VITE_SUPABASE_ANON_KEY],
+    [
+      "APP_SUPABASE_PUBLISHABLE_KEY",
+      process.env.APP_SUPABASE_PUBLISHABLE_KEY,
+    ],
+    ["APP_SUPABASE_ANON_KEY", process.env.APP_SUPABASE_ANON_KEY],
+    [
+      "SUPABASE_PUBLISHABLE_KEY",
+      process.env.SUPABASE_PUBLISHABLE_KEY,
+    ],
+    ["SUPABASE_ANON_KEY", process.env.SUPABASE_ANON_KEY],
+  ]);
+
   return {
     nodeEnv: process.env.NODE_ENV,
-    // Add server-only values here, e.g.:
-    //   databaseUrl: process.env.DATABASE_URL,
-    //   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+
+    supabaseUrl: normalizeSupabaseUrl(
+      supabaseUrlResult.value,
+    ),
+
+    supabasePublicKey: supabaseKeyResult.value.trim(),
+
+    /**
+     * Utilisé uniquement pour le diagnostic.
+     * La valeur de la clé elle-même n'est jamais exposée.
+     */
+    supabaseUrlSource: supabaseUrlResult.source,
+    supabaseKeySource: supabaseKeyResult.source,
   };
 }
