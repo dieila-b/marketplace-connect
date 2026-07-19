@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { getServerConfig } from "../config.server";
+import { getServerConfig } from "@/lib/config.server";
 
 type HealthCheck = {
   ok: boolean;
