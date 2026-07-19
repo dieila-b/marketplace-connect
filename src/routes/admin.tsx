@@ -2,12 +2,15 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   useEffect,
   useState,
+  type FormEvent,
   type ReactNode,
 } from "react";
 import {
   AlertTriangle,
   BarChart3,
   CheckCircle,
+  Eye,
+  EyeOff,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -194,11 +197,77 @@ function Badge({
    PAGE PRINCIPALE ADMIN
 ════════════════════════════════════════════════════════════ */
 
+async function getAdminAccess(
+  supabase: any,
+  userId: string,
+): Promise<{
+  isAdmin: boolean;
+  error: string | null;
+}> {
+  /*
+   * Schéma principal attendu :
+   *
+   * public.profiles
+   * - user_id
+   * - is_admin
+   *
+   * Un fallback sur profiles.id est conservé pour les projets
+   * où l'identifiant du profil correspond directement à auth.users.id.
+   */
+
+  const byUserId = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!byUserId.error && byUserId.data) {
+    return {
+      isAdmin: byUserId.data.is_admin === true,
+      error: null,
+    };
+  }
+
+  /*
+   * Si aucun profil n'est trouvé via user_id, on tente id.
+   * Cela rend la page compatible avec les deux structures courantes.
+   */
+  const byId = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (!byId.error && byId.data) {
+    return {
+      isAdmin: byId.data.is_admin === true,
+      error: null,
+    };
+  }
+
+  const technicalError =
+    byUserId.error?.message ||
+    byId.error?.message ||
+    null;
+
+  if (technicalError) {
+    return {
+      isAdmin: false,
+      error: `Impossible de vérifier le rôle administrateur : ${technicalError}`,
+    };
+  }
+
+  return {
+    isAdmin: false,
+    error:
+      "Aucun profil correspondant à ce compte n'a été trouvé dans public.profiles.",
+  };
+}
+
 function AdminPage() {
   const {
     supabase,
     user,
-    isAdmin,
     loading,
   } = useSupabase();
 
@@ -217,10 +286,10 @@ function AdminPage() {
     useState("");
 
   /*
-   * Vérification réelle du rôle admin.
+   * Vérification réelle du rôle administrateur.
    *
-   * On utilise d'abord isAdmin du provider.
-   * Si nécessaire, on vérifie directement profiles.is_admin.
+   * On ne dépend pas uniquement de la valeur isAdmin du provider :
+   * la colonne profiles.is_admin est vérifiée directement dans Supabase.
    */
   useEffect(() => {
     let cancelled = false;
@@ -234,77 +303,37 @@ function AdminPage() {
         if (!cancelled) {
           setAuthorized(false);
           setCheckingAccess(false);
-          setAccessError(
-            "Vous devez être connecté pour accéder à l'administration.",
-          );
-        }
-
-        return;
-      }
-
-      /*
-       * Si le provider confirme déjà le rôle admin,
-       * inutile de refaire immédiatement la requête.
-       */
-      if (isAdmin === true) {
-        if (!cancelled) {
-          setAuthorized(true);
-          setCheckingAccess(false);
           setAccessError("");
         }
 
         return;
       }
 
+      if (!cancelled) {
+        setCheckingAccess(true);
+        setAccessError("");
+      }
+
       try {
-        /*
-         * Vérification directe du profil.
-         *
-         * Le schéma utilisé dans ton fichier actuel contient :
-         *
-         * profiles.user_id
-         * profiles.is_admin
-         */
-        const {
-          data: profile,
-          error,
-        } = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const access = await getAdminAccess(
+          supabase,
+          user.id,
+        );
 
         if (cancelled) {
           return;
         }
 
-        if (error) {
-          console.error(
-            "[Admin] Impossible de vérifier le rôle :",
-            error,
-          );
+        setAuthorized(access.isAdmin);
 
-          setAuthorized(false);
-
+        if (!access.isAdmin) {
           setAccessError(
-            `Impossible de vérifier vos droits administrateur : ${error.message}`,
+            access.error ||
+              "Votre compte ne possède pas les droits administrateur.",
           );
-
-          return;
+        } else {
+          setAccessError("");
         }
-
-        if (!profile?.is_admin) {
-          setAuthorized(false);
-
-          setAccessError(
-            "Votre compte ne possède pas les droits administrateur.",
-          );
-
-          return;
-        }
-
-        setAuthorized(true);
-        setAccessError("");
       } catch (error) {
         if (cancelled) {
           return;
@@ -325,7 +354,7 @@ function AdminPage() {
         setAuthorized(false);
 
         setAccessError(
-          "Une erreur est survenue pendant la vérification de vos droits.",
+          "Une erreur est survenue pendant la vérification de vos droits administrateur.",
         );
       } finally {
         if (!cancelled) {
@@ -342,47 +371,49 @@ function AdminPage() {
   }, [
     loading,
     user,
-    isAdmin,
     supabase,
   ]);
 
   /*
-   * Écran de chargement.
+   * Chargement initial de la session Supabase.
    */
-  if (
-    loading ||
-    checkingAccess
-  ) {
+  if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 text-white">
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950 text-white">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
 
         <p className="mt-4 text-sm font-semibold text-slate-400">
-          Vérification de vos droits
-          administrateur...
+          Chargement de la session...
         </p>
       </div>
     );
   }
 
   /*
-   * Utilisateur non connecté.
+   * Aucun utilisateur connecté :
+   * /admin affiche directement le formulaire de connexion administrateur.
    */
   if (!user) {
     return (
-      <AdminAccessDenied
-        title="Connexion requise"
-        message={
-          accessError ||
-          "Vous devez être connecté pour accéder à cette page."
-        }
-        onBack={() =>
-          navigate({
-            to: "/",
-            replace: true,
-          })
-        }
+      <AdminLogin
+        supabase={supabase}
       />
+    );
+  }
+
+  /*
+   * Utilisateur connecté :
+   * pendant la vérification du rôle, on affiche un écran de chargement.
+   */
+  if (checkingAccess) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950 text-white">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
+
+        <p className="mt-4 text-sm font-semibold text-slate-400">
+          Vérification de vos droits administrateur...
+        </p>
+      </div>
     );
   }
 
@@ -403,6 +434,10 @@ function AdminPage() {
             replace: true,
           })
         }
+        onLogout={async () => {
+          await supabase.auth.signOut();
+          window.location.replace("/admin");
+        }}
       />
     );
   }
@@ -479,10 +514,13 @@ function AdminPage() {
           return;
         }
 
-        await navigate({
-          to: "/",
-          replace: true,
-        });
+        /*
+         * Après déconnexion, on revient sur /admin afin
+         * d'afficher directement le formulaire de connexion admin.
+         */
+        window.location.replace(
+          "/admin",
+        );
       } catch (error) {
         console.error(
           "[Admin] Erreur déconnexion :",
@@ -496,7 +534,7 @@ function AdminPage() {
     };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-white">
+    <div className="fixed inset-0 z-[9999] flex overflow-hidden bg-slate-950 text-white">
       {/* SIDEBAR */}
 
       <aside className="hidden w-60 shrink-0 flex-col border-r border-white/10 bg-slate-900 lg:flex">
@@ -520,7 +558,7 @@ function AdminPage() {
 
         {/* Navigation */}
 
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {NAV.map(
             (item) => (
               <button
@@ -596,10 +634,10 @@ function AdminPage() {
 
       {/* CONTENU PRINCIPAL */}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Topbar mobile */}
 
-        <header className="border-b border-white/10 bg-slate-900 lg:hidden">
+        <header className="shrink-0 border-b border-white/10 bg-slate-900 lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-blue-400" />
@@ -722,6 +760,365 @@ function AdminPage() {
 }
 
 /* ════════════════════════════════════════════════════════════
+   CONNEXION ADMINISTRATEUR
+════════════════════════════════════════════════════════════ */
+
+function AdminLogin({
+  supabase,
+}: {
+  supabase: any;
+}) {
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const [errorMessage, setErrorMessage] =
+    useState("");
+
+  const handleLogin =
+    async (
+      event: FormEvent<HTMLFormElement>,
+    ) => {
+      event.preventDefault();
+
+      const cleanEmail =
+        email
+          .trim()
+          .toLowerCase();
+
+      if (
+        !cleanEmail ||
+        !password
+      ) {
+        setErrorMessage(
+          "Veuillez renseigner votre adresse e-mail et votre mot de passe.",
+        );
+
+        return;
+      }
+
+      try {
+        setSubmitting(
+          true,
+        );
+
+        setErrorMessage(
+          "",
+        );
+
+        /*
+         * 1. Authentification Supabase.
+         */
+        const {
+          data,
+          error,
+        } =
+          await supabase.auth.signInWithPassword({
+            email:
+              cleanEmail,
+            password,
+          });
+
+        if (
+          error
+        ) {
+          console.error(
+            "[Admin Login] Erreur de connexion :",
+            error,
+          );
+
+          const message =
+            error.message ===
+              "Invalid login credentials"
+              ? "Adresse e-mail ou mot de passe incorrect."
+              : error.message;
+
+          setErrorMessage(
+            message,
+          );
+
+          return;
+        }
+
+        if (
+          !data?.user
+        ) {
+          setErrorMessage(
+            "Impossible de récupérer le compte utilisateur après la connexion.",
+          );
+
+          return;
+        }
+
+        /*
+         * 2. Vérification du rôle administrateur.
+         */
+        const access =
+          await getAdminAccess(
+            supabase,
+            data.user.id,
+          );
+
+        if (
+          !access.isAdmin
+        ) {
+          /*
+           * Le compte est valide mais n'est pas admin :
+           * on ferme immédiatement sa session.
+           */
+          await supabase.auth.signOut();
+
+          setErrorMessage(
+            access.error ||
+              "Ce compte ne possède pas les droits administrateur.",
+          );
+
+          return;
+        }
+
+        /*
+         * 3. Connexion admin validée.
+         */
+        toast.success(
+          "Connexion administrateur réussie.",
+        );
+
+        /*
+         * Recharge complète afin que le SupabaseProvider
+         * récupère immédiatement la nouvelle session.
+         */
+        window.location.replace(
+          "/admin",
+        );
+      } catch (error) {
+        console.error(
+          "[Admin Login] Erreur inattendue :",
+          error,
+        );
+
+        setErrorMessage(
+          "Une erreur est survenue pendant la connexion. Veuillez réessayer.",
+        );
+      } finally {
+        setSubmitting(
+          false,
+        );
+      }
+    };
+
+  return (
+    /*
+     * fixed + z-[9999] permet à /admin de recouvrir complètement
+     * le header/navigation du site public même si celui-ci est rendu
+     * par un layout parent.
+     */
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950">
+      <div className="flex min-h-full items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+
+          <div className="mb-8 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 shadow-xl shadow-blue-950/40">
+              <Shield className="h-8 w-8 text-white" />
+            </div>
+
+            <h1 className="mt-5 text-3xl font-black text-white">
+              Administration Kafoo
+            </h1>
+
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Connectez-vous avec votre compte administrateur pour accéder au tableau de bord.
+            </p>
+          </div>
+
+          {/* Formulaire */}
+
+          <div className="rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl sm:p-8">
+            <form
+              onSubmit={
+                handleLogin
+              }
+              className="space-y-5"
+            >
+              {/* Email */}
+
+              <div>
+                <label
+                  htmlFor="admin-email"
+                  className="mb-2 block text-sm font-bold text-slate-300"
+                >
+                  Adresse e-mail
+                </label>
+
+                <Input
+                  id="admin-email"
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  value={
+                    email
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setEmail(
+                      event
+                        .target
+                        .value,
+                    )
+                  }
+                  placeholder="admin@kafoo.com"
+                  disabled={
+                    submitting
+                  }
+                  required
+                  className="h-12 rounded-xl border-white/10 bg-slate-800 px-4 text-white placeholder:text-slate-500 focus:border-blue-500"
+                />
+              </div>
+
+              {/* Mot de passe */}
+
+              <div>
+                <label
+                  htmlFor="admin-password"
+                  className="mb-2 block text-sm font-bold text-slate-300"
+                >
+                  Mot de passe
+                </label>
+
+                <div className="relative">
+                  <Input
+                    id="admin-password"
+                    type={
+                      showPassword
+                        ? "text"
+                        : "password"
+                    }
+                    autoComplete="current-password"
+                    value={
+                      password
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setPassword(
+                        event
+                          .target
+                          .value,
+                      )
+                    }
+                    placeholder="Votre mot de passe"
+                    disabled={
+                      submitting
+                    }
+                    required
+                    className="h-12 rounded-xl border-white/10 bg-slate-800 px-4 pr-12 text-white placeholder:text-slate-500 focus:border-blue-500"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword(
+                        (
+                          current,
+                        ) =>
+                          !current,
+                      )
+                    }
+                    title={
+                      showPassword
+                        ? "Masquer le mot de passe"
+                        : "Afficher le mot de passe"
+                    }
+                    aria-label={
+                      showPassword
+                        ? "Masquer le mot de passe"
+                        : "Afficher le mot de passe"
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Message d'erreur */}
+
+              {errorMessage && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3"
+                >
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+
+                  <p className="text-sm font-medium leading-5 text-red-300">
+                    {
+                      errorMessage
+                    }
+                  </p>
+                </div>
+              )}
+
+              {/* Bouton connexion */}
+
+              <Button
+                type="submit"
+                disabled={
+                  submitting
+                }
+                className="h-12 w-full rounded-xl bg-blue-600 text-sm font-black text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting
+                  ? "Connexion en cours..."
+                  : "Se connecter"}
+              </Button>
+            </form>
+
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <div className="flex items-center justify-center gap-2 text-center text-xs text-slate-500">
+                <Shield className="h-3.5 w-3.5 shrink-0" />
+
+                <span>
+                  Accès strictement réservé aux administrateurs autorisés
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Retour au site */}
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() =>
+                window.location.replace(
+                  "/",
+                )
+              }
+              className="text-sm font-semibold text-slate-400 transition hover:text-white"
+            >
+              ← Retour au site Kafoo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
    ACCÈS REFUSÉ
 ════════════════════════════════════════════════════════════ */
 
@@ -729,35 +1126,51 @@ function AdminAccessDenied({
   title,
   message,
   onBack,
+  onLogout,
 }: {
   title: string;
   message: string;
   onBack: () => void;
+  onLogout?: () => void | Promise<void>;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-5">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-7 text-center shadow-2xl">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10">
-          <Shield className="h-7 w-7 text-red-400" />
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950">
+      <div className="flex min-h-full items-center justify-center p-5">
+        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-7 text-center shadow-2xl">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10">
+            <Shield className="h-7 w-7 text-red-400" />
+          </div>
+
+          <h1 className="mt-5 text-2xl font-black text-white">
+            {title}
+          </h1>
+
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            {message}
+          </p>
+
+          {onLogout && (
+            <Button
+              type="button"
+              onClick={() =>
+                void onLogout()
+              }
+              className="mt-6 w-full rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700"
+            >
+              Se déconnecter et changer de compte
+            </Button>
+          )}
+
+          <button
+            type="button"
+            onClick={
+              onBack
+            }
+            className={`${onLogout ? "mt-3" : "mt-6"} w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-slate-700 hover:text-white`}
+          >
+            Retour au site
+          </button>
         </div>
-
-        <h1 className="mt-5 text-2xl font-black text-white">
-          {title}
-        </h1>
-
-        <p className="mt-3 text-sm leading-6 text-slate-400">
-          {message}
-        </p>
-
-        <Button
-          type="button"
-          onClick={
-            onBack
-          }
-          className="mt-6 w-full rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700"
-        >
-          Retour au site
-        </Button>
       </div>
     </div>
   );
