@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { HelpCircle } from "lucide-react";
 
 import { useSupabase } from "@/integrations/supabase/provider";
-import { loadPublicFaqs } from "@/integrations/cms/public-cms";
+import { loadPublicFaqs } from "@/integrations/supabase/cms/public-cms";
 
 export const Route = createFileRoute("/faq")({
   component: FaqPage,
