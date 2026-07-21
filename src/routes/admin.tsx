@@ -1,20 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   Activity,
   AlertTriangle,
-  BarChart3,
   Bell,
-  BookOpen,
   Building2,
   CheckCircle,
   CircleDollarSign,
+  Edit3,
   Eye,
   FileText,
   Globe,
@@ -22,21 +16,29 @@ import {
   Home,
   Image as ImageIcon,
   LayoutDashboard,
+  Link2,
+  ListTree,
   Lock,
   LogOut,
   MapPin,
   Megaphone,
+  Menu,
   Newspaper,
   Package,
+  Plus,
+  RefreshCw,
+  Save,
   Search,
   Settings,
   Shield,
+  Star,
   Tags,
   Trash2,
   TrendingUp,
-  UserCheck,
+  Upload,
   UserCog,
   Users,
+  X,
   XCircle,
 } from "lucide-react";
 
@@ -44,10 +46,6 @@ import { useSupabase } from "@/integrations/supabase/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-
-/* ════════════════════════════════════════════════════════════
-   ROUTE /admin
-════════════════════════════════════════════════════════════ */
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -59,9 +57,83 @@ export const Route = createFileRoute("/admin")({
   }),
 });
 
-/* ════════════════════════════════════════════════════════════
-   TYPES
-════════════════════════════════════════════════════════════ */
+type Tab =
+  | "dashboard"
+  | "listings"
+  | "users"
+  | "shops"
+  | "reports"
+  | "categories"
+  | "locations"
+  | "media"
+  | "homepage"
+  | "pages"
+  | "sections"
+  | "menus"
+  | "banners"
+  | "faq"
+  | "testimonials"
+  | "blog"
+  | "sponsored"
+  | "ads"
+  | "notifications"
+  | "seo"
+  | "redirects"
+  | "settings"
+  | "admins"
+  | "roles"
+  | "audit";
+
+type NavItem = {
+  id: Tab;
+  label: string;
+  icon: ReactNode;
+  color: string;
+};
+
+type NavSection = {
+  label: string;
+  items: NavItem[];
+};
+
+type FieldType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "boolean"
+  | "select"
+  | "datetime"
+  | "json"
+  | "tags";
+
+type FieldConfig = {
+  key: string;
+  label: string;
+  type?: FieldType;
+  required?: boolean;
+  placeholder?: string;
+  options?: Array<{ label: string; value: string }>;
+  defaultValue?: unknown;
+  list?: boolean;
+};
+
+type CrudConfig = {
+  table: string;
+  title: string;
+  description: string;
+  singular: string;
+  fields: FieldConfig[];
+  orderBy?: string;
+  ascending?: boolean;
+  select?: string;
+  userColumns?: {
+    createdBy?: string;
+    updatedBy?: string;
+  };
+  transformBeforeSave?: (
+    payload: Record<string, unknown>,
+  ) => Record<string, unknown>;
+};
 
 type AdminListing = {
   id: string;
@@ -72,6 +144,9 @@ type AdminListing = {
   price: number;
   currency: string;
   user_id: string;
+  is_featured?: boolean;
+  is_sponsored?: boolean;
+  sponsored_until?: string | null;
   region?: { name: string } | null;
   city?: { name: string } | null;
 };
@@ -83,7 +158,8 @@ type AdminUser = {
   phone: string | null;
   created_at: string;
   is_admin: boolean;
-  email?: string;
+  is_suspended?: boolean;
+  admin_label?: string | null;
 };
 
 type AdminReport = {
@@ -103,104 +179,50 @@ type AdminCategory = {
   sort_order: number;
 };
 
-type LocationRow = {
-  id: string;
-  name: string;
-  slug?: string | null;
-};
-
-type Tab =
-  | "dashboard"
-  | "listings"
-  | "users"
-  | "shops"
-  | "reports"
-  | "categories"
-  | "locations"
-  | "media"
-  | "homepage"
-  | "pages"
-  | "banners"
-  | "faq"
-  | "blog"
-  | "sponsored"
-  | "ads"
-  | "notifications"
-  | "seo"
-  | "settings"
-  | "admins"
-  | "roles"
-  | "audit";
-
-type NavItem = {
-  id: Tab;
-  label: string;
-  icon: ReactNode;
-  color: string;
-};
-
-type NavSection = {
-  label: string;
-  items: NavItem[];
-};
-
-/* ════════════════════════════════════════════════════════════
-   STATUTS
-════════════════════════════════════════════════════════════ */
-
-const STATUS_CFG: Record<
-  string,
-  { label: string; color: string; bg: string }
-> = {
-  active: {
-    label: "Publié",
-    color: "text-emerald-700",
-    bg: "bg-emerald-100",
-  },
-  published: {
-    label: "Publié",
-    color: "text-emerald-700",
-    bg: "bg-emerald-100",
-  },
-  pending: {
-    label: "En attente",
-    color: "text-yellow-700",
-    bg: "bg-yellow-100",
-  },
-  rejected: {
-    label: "Rejeté",
-    color: "text-red-700",
-    bg: "bg-red-100",
-  },
-  suspended: {
-    label: "Suspendu",
-    color: "text-orange-700",
-    bg: "bg-orange-100",
-  },
-  sold: {
-    label: "Vendu",
-    color: "text-slate-600",
-    bg: "bg-slate-100",
-  },
-  open: {
-    label: "Ouvert",
-    color: "text-red-700",
-    bg: "bg-red-100",
-  },
-  resolved: {
-    label: "Résolu",
-    color: "text-emerald-700",
-    bg: "bg-emerald-100",
-  },
-};
+const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
+  {
+    active: { label: "Actif", color: "text-emerald-700", bg: "bg-emerald-100" },
+    published: {
+      label: "Publié",
+      color: "text-emerald-700",
+      bg: "bg-emerald-100",
+    },
+    pending: {
+      label: "En attente",
+      color: "text-yellow-700",
+      bg: "bg-yellow-100",
+    },
+    draft: { label: "Brouillon", color: "text-slate-600", bg: "bg-slate-100" },
+    rejected: { label: "Rejeté", color: "text-red-700", bg: "bg-red-100" },
+    suspended: {
+      label: "Suspendu",
+      color: "text-orange-700",
+      bg: "bg-orange-100",
+    },
+    paused: {
+      label: "En pause",
+      color: "text-orange-700",
+      bg: "bg-orange-100",
+    },
+    archived: { label: "Archivé", color: "text-slate-600", bg: "bg-slate-100" },
+    sold: { label: "Vendu", color: "text-slate-600", bg: "bg-slate-100" },
+    open: { label: "Ouvert", color: "text-red-700", bg: "bg-red-100" },
+    resolved: {
+      label: "Résolu",
+      color: "text-emerald-700",
+      bg: "bg-emerald-100",
+    },
+    sent: { label: "Envoyé", color: "text-emerald-700", bg: "bg-emerald-100" },
+    scheduled: { label: "Planifié", color: "text-blue-700", bg: "bg-blue-100" },
+    failed: { label: "Échec", color: "text-red-700", bg: "bg-red-100" },
+  };
 
 function Badge({ status }: { status: string }) {
-  const cfg =
-    STATUS_CFG[status] ?? {
-      label: status,
-      color: "text-slate-600",
-      bg: "bg-slate-100",
-    };
+  const cfg = STATUS_CFG[status] ?? {
+    label: status,
+    color: "text-slate-600",
+    bg: "bg-slate-100",
+  };
 
   return (
     <span
@@ -210,10 +232,6 @@ function Badge({ status }: { status: string }) {
     </span>
   );
 }
-
-/* ════════════════════════════════════════════════════════════
-   NAVIGATION ADMIN
-════════════════════════════════════════════════════════════ */
 
 const NAV_SECTIONS: NavSection[] = [
   {
@@ -295,6 +313,18 @@ const NAV_SECTIONS: NavSection[] = [
         color: "text-indigo-400",
       },
       {
+        id: "sections",
+        label: "Sections",
+        icon: <ListTree className="h-4 w-4" />,
+        color: "text-teal-400",
+      },
+      {
+        id: "menus",
+        label: "Menus",
+        icon: <Menu className="h-4 w-4" />,
+        color: "text-slate-300",
+      },
+      {
         id: "banners",
         label: "Bannières",
         icon: <Megaphone className="h-4 w-4" />,
@@ -305,6 +335,12 @@ const NAV_SECTIONS: NavSection[] = [
         label: "FAQ",
         icon: <HelpCircle className="h-4 w-4" />,
         color: "text-amber-400",
+      },
+      {
+        id: "testimonials",
+        label: "Témoignages",
+        icon: <Star className="h-4 w-4" />,
+        color: "text-yellow-400",
       },
       {
         id: "blog",
@@ -347,6 +383,12 @@ const NAV_SECTIONS: NavSection[] = [
         color: "text-cyan-400",
       },
       {
+        id: "redirects",
+        label: "Redirections",
+        icon: <Link2 className="h-4 w-4" />,
+        color: "text-indigo-400",
+      },
+      {
         id: "settings",
         label: "Paramètres",
         icon: <Settings className="h-4 w-4" />,
@@ -381,14 +423,503 @@ const NAV_SECTIONS: NavSection[] = [
 
 const ALL_NAV_ITEMS = NAV_SECTIONS.flatMap((section) => section.items);
 
-/* ════════════════════════════════════════════════════════════
-   PAGE PRINCIPALE ADMIN
-════════════════════════════════════════════════════════════ */
+const CRUD_CONFIGS: Partial<Record<Tab, CrudConfig>> = {
+  shops: {
+    table: "shops",
+    title: "Boutiques & professionnels",
+    description:
+      "Validez, mettez en avant ou suspendez les boutiques professionnelles.",
+    singular: "boutique",
+    orderBy: "created_at",
+    fields: [
+      { key: "name", label: "Nom", required: true, list: true },
+      { key: "slug", label: "Slug", required: true, list: true },
+      { key: "description", label: "Description", type: "textarea" },
+      { key: "phone", label: "Téléphone", list: true },
+      { key: "email", label: "E-mail", list: true },
+      { key: "address", label: "Adresse" },
+      { key: "logo_url", label: "URL du logo" },
+      { key: "banner_url", label: "URL de la bannière" },
+      {
+        key: "status",
+        label: "Statut",
+        type: "select",
+        defaultValue: "pending",
+        list: true,
+        options: [
+          { label: "En attente", value: "pending" },
+          { label: "Active", value: "active" },
+          { label: "Suspendue", value: "suspended" },
+          { label: "Rejetée", value: "rejected" },
+        ],
+      },
+      {
+        key: "is_verified",
+        label: "Vérifiée",
+        type: "boolean",
+        defaultValue: false,
+        list: true,
+      },
+      {
+        key: "is_featured",
+        label: "Mise en avant",
+        type: "boolean",
+        defaultValue: false,
+        list: true,
+      },
+      { key: "subscription_plan", label: "Formule" },
+      {
+        key: "subscription_ends_at",
+        label: "Fin d'abonnement",
+        type: "datetime",
+      },
+    ],
+  },
+  pages: {
+    table: "cms_pages",
+    title: "Pages CMS",
+    description: "Créez et publiez les pages éditoriales du site.",
+    singular: "page",
+    orderBy: "updated_at",
+    userColumns: { createdBy: "created_by", updatedBy: "updated_by" },
+    fields: [
+      { key: "locale", label: "Langue", defaultValue: "fr" },
+      { key: "title", label: "Titre", required: true, list: true },
+      { key: "slug", label: "Slug", required: true, list: true },
+      { key: "excerpt", label: "Résumé", type: "textarea" },
+      { key: "content", label: "Contenu", type: "textarea" },
+      { key: "cover_image_url", label: "Image de couverture" },
+      { key: "template", label: "Modèle", defaultValue: "default" },
+      {
+        key: "status",
+        label: "Statut",
+        type: "select",
+        defaultValue: "draft",
+        list: true,
+        options: [
+          { label: "Brouillon", value: "draft" },
+          { label: "Publié", value: "published" },
+          { label: "Archivé", value: "archived" },
+        ],
+      },
+      { key: "seo_title", label: "Titre SEO" },
+      { key: "seo_description", label: "Description SEO", type: "textarea" },
+      { key: "robots", label: "Robots", defaultValue: "index,follow" },
+      { key: "sort_order", label: "Ordre", type: "number", defaultValue: 0 },
+    ],
+    transformBeforeSave: (payload) => ({
+      ...payload,
+      published_at:
+        payload.status === "published" ? new Date().toISOString() : null,
+    }),
+  },
+  sections: {
+    table: "cms_sections",
+    title: "Sections CMS",
+    description: "Ajoutez des blocs dynamiques aux pages publiques.",
+    singular: "section",
+    orderBy: "sort_order",
+    ascending: true,
+    userColumns: { createdBy: "created_by", updatedBy: "updated_by" },
+    fields: [
+      { key: "locale", label: "Langue", defaultValue: "fr" },
+      {
+        key: "page_key",
+        label: "Clé de page",
+        required: true,
+        placeholder: "home ou slug-page",
+        list: true,
+      },
+      {
+        key: "section_key",
+        label: "Clé de section",
+        required: true,
+        list: true,
+      },
+      {
+        key: "section_type",
+        label: "Type",
+        defaultValue: "content",
+        list: true,
+      },
+      { key: "title", label: "Titre" },
+      { key: "subtitle", label: "Sous-titre", type: "textarea" },
+      { key: "body", label: "Contenu", type: "textarea" },
+      { key: "image_url", label: "URL image" },
+      { key: "cta_label", label: "Texte du bouton" },
+      { key: "cta_url", label: "Lien du bouton" },
+      { key: "content", label: "Données JSON", type: "json", defaultValue: {} },
+      {
+        key: "sort_order",
+        label: "Ordre",
+        type: "number",
+        defaultValue: 0,
+        list: true,
+      },
+      {
+        key: "is_active",
+        label: "Active",
+        type: "boolean",
+        defaultValue: true,
+        list: true,
+      },
+    ],
+  },
+  banners: {
+    table: "banners",
+    title: "Bannières",
+    description: "Gérez les campagnes visuelles affichées sur le site.",
+    singular: "bannière",
+    orderBy: "sort_order",
+    ascending: true,
+    userColumns: { createdBy: "created_by", updatedBy: "updated_by" },
+    fields: [
+      { key: "locale", label: "Langue", defaultValue: "fr" },
+      { key: "title", label: "Titre", required: true, list: true },
+      { key: "subtitle", label: "Sous-titre", type: "textarea" },
+      { key: "image_url", label: "Image bureau", list: true },
+      { key: "mobile_image_url", label: "Image mobile" },
+      { key: "cta_label", label: "Texte du bouton" },
+      { key: "cta_url", label: "Lien du bouton" },
+      {
+        key: "placement",
+        label: "Emplacement",
+        defaultValue: "homepage",
+        list: true,
+      },
+      {
+        key: "status",
+        label: "Statut",
+        type: "select",
+        defaultValue: "draft",
+        list: true,
+        options: [
+          { label: "Brouillon", value: "draft" },
+          { label: "Active", value: "active" },
+          { label: "En pause", value: "paused" },
+          { label: "Archivée", value: "archived" },
+        ],
+      },
+      { key: "starts_at", label: "Début", type: "datetime" },
+      { key: "ends_at", label: "Fin", type: "datetime" },
+      { key: "sort_order", label: "Ordre", type: "number", defaultValue: 0 },
+      {
+        key: "audience",
+        label: "Audience JSON",
+        type: "json",
+        defaultValue: { type: "all" },
+      },
+    ],
+  },
+  faq: {
+    table: "faqs",
+    title: "FAQ",
+    description: "Gérez les questions fréquentes du site.",
+    singular: "question",
+    orderBy: "sort_order",
+    ascending: true,
+    userColumns: { createdBy: "created_by", updatedBy: "updated_by" },
+    fields: [
+      { key: "locale", label: "Langue", defaultValue: "fr" },
+      { key: "category", label: "Catégorie", list: true },
+      {
+        key: "question",
+        label: "Question",
+        required: true,
+        type: "textarea",
+        list: true,
+      },
+      { key: "answer", label: "Réponse", required: true, type: "textarea" },
+      { key: "sort_order", label: "Ordre", type: "number", defaultValue: 0 },
+      {
+        key: "is_active",
+        label: "Active",
+        type: "boolean",
+        defaultValue: true,
+        list: true,
+      },
+    ],
+  },
+  testimonials: {
+    table: "testimonials",
+    title: "Témoignages",
+    description: "Gérez les avis affichés sur la plateforme.",
+    singular: "témoignage",
+    orderBy: "sort_order",
+    ascending: true,
+    userColumns: { createdBy: "created_by", updatedBy: "updated_by" },
+    fields: [
+      { key: "locale", label: "Langue", defaultValue: "fr" },
+      { key: "author_name", label: "Auteur", required: true, list: true },
+      { key: "author_role", label: "Fonction" },
+      { key: "author_avatar_url", label: "Avatar" },
+      {
+        key: "content",
+        label: "Témoignage",
+        required: true,
+        type: "textarea",
+        list: true,
+      },
+      {
+        key: "rating",
+        label: "Note",
+        type: "number",
+        defaultValue: 5,
+        list: true,
+      },
+      { key: "sort_order", label: "Ordre", type: "number", defaultValue: 0 },
+      {
+        key: "is_active",
+        label: "Actif",
+        type: "boolean",
+        defaultValue: true,
+        list: true,
+      },
+    ],
+  },
+  blog: {
+    table: "posts",
+    title: "Blog & actualités",
+    description: "Créez, planifiez et publiez les articles Kafoo.",
+    singular: "article",
+    orderBy: "updated_at",
+    fields: [
+      { key: "locale", label: "Langue", defaultValue: "fr" },
+      { key: "title", label: "Titre", required: true, list: true },
+      { key: "slug", label: "Slug", required: true, list: true },
+      { key: "excerpt", label: "Résumé", type: "textarea" },
+      { key: "content", label: "Contenu", type: "textarea" },
+      { key: "cover_image_url", label: "Image de couverture" },
+      { key: "category", label: "Catégorie", list: true },
+      {
+        key: "tags",
+        label: "Tags séparés par des virgules",
+        type: "tags",
+        defaultValue: [],
+      },
+      {
+        key: "status",
+        label: "Statut",
+        type: "select",
+        defaultValue: "draft",
+        list: true,
+        options: [
+          { label: "Brouillon", value: "draft" },
+          { label: "Publié", value: "published" },
+          { label: "Archivé", value: "archived" },
+        ],
+      },
+      {
+        key: "is_featured",
+        label: "À la une",
+        type: "boolean",
+        defaultValue: false,
+        list: true,
+      },
+      { key: "seo_title", label: "Titre SEO" },
+      { key: "seo_description", label: "Description SEO", type: "textarea" },
+    ],
+    transformBeforeSave: (payload) => ({
+      ...payload,
+      published_at:
+        payload.status === "published" ? new Date().toISOString() : null,
+    }),
+  },
+  ads: {
+    table: "ads",
+    title: "Publicités",
+    description: "Administrez les campagnes et emplacements publicitaires.",
+    singular: "publicité",
+    orderBy: "created_at",
+    userColumns: { createdBy: "created_by", updatedBy: "updated_by" },
+    fields: [
+      { key: "name", label: "Nom de campagne", required: true, list: true },
+      { key: "advertiser_name", label: "Annonceur", list: true },
+      { key: "placement", label: "Emplacement", required: true, list: true },
+      { key: "image_url", label: "Image" },
+      { key: "target_url", label: "Lien cible" },
+      {
+        key: "status",
+        label: "Statut",
+        type: "select",
+        defaultValue: "draft",
+        list: true,
+        options: [
+          { label: "Brouillon", value: "draft" },
+          { label: "Active", value: "active" },
+          { label: "En pause", value: "paused" },
+          { label: "Terminée", value: "completed" },
+          { label: "Archivée", value: "archived" },
+        ],
+      },
+      { key: "starts_at", label: "Début", type: "datetime" },
+      { key: "ends_at", label: "Fin", type: "datetime" },
+      {
+        key: "audience",
+        label: "Audience JSON",
+        type: "json",
+        defaultValue: { type: "all" },
+      },
+      { key: "sort_order", label: "Ordre", type: "number", defaultValue: 0 },
+    ],
+  },
+  notifications: {
+    table: "notifications",
+    title: "Notifications",
+    description:
+      "Créez des notifications in-app et préparez les campagnes multicanales.",
+    singular: "notification",
+    orderBy: "created_at",
+    userColumns: { createdBy: "created_by" },
+    fields: [
+      { key: "title", label: "Titre", required: true, list: true },
+      { key: "body", label: "Message", required: true, type: "textarea" },
+      { key: "notification_type", label: "Type", defaultValue: "info" },
+      {
+        key: "channel",
+        label: "Canal",
+        type: "select",
+        defaultValue: "in_app",
+        list: true,
+        options: [
+          { label: "Dans l'application", value: "in_app" },
+          { label: "E-mail", value: "email" },
+          { label: "SMS", value: "sms" },
+          { label: "WhatsApp", value: "whatsapp" },
+          { label: "Push", value: "push" },
+        ],
+      },
+      {
+        key: "target_type",
+        label: "Destinataires",
+        type: "select",
+        defaultValue: "all",
+        list: true,
+        options: [
+          { label: "Tous", value: "all" },
+          { label: "Utilisateur", value: "user" },
+          { label: "Administrateurs", value: "admins" },
+          { label: "Professionnels", value: "professionals" },
+          { label: "Segment", value: "segment" },
+        ],
+      },
+      { key: "target_user_id", label: "UUID utilisateur" },
+      {
+        key: "target_filter",
+        label: "Filtre JSON",
+        type: "json",
+        defaultValue: {},
+      },
+      { key: "data", label: "Données JSON", type: "json", defaultValue: {} },
+      {
+        key: "status",
+        label: "Statut",
+        type: "select",
+        defaultValue: "draft",
+        list: true,
+        options: [
+          { label: "Brouillon", value: "draft" },
+          { label: "Planifiée", value: "scheduled" },
+          { label: "Envoyée", value: "sent" },
+          { label: "Annulée", value: "cancelled" },
+          { label: "Échec", value: "failed" },
+        ],
+      },
+      { key: "scheduled_at", label: "Date planifiée", type: "datetime" },
+    ],
+    transformBeforeSave: (payload) => ({
+      ...payload,
+      sent_at: payload.status === "sent" ? new Date().toISOString() : null,
+    }),
+  },
+  seo: {
+    table: "seo_metadata",
+    title: "Référencement SEO",
+    description: "Gérez les métadonnées de chaque route publique.",
+    singular: "configuration SEO",
+    orderBy: "route",
+    ascending: true,
+    userColumns: { updatedBy: "updated_by" },
+    fields: [
+      { key: "locale", label: "Langue", defaultValue: "fr" },
+      {
+        key: "route",
+        label: "Route",
+        required: true,
+        placeholder: "/",
+        list: true,
+      },
+      { key: "title", label: "Titre", list: true },
+      { key: "description", label: "Description", type: "textarea" },
+      { key: "canonical_url", label: "URL canonique" },
+      { key: "og_title", label: "Titre Open Graph" },
+      {
+        key: "og_description",
+        label: "Description Open Graph",
+        type: "textarea",
+      },
+      { key: "og_image_url", label: "Image Open Graph" },
+      {
+        key: "twitter_card",
+        label: "Twitter Card",
+        defaultValue: "summary_large_image",
+      },
+      {
+        key: "robots",
+        label: "Robots",
+        defaultValue: "index,follow",
+        list: true,
+      },
+      {
+        key: "schema_json",
+        label: "Schema JSON-LD",
+        type: "json",
+        defaultValue: {},
+      },
+    ],
+  },
+  redirects: {
+    table: "seo_redirects",
+    title: "Redirections SEO",
+    description: "Gérez les changements d'URL et redirections permanentes.",
+    singular: "redirection",
+    orderBy: "created_at",
+    userColumns: { createdBy: "created_by" },
+    fields: [
+      { key: "source_path", label: "Ancienne URL", required: true, list: true },
+      {
+        key: "destination_path",
+        label: "Nouvelle URL",
+        required: true,
+        list: true,
+      },
+      {
+        key: "status_code",
+        label: "Code HTTP",
+        type: "select",
+        defaultValue: "301",
+        list: true,
+        options: [
+          { label: "301", value: "301" },
+          { label: "302", value: "302" },
+          { label: "307", value: "307" },
+          { label: "308", value: "308" },
+        ],
+      },
+      {
+        key: "is_active",
+        label: "Active",
+        type: "boolean",
+        defaultValue: true,
+        list: true,
+      },
+    ],
+  },
+};
 
 function AdminPage() {
   const { supabase, user, isAdmin, loading } = useSupabase();
   const navigate = useNavigate();
-
   const [tab, setTab] = useState<Tab>("dashboard");
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [authorized, setAuthorized] = useState(false);
@@ -419,55 +950,30 @@ function AdminPage() {
       }
 
       try {
-        let profile: { is_admin?: boolean } | null = null;
-        let profileError: any = null;
-
-        const firstCheck = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        profile = firstCheck.data;
-        profileError = firstCheck.error;
-
-        if (profileError) {
-          const fallbackCheck = await supabase
-            .from("profiles")
-            .select("is_admin")
-            .eq("id", user.id)
-            .maybeSingle();
-
-          profile = fallbackCheck.data;
-          profileError = fallbackCheck.error;
-        }
+        const { data, error } = await supabase.rpc("is_admin");
 
         if (cancelled) return;
 
-        if (profileError) {
-          console.error("[Admin] Vérification du rôle impossible :", profileError);
+        if (error) {
           setAuthorized(false);
           setAccessError(
-            `Impossible de vérifier vos droits administrateur : ${profileError.message}`,
+            `Impossible de vérifier vos droits : ${error.message}`,
           );
           return;
         }
 
-        if (!profile?.is_admin) {
-          setAuthorized(false);
-          setAccessError("Votre compte ne possède pas les droits administrateur.");
-          return;
+        setAuthorized(Boolean(data));
+        if (!data) {
+          setAccessError(
+            "Votre compte ne possède pas les droits administrateur.",
+          );
         }
-
-        setAuthorized(true);
-        setAccessError("");
       } catch (error) {
         if (cancelled) return;
-
-        console.error("[Admin] Erreur de vérification :", error);
+        console.error("[Admin] Vérification impossible :", error);
         setAuthorized(false);
         setAccessError(
-          "Une erreur est survenue pendant la vérification de vos droits.",
+          "Une erreur est survenue pendant la vérification des droits.",
         );
       } finally {
         if (!cancelled) setCheckingAccess(false);
@@ -506,11 +1012,7 @@ function AdminPage() {
     return (
       <AdminFullscreen>
         <AdminAccessDenied
-          title="Accès refusé"
-          message={
-            accessError ||
-            "Vous ne disposez pas des droits nécessaires pour accéder à l'administration."
-          }
+          message={accessError}
           onBack={() => navigate({ to: "/", replace: true })}
           onLogout={async () => {
             await supabase.auth.signOut();
@@ -521,24 +1023,18 @@ function AdminPage() {
     );
   }
 
-  const activeItem =
-    ALL_NAV_ITEMS.find((item) => item.id === tab) ?? ALL_NAV_ITEMS[0];
+  const activeItem = ALL_NAV_ITEMS.find((item) => item.id === tab);
 
   const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-
-      window.location.href = "/admin";
-    } catch (error) {
-      console.error("[Admin] Erreur déconnexion :", error);
-      toast.error("Impossible de vous déconnecter.");
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error(error.message);
+      return;
     }
+    window.location.href = "/admin";
   };
+
+  const crudConfig = CRUD_CONFIGS[tab];
 
   return (
     <AdminFullscreen>
@@ -548,7 +1044,6 @@ function AdminPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-fuchsia-500">
               <Shield className="h-5 w-5 text-white" />
             </div>
-
             <div>
               <p className="font-black text-white">Kafoo</p>
               <p className="text-[10px] uppercase tracking-[0.22em] text-slate-400">
@@ -563,7 +1058,6 @@ function AdminPage() {
                 <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
                   {section.label}
                 </p>
-
                 <div className="space-y-1">
                   {section.items.map((item) => (
                     <button
@@ -576,7 +1070,9 @@ function AdminPage() {
                           : "text-slate-400 hover:bg-white/5 hover:text-white"
                       }`}
                     >
-                      <span className={tab === item.id ? "text-white" : item.color}>
+                      <span
+                        className={tab === item.id ? "text-white" : item.color}
+                      >
                         {item.icon}
                       </span>
                       <span className="truncate">{item.label}</span>
@@ -592,19 +1088,19 @@ function AdminPage() {
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-fuchsia-500 text-xs font-black">
                 {user.email?.[0]?.toUpperCase() ?? "A"}
               </div>
-
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-white">{user.email}</p>
+                <p className="truncate text-xs font-bold text-white">
+                  {user.email}
+                </p>
                 <p className="text-[10px] font-semibold text-emerald-400">
                   Administrateur
                 </p>
               </div>
-
               <button
                 type="button"
                 onClick={() => void handleLogout()}
+                className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"
                 title="Se déconnecter"
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
               >
                 <LogOut className="h-4 w-4" />
               </button>
@@ -619,20 +1115,19 @@ function AdminPage() {
                 <Shield className="h-5 w-5 text-blue-400" />
                 <div>
                   <p className="text-sm font-black text-white">Admin Kafoo</p>
-                  <p className="text-[10px] text-slate-500">{activeItem.label}</p>
+                  <p className="text-[10px] text-slate-500">
+                    {activeItem?.label}
+                  </p>
                 </div>
               </div>
-
               <button
                 type="button"
                 onClick={() => void handleLogout()}
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
-                title="Se déconnecter"
+                className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"
               >
                 <LogOut className="h-4 w-4" />
               </button>
             </div>
-
             <div className="flex overflow-x-auto border-t border-white/5 px-2 py-2">
               {ALL_NAV_ITEMS.map((item) => (
                 <button
@@ -640,10 +1135,10 @@ function AdminPage() {
                   key={item.id}
                   onClick={() => setTab(item.id)}
                   title={item.label}
-                  className={`mx-0.5 shrink-0 rounded-lg p-2.5 transition ${
+                  className={`mx-0.5 shrink-0 rounded-lg p-2.5 ${
                     tab === item.id
                       ? "bg-white/10 text-white"
-                      : "text-slate-400 hover:bg-white/5"
+                      : "text-slate-400"
                   }`}
                 >
                   {item.icon}
@@ -660,181 +1155,35 @@ function AdminPage() {
             {tab === "users" && (
               <TabUsers supabase={supabase} currentUserId={user.id} />
             )}
-            {tab === "shops" && (
-              <ModulePlaceholder
-                title="Boutiques & professionnels"
-                description="Gérez les boutiques, vendeurs professionnels, statuts de validation, abonnements et mises en avant."
-                icon={<Building2 className="h-6 w-6" />}
-                features={[
-                  "Valider ou suspendre une boutique",
-                  "Voir le propriétaire et ses annonces",
-                  "Gérer les offres professionnelles",
-                  "Suivre les performances des boutiques",
-                ]}
-                tables={["shops"]}
-              />
-            )}
             {tab === "reports" && <TabReports supabase={supabase} />}
             {tab === "categories" && <TabCategories supabase={supabase} />}
             {tab === "locations" && <TabLocations supabase={supabase} />}
             {tab === "media" && (
-              <ModulePlaceholder
-                title="Médiathèque"
-                description="Centralisez les images du CMS, bannières, logos et visuels éditoriaux."
-                icon={<ImageIcon className="h-6 w-6" />}
-                features={[
-                  "Téléversement d'images",
-                  "Classement par dossiers",
-                  "Recherche et réutilisation",
-                  "Suppression et archivage",
-                ]}
-                tables={["media"]}
-              />
+              <TabMedia supabase={supabase} currentUserId={user.id} />
             )}
             {tab === "homepage" && (
-              <TabHomepageCms />
+              <TabHomepageCms supabase={supabase} currentUserId={user.id} />
             )}
-            {tab === "pages" && (
-              <ModulePlaceholder
-                title="Pages CMS"
-                description="Créez et modifiez les pages éditoriales de Kafoo sans toucher au code."
-                icon={<FileText className="h-6 w-6" />}
-                features={[
-                  "À propos",
-                  "Conditions générales",
-                  "Politique de confidentialité",
-                  "Pages personnalisées",
-                ]}
-                tables={["cms_pages"]}
+            {tab === "menus" && <TabMenus supabase={supabase} />}
+            {tab === "sponsored" && <TabSponsored supabase={supabase} />}
+            {tab === "settings" && (
+              <TabSettings
+                supabase={supabase}
+                currentUserId={user.id}
+                user={user}
               />
             )}
-            {tab === "banners" && (
-              <ModulePlaceholder
-                title="Bannières"
-                description="Gérez les visuels promotionnels et les campagnes affichées sur le site."
-                icon={<Megaphone className="h-6 w-6" />}
-                features={[
-                  "Bannière d'accueil",
-                  "Bannières par catégorie",
-                  "Périodes d'affichage",
-                  "Lien d'action et ciblage",
-                ]}
-                tables={["banners"]}
-              />
-            )}
-            {tab === "faq" && (
-              <ModulePlaceholder
-                title="FAQ"
-                description="Administrez les questions fréquentes et leur ordre d'affichage."
-                icon={<HelpCircle className="h-6 w-6" />}
-                features={[
-                  "Créer une question",
-                  "Modifier les réponses",
-                  "Activer ou désactiver",
-                  "Réordonner les éléments",
-                ]}
-                tables={["faqs"]}
-              />
-            )}
-            {tab === "blog" && (
-              <ModulePlaceholder
-                title="Blog & actualités"
-                description="Publiez des articles, annonces officielles et contenus éditoriaux."
-                icon={<Newspaper className="h-6 w-6" />}
-                features={[
-                  "Brouillon et publication",
-                  "Image de couverture",
-                  "SEO par article",
-                  "Catégories éditoriales",
-                ]}
-                tables={["posts"]}
-              />
-            )}
-            {tab === "sponsored" && (
-              <ModulePlaceholder
-                title="Annonces sponsorisées"
-                description="Pilotez les annonces mises en avant et leur durée de visibilité."
-                icon={<TrendingUp className="h-6 w-6" />}
-                features={[
-                  "Mise en avant manuelle",
-                  "Date de début et de fin",
-                  "Priorité d'affichage",
-                  "Historique des campagnes",
-                ]}
-                tables={["listings"]}
-              />
-            )}
-            {tab === "ads" && (
-              <ModulePlaceholder
-                title="Publicités"
-                description="Gérez les emplacements publicitaires et les campagnes partenaires."
-                icon={<CircleDollarSign className="h-6 w-6" />}
-                features={[
-                  "Campagnes publicitaires",
-                  "Emplacements",
-                  "Périodes de diffusion",
-                  "Statistiques de clics",
-                ]}
-                tables={["ads", "banners"]}
-              />
-            )}
-            {tab === "notifications" && (
-              <ModulePlaceholder
-                title="Notifications"
-                description="Préparez et diffusez des communications aux utilisateurs de la plateforme."
-                icon={<Bell className="h-6 w-6" />}
-                features={[
-                  "Notification individuelle",
-                  "Diffusion globale",
-                  "Ciblage par type d'utilisateur",
-                  "Historique d'envoi",
-                ]}
-                tables={["notifications"]}
-              />
-            )}
-            {tab === "seo" && <TabSeo />}
-            {tab === "settings" && <TabSettings user={user} />}
             {tab === "admins" && (
-              <ModulePlaceholder
-                title="Administrateurs"
-                description="Gérez les comptes ayant accès au back-office."
-                icon={<UserCog className="h-6 w-6" />}
-                features={[
-                  "Ajouter un administrateur",
-                  "Retirer les droits administrateur",
-                  "Voir les dernières connexions",
-                  "Bloquer un accès",
-                ]}
-                tables={["profiles"]}
-              />
+              <TabAdmins supabase={supabase} currentUserId={user.id} />
             )}
-            {tab === "roles" && (
-              <ModulePlaceholder
-                title="Rôles & permissions"
-                description="Définissez précisément les droits des administrateurs et modérateurs."
-                icon={<Lock className="h-6 w-6" />}
-                features={[
-                  "Super administrateur",
-                  "Administrateur",
-                  "Modérateur",
-                  "Gestionnaire de contenu",
-                  "Support client",
-                ]}
-                tables={["roles", "permissions", "user_roles"]}
-              />
-            )}
-            {tab === "audit" && (
-              <ModulePlaceholder
-                title="Journal d'activité"
-                description="Suivez les actions sensibles effectuées dans l'administration."
-                icon={<Activity className="h-6 w-6" />}
-                features={[
-                  "Action effectuée",
-                  "Administrateur concerné",
-                  "Élément modifié",
-                  "Date et détails",
-                ]}
-                tables={["admin_logs"]}
+            {tab === "roles" && <TabRoles supabase={supabase} />}
+            {tab === "audit" && <TabAudit supabase={supabase} />}
+            {crudConfig && (
+              <GenericCrudManager
+                key={crudConfig.table}
+                supabase={supabase}
+                currentUserId={user.id}
+                config={crudConfig}
               />
             )}
           </main>
@@ -844,10 +1193,6 @@ function AdminPage() {
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   ÉCRAN PLEIN ADMIN
-════════════════════════════════════════════════════════════ */
-
 function AdminFullscreen({ children }: { children: ReactNode }) {
   return (
     <div className="fixed inset-0 z-[100] overflow-auto bg-slate-950">
@@ -856,11 +1201,7 @@ function AdminFullscreen({ children }: { children: ReactNode }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   CONNEXION ADMINISTRATEUR
-════════════════════════════════════════════════════════════ */
-
-function AdminLogin({ supabase }: { supabase: any }) {
+function AdminLogin({ supabase }: { supabase: SupabaseClient }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -869,12 +1210,9 @@ function AdminLogin({ supabase }: { supabase: any }) {
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    const cleanEmail = email.trim();
-
-    if (!cleanEmail || !password) {
+    if (!email.trim() || !password) {
       setErrorMessage(
-        "Veuillez renseigner votre adresse e-mail et votre mot de passe.",
+        "Veuillez renseigner votre e-mail et votre mot de passe.",
       );
       return;
     }
@@ -884,7 +1222,7 @@ function AdminLogin({ supabase }: { supabase: any }) {
       setErrorMessage("");
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
+        email: email.trim(),
         password,
       });
 
@@ -897,50 +1235,21 @@ function AdminLogin({ supabase }: { supabase: any }) {
         return;
       }
 
-      if (!data?.user) {
-        setErrorMessage("Impossible de récupérer le compte utilisateur.");
+      if (!data.user) {
+        setErrorMessage("Impossible de récupérer le compte.");
         return;
       }
 
-      let profile: { is_admin?: boolean } | null = null;
-      let profileError: any = null;
-
-      const firstCheck = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("user_id", data.user.id)
-        .maybeSingle();
-
-      profile = firstCheck.data;
-      profileError = firstCheck.error;
-
-      if (profileError) {
-        const fallbackCheck = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", data.user.id)
-          .maybeSingle();
-
-        profile = fallbackCheck.data;
-        profileError = fallbackCheck.error;
-      }
-
-      if (profileError) {
-        await supabase.auth.signOut();
-        setErrorMessage("Impossible de vérifier vos droits administrateur.");
-        return;
-      }
-
-      if (!profile?.is_admin) {
+      const access = await supabase.rpc("is_admin");
+      if (access.error || !access.data) {
         await supabase.auth.signOut();
         setErrorMessage("Ce compte ne possède pas les droits administrateur.");
         return;
       }
 
-      toast.success("Connexion administrateur réussie.");
       window.location.href = "/admin";
     } catch (error) {
-      console.error("[Admin Login] Erreur :", error);
+      console.error("[Admin Login]", error);
       setErrorMessage("Une erreur est survenue pendant la connexion.");
     } finally {
       setSubmitting(false);
@@ -951,155 +1260,87 @@ function AdminLogin({ supabase }: { supabase: any }) {
     <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 shadow-xl shadow-blue-900/20">
-            <Shield className="h-8 w-8 text-white" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600">
+            <Shield className="h-8 w-8" />
           </div>
-
-          <h1 className="mt-5 text-3xl font-black text-white">
-            Administration Kafoo
-          </h1>
-
+          <h1 className="mt-5 text-3xl font-black">Administration Kafoo</h1>
           <p className="mt-2 text-sm text-slate-400">
             Connectez-vous pour accéder au back-office.
           </p>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl sm:p-8">
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <label
-                htmlFor="admin-email"
-                className="mb-2 block text-sm font-bold text-slate-300"
-              >
-                Adresse e-mail
-              </label>
-
-              <Input
-                id="admin-email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="admin@kafoo.com"
-                disabled={submitting}
-                className="h-12 rounded-xl border-white/10 bg-slate-800 px-4 text-white placeholder:text-slate-500"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="admin-password"
-                className="mb-2 block text-sm font-bold text-slate-300"
-              >
-                Mot de passe
-              </label>
-
-              <div className="relative">
-                <Input
-                  id="admin-password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Votre mot de passe"
-                  disabled={submitting}
-                  className="h-12 rounded-xl border-white/10 bg-slate-800 px-4 pr-12 text-white placeholder:text-slate-500"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((current) => !current)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
-                  title={
-                    showPassword
-                      ? "Masquer le mot de passe"
-                      : "Afficher le mot de passe"
-                  }
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            {errorMessage && (
-              <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
-                <p className="text-sm font-medium text-red-300">
-                  {errorMessage}
-                </p>
-              </div>
-            )}
-
-            <Button
-              type="submit"
+        <form
+          onSubmit={handleLogin}
+          className="space-y-5 rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl sm:p-8"
+        >
+          <FormLabel label="Adresse e-mail">
+            <Input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="h-12 border-white/10 bg-slate-800 text-white"
               disabled={submitting}
-              className="h-12 w-full rounded-xl bg-blue-600 text-sm font-black text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? "Connexion en cours..." : "Se connecter"}
-            </Button>
-          </form>
+            />
+          </FormLabel>
 
-          <div className="mt-6 border-t border-white/10 pt-5">
-            <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
-              <Shield className="h-3.5 w-3.5" />
-              <span>Accès réservé aux administrateurs autorisés</span>
+          <FormLabel label="Mot de passe">
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="h-12 border-white/10 bg-slate-800 pr-12 text-white"
+                disabled={submitting}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
             </div>
-          </div>
-        </div>
+          </FormLabel>
 
-        <div className="mt-6 text-center">
-          <a
-            href="/"
-            className="text-sm font-semibold text-slate-400 transition hover:text-white"
+          {errorMessage && (
+            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
+              {errorMessage}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="h-12 w-full rounded-xl bg-blue-600 font-black hover:bg-blue-700"
           >
-            ← Retour au site Kafoo
-          </a>
-        </div>
+            {submitting ? "Connexion en cours..." : "Se connecter"}
+          </Button>
+        </form>
       </div>
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   ACCÈS REFUSÉ
-════════════════════════════════════════════════════════════ */
-
 function AdminAccessDenied({
-  title,
   message,
   onBack,
   onLogout,
 }: {
-  title: string;
   message: string;
   onBack: () => void;
   onLogout: () => void;
 }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 p-5">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-7 text-center shadow-2xl">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10">
-          <Shield className="h-7 w-7 text-red-400" />
-        </div>
-
-        <h1 className="mt-5 text-2xl font-black text-white">{title}</h1>
-
+      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-7 text-center text-white">
+        <Shield className="mx-auto h-12 w-12 text-red-400" />
+        <h1 className="mt-5 text-2xl font-black">Accès refusé</h1>
         <p className="mt-3 text-sm leading-6 text-slate-400">{message}</p>
-
         <div className="mt-6 grid gap-2">
-          <Button
-            type="button"
-            onClick={onLogout}
-            className="w-full rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700"
-          >
-            Se connecter avec un autre compte
+          <Button onClick={onLogout} className="bg-blue-600 hover:bg-blue-700">
+            Utiliser un autre compte
           </Button>
-
-          <Button
-            type="button"
-            onClick={onBack}
-            className="w-full rounded-xl bg-slate-800 font-bold text-slate-200 hover:bg-slate-700"
-          >
+          <Button onClick={onBack} className="bg-slate-800 hover:bg-slate-700">
             Retour au site
           </Button>
         </div>
@@ -1108,46 +1349,22 @@ function AdminAccessDenied({
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   TAB — DASHBOARD
-════════════════════════════════════════════════════════════ */
-
 function TabDashboard({
   supabase,
   setTab,
 }: {
-  supabase: any;
+  supabase: SupabaseClient;
   setTab: (tab: Tab) => void;
 }) {
-  const [stats, setStats] = useState({
-    users: 0,
-    listings: 0,
-    pending: 0,
-    reports: 0,
-    published: 0,
-    sold: 0,
-    categories: 0,
-  });
-
+  const [stats, setStats] = useState<Record<string, number>>({});
   const [recent, setRecent] = useState<AdminListing[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadDashboard() {
-      try {
-        setLoading(true);
-
-        const [
-          usersResult,
-          listingsResult,
-          pendingResult,
-          reportsResult,
-          publishedResult,
-          soldResult,
-          categoriesResult,
-        ] = await Promise.all([
+    void (async () => {
+      const [users, listings, pending, reports, pages, posts, media] =
+        await Promise.all([
           supabase.from("profiles").select("*", { count: "exact", head: true }),
           supabase.from("listings").select("*", { count: "exact", head: true }),
           supabase
@@ -1159,236 +1376,133 @@ function TabDashboard({
             .select("*", { count: "exact", head: true })
             .eq("status", "open"),
           supabase
-            .from("listings")
-            .select("*", { count: "exact", head: true })
-            .in("status", ["active", "published"]),
-          supabase
-            .from("listings")
-            .select("*", { count: "exact", head: true })
-            .eq("status", "sold"),
-          supabase
-            .from("categories")
+            .from("cms_pages")
             .select("*", { count: "exact", head: true }),
+          supabase.from("posts").select("*", { count: "exact", head: true }),
+          supabase.from("media").select("*", { count: "exact", head: true }),
         ]);
 
-        if (cancelled) return;
-
+      if (!cancelled) {
         setStats({
-          users: usersResult.count ?? 0,
-          listings: listingsResult.count ?? 0,
-          pending: pendingResult.count ?? 0,
-          reports: reportsResult.count ?? 0,
-          published: publishedResult.count ?? 0,
-          sold: soldResult.count ?? 0,
-          categories: categoriesResult.count ?? 0,
+          users: users.count ?? 0,
+          listings: listings.count ?? 0,
+          pending: pending.count ?? 0,
+          reports: reports.count ?? 0,
+          pages: pages.count ?? 0,
+          posts: posts.count ?? 0,
+          media: media.count ?? 0,
         });
-
-        const { data, error } = await supabase
-          .from("listings")
-          .select("id,title,slug,status,price,currency,created_at,user_id")
-          .order("created_at", { ascending: false })
-          .limit(8);
-
-        if (error) {
-          console.error("[Admin Dashboard] Erreur annonces récentes :", error);
-        }
-
-        if (!cancelled) {
-          setRecent((data ?? []) as AdminListing[]);
-        }
-      } catch (error) {
-        console.error("[Admin Dashboard] Erreur :", error);
-      } finally {
-        if (!cancelled) setLoading(false);
       }
-    }
 
-    void loadDashboard();
+      const { data } = await supabase
+        .from("listings")
+        .select("id,title,slug,status,price,currency,created_at,user_id")
+        .order("created_at", { ascending: false })
+        .limit(8);
+
+      if (!cancelled) setRecent((data ?? []) as AdminListing[]);
+    })();
 
     return () => {
       cancelled = true;
     };
   }, [supabase]);
 
-  const statCards = [
-    {
-      label: "Utilisateurs",
-      value: stats.users,
-      icon: <Users className="h-5 w-5" />,
-      from: "from-blue-600",
-      to: "to-blue-400",
-      tab: "users" as Tab,
-    },
-    {
-      label: "Total annonces",
-      value: stats.listings,
-      icon: <Package className="h-5 w-5" />,
-      from: "from-violet-600",
-      to: "to-violet-400",
-      tab: "listings" as Tab,
-    },
-    {
-      label: "En attente",
-      value: stats.pending,
-      icon: <TrendingUp className="h-5 w-5" />,
-      from: "from-yellow-600",
-      to: "to-yellow-400",
-      tab: "listings" as Tab,
-    },
-    {
-      label: "Signalements",
-      value: stats.reports,
-      icon: <AlertTriangle className="h-5 w-5" />,
-      from: "from-red-600",
-      to: "to-red-400",
-      tab: "reports" as Tab,
-    },
-    {
-      label: "Publiées",
-      value: stats.published,
-      icon: <CheckCircle className="h-5 w-5" />,
-      from: "from-emerald-600",
-      to: "to-emerald-400",
-      tab: "listings" as Tab,
-    },
-    {
-      label: "Vendues",
-      value: stats.sold,
-      icon: <BarChart3 className="h-5 w-5" />,
-      from: "from-orange-600",
-      to: "to-orange-400",
-      tab: "listings" as Tab,
-    },
-    {
-      label: "Catégories",
-      value: stats.categories,
-      icon: <Tags className="h-5 w-5" />,
-      from: "from-cyan-600",
-      to: "to-cyan-400",
-      tab: "categories" as Tab,
-    },
-  ];
-
-  const quickAccess: Array<{
-    tab: Tab;
+  const cards: Array<{
     label: string;
-    description: string;
+    value: number;
+    tab: Tab;
     icon: ReactNode;
   }> = [
     {
-      tab: "homepage",
-      label: "Modifier l'accueil",
-      description: "Titres, textes, CTA et sections.",
-      icon: <Home className="h-5 w-5" />,
+      label: "Utilisateurs",
+      value: stats.users ?? 0,
+      tab: "users",
+      icon: <Users className="h-5 w-5" />,
     },
     {
-      tab: "banners",
-      label: "Gérer les bannières",
-      description: "Campagnes et visuels promotionnels.",
-      icon: <Megaphone className="h-5 w-5" />,
+      label: "Annonces",
+      value: stats.listings ?? 0,
+      tab: "listings",
+      icon: <Package className="h-5 w-5" />,
     },
     {
-      tab: "notifications",
-      label: "Envoyer une notification",
-      description: "Communications ciblées ou globales.",
-      icon: <Bell className="h-5 w-5" />,
+      label: "En attente",
+      value: stats.pending ?? 0,
+      tab: "listings",
+      icon: <TrendingUp className="h-5 w-5" />,
     },
     {
-      tab: "seo",
-      label: "Configurer le SEO",
-      description: "Titres, métadonnées et indexation.",
-      icon: <Globe className="h-5 w-5" />,
+      label: "Signalements",
+      value: stats.reports ?? 0,
+      tab: "reports",
+      icon: <AlertTriangle className="h-5 w-5" />,
+    },
+    {
+      label: "Pages CMS",
+      value: stats.pages ?? 0,
+      tab: "pages",
+      icon: <FileText className="h-5 w-5" />,
+    },
+    {
+      label: "Articles",
+      value: stats.posts ?? 0,
+      tab: "blog",
+      icon: <Newspaper className="h-5 w-5" />,
+    },
+    {
+      label: "Médias",
+      value: stats.media ?? 0,
+      tab: "media",
+      icon: <ImageIcon className="h-5 w-5" />,
     },
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">Tableau de bord</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Vue globale de la plateforme et accès rapide au CMS Kafoo.
-        </p>
-      </div>
-
+    <PageContainer
+      title="Tableau de bord"
+      description="Vue globale de la plateforme et du CMS Kafoo."
+    >
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-7">
-        {statCards.map((stat) => (
+        {cards.map((card) => (
           <button
             type="button"
-            key={stat.label}
-            onClick={() => setTab(stat.tab)}
-            className="group rounded-2xl border border-white/10 bg-slate-800 p-4 text-left transition hover:border-white/20 hover:bg-slate-700"
-          >
-            <div
-              className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.from} ${stat.to} text-white shadow-lg`}
-            >
-              {stat.icon}
-            </div>
-
-            <div className="text-2xl font-black text-white">{stat.value}</div>
-            <div className="mt-0.5 text-xs font-semibold text-slate-400">
-              {stat.label}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {quickAccess.map((item) => (
-          <button
-            type="button"
-            key={item.tab}
-            onClick={() => setTab(item.tab)}
-            className="rounded-2xl border border-white/10 bg-slate-900 p-4 text-left transition hover:border-blue-500/30 hover:bg-slate-800"
+            key={card.label}
+            onClick={() => setTab(card.tab)}
+            className="rounded-2xl border border-white/10 bg-slate-800 p-4 text-left transition hover:bg-slate-700"
           >
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
-              {item.icon}
+              {card.icon}
             </div>
-            <p className="font-bold text-white">{item.label}</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              {item.description}
-            </p>
+            <p className="text-2xl font-black">{card.value}</p>
+            <p className="text-xs font-semibold text-slate-400">{card.label}</p>
           </button>
         ))}
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-slate-800">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-          <h2 className="font-black text-white">Annonces récentes</h2>
+          <h2 className="font-black">Annonces récentes</h2>
           <button
-            type="button"
+            className="text-xs font-bold text-blue-400"
             onClick={() => setTab("listings")}
-            className="text-xs font-bold text-blue-400 hover:underline"
           >
             Voir tout
           </button>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/10 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-white/10 text-left text-xs uppercase text-slate-500">
                 <th className="px-5 py-3">Titre</th>
                 <th className="px-5 py-3">Statut</th>
                 <th className="px-5 py-3">Date</th>
               </tr>
             </thead>
-
             <tbody>
               {recent.map((listing) => (
-                <tr
-                  key={listing.id}
-                  className="border-b border-white/5 transition hover:bg-white/5"
-                >
-                  <td className="px-5 py-3">
-                    <a
-                      href={`/annonces/${listing.slug}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="line-clamp-1 font-semibold text-white hover:text-blue-400 hover:underline"
-                    >
-                      {listing.title}
-                    </a>
-                  </td>
+                <tr key={listing.id} className="border-b border-white/5">
+                  <td className="px-5 py-3 font-semibold">{listing.title}</td>
                   <td className="px-5 py-3">
                     <Badge status={listing.status} />
                   </td>
@@ -1399,1075 +1513,2314 @@ function TabDashboard({
               ))}
             </tbody>
           </table>
-
-          {!loading && recent.length === 0 && (
-            <p className="py-10 text-center text-sm text-slate-500">
-              Aucune annonce récente.
-            </p>
-          )}
+          {recent.length === 0 && <EmptyRow text="Aucune annonce récente." />}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   TAB — ANNONCES
-════════════════════════════════════════════════════════════ */
-
-function TabListings({ supabase }: { supabase: any }) {
+function TabListings({ supabase }: { supabase: SupabaseClient }) {
   const [items, setItems] = useState<AdminListing[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const load = async () => {
+    setLoading(true);
+    let query = supabase
+      .from("listings")
+      .select(
+        "id,title,slug,status,price,currency,created_at,user_id,is_featured,is_sponsored,sponsored_until",
+      )
+      .order("created_at", { ascending: false })
+      .limit(200);
 
-    async function loadListings() {
-      try {
-        setLoading(true);
+    if (filter !== "all") query = query.eq("status", filter);
+    const { data, error } = await query;
+    setLoading(false);
 
-        let query = supabase
-          .from("listings")
-          .select(
-            "id,title,slug,status,price,currency,created_at,user_id,region:regions(name),city:cities(name)",
-          )
-          .order("created_at", { ascending: false })
-          .limit(100);
-
-        if (filter !== "all") {
-          query = query.eq("status", filter);
-        }
-
-        let { data, error } = await query;
-
-        if (error) {
-          console.warn(
-            "[Admin Listings] Relations indisponibles, fallback sans jointure :",
-            error,
-          );
-
-          let fallbackQuery = supabase
-            .from("listings")
-            .select("id,title,slug,status,price,currency,created_at,user_id")
-            .order("created_at", { ascending: false })
-            .limit(100);
-
-          if (filter !== "all") {
-            fallbackQuery = fallbackQuery.eq("status", filter);
-          }
-
-          const fallback = await fallbackQuery;
-          data = fallback.data;
-          error = fallback.error;
-        }
-
-        if (error) {
-          toast.error(`Impossible de charger les annonces : ${error.message}`);
-          return;
-        }
-
-        if (!cancelled) {
-          setItems((data ?? []) as AdminListing[]);
-        }
-      } catch (error) {
-        console.error("[Admin Listings] Erreur :", error);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    if (error) {
+      toast.error(error.message);
+      return;
     }
+    setItems((data ?? []) as AdminListing[]);
+  };
 
-    void loadListings();
+  useEffect(() => {
+    void load();
+  }, [filter]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase, filter]);
-
-  const setStatus = async (id: string, status: string) => {
+  const update = async (id: string, patch: Record<string, unknown>) => {
     const { error } = await supabase
       .from("listings")
-      .update({ status })
+      .update(patch)
       .eq("id", id);
-
     if (error) {
       toast.error(error.message);
       return;
     }
-
-    toast.success("Statut mis à jour");
-    setItems((current) =>
-      current.map((item) => (item.id === id ? { ...item, status } : item)),
-    );
+    toast.success("Annonce mise à jour");
+    await load();
   };
 
-  const del = async (id: string) => {
+  const remove = async (id: string) => {
     if (!window.confirm("Supprimer définitivement cette annonce ?")) return;
-
     const { error } = await supabase.from("listings").delete().eq("id", id);
-
-    if (error) {
-      toast.error(error.message);
-      return;
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Annonce supprimée");
+      await load();
     }
-
-    toast.success("Annonce supprimée");
-    setItems((current) => current.filter((item) => item.id !== id));
   };
 
-  const filtered = items.filter((listing) =>
-    listing.title.toLowerCase().includes(search.toLowerCase()),
+  const filtered = items.filter((item) =>
+    item.title.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const filters = [
-    "all",
-    "pending",
-    "active",
-    "published",
-    "rejected",
-    "suspended",
-    "sold",
-  ];
-
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-black text-white">Gestion des annonces</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          {items.length} annonces chargées
-        </p>
-      </div>
-
+    <PageContainer
+      title="Gestion des annonces"
+      description={`${items.length} annonces chargées`}
+      action={<RefreshButton onClick={() => void load()} loading={loading} />}
+    >
       <div className="flex flex-wrap gap-2">
-        {filters.map((item) => (
+        {[
+          "all",
+          "pending",
+          "active",
+          "published",
+          "rejected",
+          "suspended",
+          "sold",
+        ].map((status) => (
           <button
             type="button"
-            key={item}
-            onClick={() => setFilter(item)}
-            className={`rounded-full px-4 py-1.5 text-xs font-bold transition ${
-              filter === item
-                ? "bg-blue-600 text-white"
-                : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
+            key={status}
+            onClick={() => setFilter(status)}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold ${
+              filter === status ? "bg-blue-600" : "bg-slate-800 text-slate-400"
             }`}
           >
-            {item === "all" ? "Tout" : STATUS_CFG[item]?.label ?? item}
+            {status === "all" ? "Tout" : (STATUS_CFG[status]?.label ?? status)}
           </button>
         ))}
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Rechercher une annonce…"
-          className="rounded-xl border-white/10 bg-slate-800 pl-9 text-white placeholder:text-slate-500"
-        />
-      </div>
+      <SearchBox
+        value={search}
+        onChange={setSearch}
+        placeholder="Rechercher une annonce…"
+      />
 
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-800">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/10 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
-              <th className="px-5 py-3">Titre</th>
-              <th className="px-5 py-3">Lieu</th>
-              <th className="px-5 py-3">Statut</th>
-              <th className="px-5 py-3">Date</th>
-              <th className="px-5 py-3">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filtered.map((listing) => (
-              <tr
-                key={listing.id}
-                className="border-b border-white/5 transition hover:bg-white/5"
-              >
-                <td className="max-w-[200px] px-5 py-3">
-                  <a
-                    href={`/annonces/${listing.slug}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block line-clamp-1 font-semibold text-white hover:text-blue-400"
-                  >
-                    {listing.title}
-                  </a>
-                </td>
-
-                <td className="px-5 py-3 text-xs text-slate-400">
-                  {[listing.city?.name, listing.region?.name]
-                    .filter(Boolean)
-                    .join(", ") || "—"}
-                </td>
-
-                <td className="px-5 py-3">
-                  <Badge status={listing.status} />
-                </td>
-
-                <td className="px-5 py-3 text-xs text-slate-400">
-                  {new Date(listing.created_at).toLocaleDateString("fr-FR")}
-                </td>
-
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-1">
-                    <ActionBtn
-                      color="emerald"
-                      title="Publier"
-                      onClick={() => void setStatus(listing.id, "published")}
-                    >
-                      <CheckCircle className="h-3.5 w-3.5" />
-                    </ActionBtn>
-
-                    <ActionBtn
-                      color="red"
-                      title="Rejeter"
-                      onClick={() => void setStatus(listing.id, "rejected")}
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                    </ActionBtn>
-
-                    <ActionBtn
-                      color="orange"
-                      title="Suspendre"
-                      onClick={() => void setStatus(listing.id, "suspended")}
-                    >
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                    </ActionBtn>
-
-                    <ActionBtn
-                      color="slate"
-                      title="Supprimer"
-                      onClick={() => void del(listing.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </ActionBtn>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {loading && (
-          <p className="py-10 text-center text-sm text-slate-500">
-            Chargement des annonces...
-          </p>
-        )}
-
-        {!loading && filtered.length === 0 && (
-          <p className="py-10 text-center text-sm text-slate-500">
-            Aucune annonce trouvée.
-          </p>
-        )}
-      </div>
-    </div>
+      <DataTable
+        headers={[
+          "Titre",
+          "Prix",
+          "Statut",
+          "Mise en avant",
+          "Date",
+          "Actions",
+        ]}
+      >
+        {filtered.map((item) => (
+          <tr key={item.id} className="border-b border-white/5">
+            <td className="px-5 py-3 font-semibold">{item.title}</td>
+            <td className="px-5 py-3 text-slate-400">
+              {item.price} {item.currency}
+            </td>
+            <td className="px-5 py-3">
+              <Badge status={item.status} />
+            </td>
+            <td className="px-5 py-3 text-xs text-slate-400">
+              {item.is_sponsored
+                ? "Sponsorisé"
+                : item.is_featured
+                  ? "À la une"
+                  : "Standard"}
+            </td>
+            <td className="px-5 py-3 text-xs text-slate-400">
+              {new Date(item.created_at).toLocaleDateString("fr-FR")}
+            </td>
+            <td className="px-5 py-3">
+              <div className="flex gap-1">
+                <ActionBtn
+                  color="emerald"
+                  title="Publier"
+                  onClick={() => void update(item.id, { status: "published" })}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                </ActionBtn>
+                <ActionBtn
+                  color="red"
+                  title="Rejeter"
+                  onClick={() => void update(item.id, { status: "rejected" })}
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                </ActionBtn>
+                <ActionBtn
+                  color="orange"
+                  title="Suspendre"
+                  onClick={() => void update(item.id, { status: "suspended" })}
+                >
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                </ActionBtn>
+                <ActionBtn
+                  color="slate"
+                  title="Supprimer"
+                  onClick={() => void remove(item.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </ActionBtn>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+      {!loading && filtered.length === 0 && (
+        <EmptyRow text="Aucune annonce trouvée." />
+      )}
+    </PageContainer>
   );
 }
-
-/* ════════════════════════════════════════════════════════════
-   TAB — UTILISATEURS
-════════════════════════════════════════════════════════════ */
 
 function TabUsers({
   supabase,
   currentUserId,
 }: {
-  supabase: any;
+  supabase: SupabaseClient;
   currentUserId: string;
 }) {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState("");
 
+  const load = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(
+        "id,user_id,display_name,phone,created_at,is_admin,is_suspended,admin_label",
+      )
+      .order("created_at", { ascending: false });
+    if (error) toast.error(error.message);
+    else setUsers((data ?? []) as AdminUser[]);
+  };
+
   useEffect(() => {
-    let cancelled = false;
+    void load();
+  }, []);
 
-    async function loadUsers() {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id,user_id,display_name,phone,created_at,is_admin")
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (error) {
-        toast.error(`Impossible de charger les utilisateurs : ${error.message}`);
-        return;
-      }
-
-      if (!cancelled) {
-        setUsers((data ?? []) as AdminUser[]);
-      }
-    }
-
-    void loadUsers();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
-
-  const toggleAdmin = async (uid: string, current: boolean) => {
-    if (uid === currentUserId && current) {
-      toast.error(
-        "Vous ne pouvez pas retirer vos propres droits administrateur.",
-      );
+  const update = async (item: AdminUser, patch: Record<string, unknown>) => {
+    if (item.user_id === currentUserId && patch.is_admin === false) {
+      toast.error("Vous ne pouvez pas retirer vos propres droits.");
       return;
     }
-
     const { error } = await supabase
       .from("profiles")
-      .update({ is_admin: !current })
-      .eq("user_id", uid);
-
-    if (error) {
-      toast.error(error.message);
-      return;
+      .update(patch)
+      .eq("user_id", item.user_id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Utilisateur mis à jour");
+      await load();
     }
-
-    toast.success(current ? "Droits admin retirés" : "Droits admin accordés");
-
-    setUsers((currentUsers) =>
-      currentUsers.map((item) =>
-        item.user_id === uid ? { ...item, is_admin: !current } : item,
-      ),
-    );
   };
 
-  const del = async (uid: string) => {
-    if (uid === currentUserId) {
-      toast.error(
-        "Vous ne pouvez pas supprimer votre propre compte administrateur.",
-      );
-      return;
-    }
-
-    if (!window.confirm("Supprimer le profil de cet utilisateur ?")) return;
-
-    const { error } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("user_id", uid);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    toast.success("Profil utilisateur supprimé");
-    setUsers((current) => current.filter((item) => item.user_id !== uid));
-  };
-
-  const filtered = users.filter(
-    (item) =>
-      (item.display_name ?? "")
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      (item.phone ?? "").includes(search),
+  const filtered = users.filter((item) =>
+    `${item.display_name ?? ""} ${item.phone ?? ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
   );
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-black text-white">Utilisateurs</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          {users.length} profils chargés
-        </p>
-      </div>
-
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Nom ou téléphone…"
-          className="rounded-xl border-white/10 bg-slate-800 pl-9 text-white placeholder:text-slate-500"
-        />
-      </div>
-
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-800">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/10 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
-              <th className="px-5 py-3">Utilisateur</th>
-              <th className="px-5 py-3">Téléphone</th>
-              <th className="px-5 py-3">Rôle</th>
-              <th className="px-5 py-3">Inscrit le</th>
-              <th className="px-5 py-3">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filtered.map((item) => (
-              <tr
-                key={item.id}
-                className="border-b border-white/5 transition hover:bg-white/5"
-              >
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-fuchsia-500 text-xs font-black text-white">
-                      {(item.display_name ?? "?")[0]?.toUpperCase()}
-                    </div>
-
-                    <span className="font-semibold text-white">
-                      {item.display_name ?? (
-                        <span className="italic text-slate-500">Sans nom</span>
-                      )}
-                    </span>
-                  </div>
-                </td>
-
-                <td className="px-5 py-3 text-slate-400">
-                  {item.phone ?? "—"}
-                </td>
-
-                <td className="px-5 py-3">
-                  {item.is_admin ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-900/60 px-2.5 py-0.5 text-xs font-bold text-blue-300">
-                      <Shield className="h-3 w-3" />
-                      Admin
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-700 px-2.5 py-0.5 text-xs font-bold text-slate-300">
-                      <UserCheck className="h-3 w-3" />
-                      Membre
-                    </span>
-                  )}
-                </td>
-
-                <td className="px-5 py-3 text-xs text-slate-400">
-                  {new Date(item.created_at).toLocaleDateString("fr-FR")}
-                </td>
-
-                <td className="px-5 py-3">
-                  <div className="flex gap-1">
-                    <ActionBtn
-                      color="blue"
-                      title={item.is_admin ? "Retirer admin" : "Passer admin"}
-                      onClick={() =>
-                        void toggleAdmin(item.user_id, item.is_admin)
-                      }
-                    >
-                      <Shield className="h-3.5 w-3.5" />
-                    </ActionBtn>
-
-                    <ActionBtn
-                      color="slate"
-                      title="Supprimer"
-                      onClick={() => void del(item.user_id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </ActionBtn>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {filtered.length === 0 && (
-          <p className="py-10 text-center text-sm text-slate-500">
-            Aucun utilisateur trouvé.
-          </p>
-        )}
-      </div>
-    </div>
+    <PageContainer title="Utilisateurs" description={`${users.length} profils`}>
+      <SearchBox
+        value={search}
+        onChange={setSearch}
+        placeholder="Nom ou téléphone…"
+      />
+      <DataTable
+        headers={[
+          "Utilisateur",
+          "Téléphone",
+          "Rôle",
+          "État",
+          "Inscrit le",
+          "Actions",
+        ]}
+      >
+        {filtered.map((item) => (
+          <tr key={item.id} className="border-b border-white/5">
+            <td className="px-5 py-3 font-semibold">
+              {item.display_name || "Sans nom"}
+            </td>
+            <td className="px-5 py-3 text-slate-400">{item.phone || "—"}</td>
+            <td className="px-5 py-3">
+              {item.is_admin ? "Administrateur" : "Membre"}
+            </td>
+            <td className="px-5 py-3">
+              {item.is_suspended ? (
+                <Badge status="suspended" />
+              ) : (
+                <Badge status="active" />
+              )}
+            </td>
+            <td className="px-5 py-3 text-xs text-slate-400">
+              {new Date(item.created_at).toLocaleDateString("fr-FR")}
+            </td>
+            <td className="px-5 py-3">
+              <div className="flex gap-1">
+                <ActionBtn
+                  color="blue"
+                  title={item.is_admin ? "Retirer admin" : "Passer admin"}
+                  onClick={() =>
+                    void update(item, { is_admin: !item.is_admin })
+                  }
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                </ActionBtn>
+                <ActionBtn
+                  color="orange"
+                  title={item.is_suspended ? "Réactiver" : "Suspendre"}
+                  onClick={() =>
+                    void update(item, { is_suspended: !item.is_suspended })
+                  }
+                >
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                </ActionBtn>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+      {filtered.length === 0 && <EmptyRow text="Aucun utilisateur trouvé." />}
+    </PageContainer>
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   TAB — SIGNALEMENTS
-════════════════════════════════════════════════════════════ */
-
-function TabReports({ supabase }: { supabase: any }) {
+function TabReports({ supabase }: { supabase: SupabaseClient }) {
   const [reports, setReports] = useState<AdminReport[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadReports() {
-      let { data, error } = await supabase
-        .from("reports")
-        .select("id,reason,status,created_at,listing:listings(title,slug)")
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (error) {
-        const fallback = await supabase
-          .from("reports")
-          .select("id,reason,status,created_at")
-          .order("created_at", { ascending: false })
-          .limit(100);
-
-        data = fallback.data;
-        error = fallback.error;
-      }
-
-      if (error) {
-        toast.error(`Impossible de charger les signalements : ${error.message}`);
-        return;
-      }
-
-      if (!cancelled) {
-        setReports((data ?? []) as AdminReport[]);
-      }
-    }
-
-    void loadReports();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
-
-  const resolve = async (id: string) => {
-    const { error } = await supabase
+  const load = async () => {
+    let { data, error } = await supabase
       .from("reports")
-      .update({ status: "resolved" })
-      .eq("id", id);
+      .select("id,reason,status,created_at,listing:listings(title,slug)")
+      .order("created_at", { ascending: false });
 
     if (error) {
-      toast.error(error.message);
-      return;
+      const fallback = await supabase
+        .from("reports")
+        .select("id,reason,status,created_at")
+        .order("created_at", { ascending: false });
+      data = fallback.data as any;
+      error = fallback.error;
     }
 
-    toast.success("Signalement résolu");
-    setReports((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, status: "resolved" } : item,
-      ),
-    );
+    if (error) toast.error(error.message);
+    else setReports((data ?? []) as unknown as AdminReport[]);
   };
 
-  const del = async (id: string) => {
-    const { error } = await supabase.from("reports").delete().eq("id", id);
+  useEffect(() => {
+    void load();
+  }, []);
 
-    if (error) {
-      toast.error(error.message);
-      return;
+  const update = async (id: string, status: string) => {
+    const { error } = await supabase
+      .from("reports")
+      .update({ status })
+      .eq("id", id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Signalement mis à jour");
+      await load();
     }
+  };
 
-    toast.success("Signalement supprimé");
-    setReports((current) => current.filter((item) => item.id !== id));
+  const remove = async (id: string) => {
+    const { error } = await supabase.from("reports").delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else await load();
   };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-black text-white">Signalements</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          {reports.filter((item) => item.status === "open").length} ouverts
-        </p>
-      </div>
-
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-800">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/10 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
-              <th className="px-5 py-3">Annonce</th>
-              <th className="px-5 py-3">Raison</th>
-              <th className="px-5 py-3">Statut</th>
-              <th className="px-5 py-3">Date</th>
-              <th className="px-5 py-3">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {reports.map((report) => (
-              <tr
-                key={report.id}
-                className="border-b border-white/5 transition hover:bg-white/5"
-              >
-                <td className="max-w-[180px] px-5 py-3">
-                  {report.listing ? (
-                    <a
-                      href={`/annonces/${report.listing.slug}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block line-clamp-1 font-semibold text-white hover:text-blue-400"
-                    >
-                      {report.listing.title}
-                    </a>
-                  ) : (
-                    <span className="italic text-slate-500">
-                      Annonce indisponible
-                    </span>
-                  )}
-                </td>
-
-                <td className="max-w-[160px] px-5 py-3 text-slate-300">
-                  <span className="line-clamp-2">{report.reason}</span>
-                </td>
-
-                <td className="px-5 py-3">
-                  <Badge status={report.status} />
-                </td>
-
-                <td className="px-5 py-3 text-xs text-slate-400">
-                  {new Date(report.created_at).toLocaleDateString("fr-FR")}
-                </td>
-
-                <td className="px-5 py-3">
-                  <div className="flex gap-1">
-                    {report.status === "open" && (
-                      <ActionBtn
-                        color="emerald"
-                        title="Résoudre"
-                        onClick={() => void resolve(report.id)}
-                      >
-                        <CheckCircle className="h-3.5 w-3.5" />
-                      </ActionBtn>
-                    )}
-
-                    <ActionBtn
-                      color="slate"
-                      title="Supprimer"
-                      onClick={() => void del(report.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </ActionBtn>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {reports.length === 0 && (
-          <p className="py-10 text-center text-sm text-slate-500">
-            Aucun signalement.
-          </p>
-        )}
-      </div>
-    </div>
+    <PageContainer
+      title="Signalements"
+      description={`${reports.filter((item) => item.status === "open").length} ouverts`}
+    >
+      <DataTable headers={["Annonce", "Raison", "Statut", "Date", "Actions"]}>
+        {reports.map((item) => (
+          <tr key={item.id} className="border-b border-white/5">
+            <td className="px-5 py-3 font-semibold">
+              {item.listing?.title || "Annonce indisponible"}
+            </td>
+            <td className="max-w-sm px-5 py-3 text-slate-300">{item.reason}</td>
+            <td className="px-5 py-3">
+              <Badge status={item.status} />
+            </td>
+            <td className="px-5 py-3 text-xs text-slate-400">
+              {new Date(item.created_at).toLocaleDateString("fr-FR")}
+            </td>
+            <td className="px-5 py-3">
+              <div className="flex gap-1">
+                <ActionBtn
+                  color="emerald"
+                  title="Résoudre"
+                  onClick={() => void update(item.id, "resolved")}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                </ActionBtn>
+                <ActionBtn
+                  color="slate"
+                  title="Supprimer"
+                  onClick={() => void remove(item.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </ActionBtn>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+      {reports.length === 0 && <EmptyRow text="Aucun signalement." />}
+    </PageContainer>
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   TAB — CATÉGORIES
-════════════════════════════════════════════════════════════ */
+function TabCategories({ supabase }: { supabase: SupabaseClient }) {
+  const [rows, setRows] = useState<AdminCategory[]>([]);
+  const [form, setForm] = useState({ name: "", slug: "", icon: "" });
 
-function TabCategories({ supabase }: { supabase: any }) {
-  const [cats, setCats] = useState<AdminCategory[]>([]);
-  const [newName, setNewName] = useState("");
-  const [newSlug, setNewSlug] = useState("");
-  const [newIcon, setNewIcon] = useState("");
+  const load = async () => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("id,name,slug,icon,is_active,sort_order")
+      .is("parent_id", null)
+      .order("sort_order");
+    if (error) toast.error(error.message);
+    else setRows((data ?? []) as AdminCategory[]);
+  };
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadCategories() {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("id,name,slug,icon,is_active,sort_order")
-        .is("parent_id", null)
-        .order("sort_order");
-
-      if (error) {
-        toast.error(`Impossible de charger les catégories : ${error.message}`);
-        return;
-      }
-
-      if (!cancelled) {
-        setCats((data ?? []) as AdminCategory[]);
-      }
-    }
-
-    void loadCategories();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
+    void load();
+  }, []);
 
   const add = async () => {
-    const name = newName.trim();
-    const slug = newSlug.trim().toLowerCase();
-
-    if (!name || !slug) {
+    if (!form.name.trim() || !form.slug.trim()) {
       toast.error("Nom et slug requis");
       return;
     }
-
-    const { data, error } = await supabase
-      .from("categories")
-      .insert({
-        name,
-        slug,
-        icon: newIcon.trim() || null,
-        is_active: true,
-        sort_order: cats.length + 1,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      toast.error(error.message);
-      return;
+    const { error } = await supabase.from("categories").insert({
+      name: form.name.trim(),
+      slug: form.slug.trim().toLowerCase(),
+      icon: form.icon.trim() || null,
+      is_active: true,
+      sort_order: rows.length + 1,
+    });
+    if (error) toast.error(error.message);
+    else {
+      setForm({ name: "", slug: "", icon: "" });
+      toast.success("Catégorie ajoutée");
+      await load();
     }
-
-    toast.success("Catégorie ajoutée");
-    setCats((current) => [...current, data as AdminCategory]);
-    setNewName("");
-    setNewSlug("");
-    setNewIcon("");
   };
 
-  const toggle = async (id: string, current: boolean) => {
+  const toggle = async (row: AdminCategory) => {
     const { error } = await supabase
       .from("categories")
-      .update({ is_active: !current })
-      .eq("id", id);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    toast.success("Catégorie mise à jour");
-    setCats((currentCategories) =>
-      currentCategories.map((item) =>
-        item.id === id ? { ...item, is_active: !current } : item,
-      ),
-    );
+      .update({ is_active: !row.is_active })
+      .eq("id", row.id);
+    if (error) toast.error(error.message);
+    else await load();
   };
 
-  const del = async (id: string) => {
+  const remove = async (id: string) => {
     if (!window.confirm("Supprimer cette catégorie ?")) return;
-
     const { error } = await supabase.from("categories").delete().eq("id", id);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    toast.success("Catégorie supprimée");
-    setCats((current) => current.filter((item) => item.id !== id));
+    if (error) toast.error(error.message);
+    else await load();
   };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-black text-white">Catégories</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          {cats.length} catégories principales
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-slate-800 p-5">
-        <h2 className="mb-4 font-black text-white">Ajouter une catégorie</h2>
-
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div>
-            <label className="mb-1 block text-xs font-bold text-slate-400">
-              Nom
-            </label>
-            <Input
-              value={newName}
-              onChange={(event) => setNewName(event.target.value)}
-              placeholder="ex : Électronique"
-              className="rounded-xl border-white/10 bg-slate-700 text-white placeholder:text-slate-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-bold text-slate-400">
-              Slug
-            </label>
-            <Input
-              value={newSlug}
-              onChange={(event) => setNewSlug(event.target.value)}
-              placeholder="ex : electronique"
-              className="rounded-xl border-white/10 bg-slate-700 text-white placeholder:text-slate-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-bold text-slate-400">
-              Icône
-            </label>
-            <Input
-              value={newIcon}
-              onChange={(event) => setNewIcon(event.target.value)}
-              placeholder="ex : smartphone"
-              className="rounded-xl border-white/10 bg-slate-700 text-white placeholder:text-slate-500"
-            />
-          </div>
+    <PageContainer
+      title="Catégories"
+      description={`${rows.length} catégories principales`}
+    >
+      <Panel title="Ajouter une catégorie">
+        <div className="grid gap-3 md:grid-cols-3">
+          <Input
+            value={form.name}
+            onChange={(e) =>
+              setForm((current) => ({ ...current, name: e.target.value }))
+            }
+            placeholder="Nom"
+            className="border-white/10 bg-slate-700 text-white"
+          />
+          <Input
+            value={form.slug}
+            onChange={(e) =>
+              setForm((current) => ({ ...current, slug: e.target.value }))
+            }
+            placeholder="Slug"
+            className="border-white/10 bg-slate-700 text-white"
+          />
+          <Input
+            value={form.icon}
+            onChange={(e) =>
+              setForm((current) => ({ ...current, icon: e.target.value }))
+            }
+            placeholder="Icône Lucide"
+            className="border-white/10 bg-slate-700 text-white"
+          />
         </div>
-
         <Button
-          type="button"
           onClick={() => void add()}
-          className="mt-4 rounded-full bg-blue-600 px-6 font-bold text-white hover:bg-blue-700"
+          className="mt-4 bg-blue-600 hover:bg-blue-700"
         >
+          <Plus className="mr-2 h-4 w-4" />
           Ajouter
         </Button>
-      </div>
+      </Panel>
 
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-800">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/10 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
-              <th className="px-5 py-3">Nom</th>
-              <th className="px-5 py-3">Slug</th>
-              <th className="px-5 py-3">Icône</th>
-              <th className="px-5 py-3">Statut</th>
-              <th className="px-5 py-3">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {cats.map((category) => (
-              <tr
-                key={category.id}
-                className="border-b border-white/5 transition hover:bg-white/5"
-              >
-                <td className="px-5 py-3 font-semibold text-white">
-                  {category.name}
-                </td>
-                <td className="px-5 py-3 font-mono text-xs text-slate-400">
-                  {category.slug}
-                </td>
-                <td className="px-5 py-3 text-slate-400">
-                  {category.icon ?? "—"}
-                </td>
-                <td className="px-5 py-3">
-                  <Badge
-                    status={category.is_active ? "published" : "suspended"}
-                  />
-                </td>
-                <td className="px-5 py-3">
-                  <div className="flex gap-1">
-                    <ActionBtn
-                      color={category.is_active ? "orange" : "emerald"}
-                      title={category.is_active ? "Désactiver" : "Activer"}
-                      onClick={() =>
-                        void toggle(category.id, category.is_active)
-                      }
-                    >
-                      {category.is_active ? (
-                        <XCircle className="h-3.5 w-3.5" />
-                      ) : (
-                        <CheckCircle className="h-3.5 w-3.5" />
-                      )}
-                    </ActionBtn>
-
-                    <ActionBtn
-                      color="slate"
-                      title="Supprimer"
-                      onClick={() => void del(category.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </ActionBtn>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <DataTable headers={["Nom", "Slug", "Icône", "Statut", "Actions"]}>
+        {rows.map((row) => (
+          <tr key={row.id} className="border-b border-white/5">
+            <td className="px-5 py-3 font-semibold">{row.name}</td>
+            <td className="px-5 py-3 text-slate-400">{row.slug}</td>
+            <td className="px-5 py-3 text-slate-400">{row.icon || "—"}</td>
+            <td className="px-5 py-3">
+              <Badge status={row.is_active ? "active" : "suspended"} />
+            </td>
+            <td className="px-5 py-3">
+              <div className="flex gap-1">
+                <ActionBtn
+                  color="orange"
+                  title="Activer/désactiver"
+                  onClick={() => void toggle(row)}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                </ActionBtn>
+                <ActionBtn
+                  color="slate"
+                  title="Supprimer"
+                  onClick={() => void remove(row.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </ActionBtn>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+    </PageContainer>
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   TAB — LOCALISATION
-════════════════════════════════════════════════════════════ */
+function TabLocations({ supabase }: { supabase: SupabaseClient }) {
+  const [regions, setRegions] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
+  const [communes, setCommunes] = useState<any[]>([]);
+  const [newRegion, setNewRegion] = useState("");
+  const [newCity, setNewCity] = useState("");
+  const [newCommune, setNewCommune] = useState("");
+  const [regionId, setRegionId] = useState("");
+  const [cityId, setCityId] = useState("");
 
-function TabLocations({ supabase }: { supabase: any }) {
-  const [regions, setRegions] = useState<LocationRow[]>([]);
-  const [cities, setCities] = useState<LocationRow[]>([]);
-  const [communes, setCommunes] = useState<LocationRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    const [r, c, m] = await Promise.all([
+      supabase.from("regions").select("*").order("name"),
+      supabase.from("cities").select("*").order("name"),
+      supabase.from("communes").select("*").order("name"),
+    ]);
+    if (r.error) toast.error(r.error.message);
+    if (c.error) toast.error(c.error.message);
+    if (m.error) toast.error(m.error.message);
+    setRegions(r.data ?? []);
+    setCities(c.data ?? []);
+    setCommunes(m.data ?? []);
+  };
 
   useEffect(() => {
-    let cancelled = false;
+    void load();
+  }, []);
 
-    async function loadLocations() {
-      try {
-        setLoading(true);
+  const slugify = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
 
-        const [regionsResult, citiesResult, communesResult] = await Promise.all([
-          supabase.from("regions").select("id,name,slug").order("name"),
-          supabase.from("cities").select("id,name,slug").order("name"),
-          supabase.from("communes").select("id,name,slug").order("name"),
-        ]);
-
-        if (cancelled) return;
-
-        setRegions((regionsResult.data ?? []) as LocationRow[]);
-        setCities((citiesResult.data ?? []) as LocationRow[]);
-        setCommunes((communesResult.data ?? []) as LocationRow[]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void loadLocations();
-
-    return () => {
-      cancelled = true;
+  const addLocation = async (
+    table: "regions" | "cities" | "communes",
+    name: string,
+    parent?: { key: string; value: string },
+  ) => {
+    if (!name.trim()) return;
+    const payload: Record<string, unknown> = {
+      name: name.trim(),
+      slug: slugify(name),
+      is_active: true,
     };
-  }, [supabase]);
+    if (parent?.value) payload[parent.key] = parent.value;
 
-  const groups = [
-    { label: "Régions", rows: regions },
-    { label: "Villes", rows: cities },
-    { label: "Communes", rows: communes },
-  ];
+    let result = await supabase.from(table).insert(payload);
+    if (result.error && parent) {
+      delete payload[parent.key];
+      result = await supabase.from(table).insert(payload);
+    }
+    if (result.error) toast.error(result.error.message);
+    else {
+      toast.success("Localisation ajoutée");
+      await load();
+    }
+  };
+
+  const remove = async (table: string, id: string) => {
+    if (!window.confirm("Supprimer cet élément ?")) return;
+    const { error } = await supabase.from(table).delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else await load();
+  };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-black text-white">Localisation</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Gérez les zones utilisées dans la publication et la recherche
-          d'annonces.
-        </p>
+    <PageContainer
+      title="Localisation"
+      description="Régions, villes et communes utilisées par les annonces."
+    >
+      <div className="grid gap-4 xl:grid-cols-3">
+        <LocationPanel
+          title="Régions"
+          rows={regions}
+          value={newRegion}
+          onChange={setNewRegion}
+          onAdd={() =>
+            void addLocation("regions", newRegion).then(() => setNewRegion(""))
+          }
+          onDelete={(id) => void remove("regions", id)}
+        />
+        <LocationPanel
+          title="Villes"
+          rows={cities}
+          value={newCity}
+          onChange={setNewCity}
+          onAdd={() =>
+            void addLocation("cities", newCity, {
+              key: "region_id",
+              value: regionId,
+            }).then(() => setNewCity(""))
+          }
+          onDelete={(id) => void remove("cities", id)}
+          parentValue={regionId}
+          onParentChange={setRegionId}
+          parentRows={regions}
+          parentLabel="Région"
+        />
+        <LocationPanel
+          title="Communes"
+          rows={communes}
+          value={newCommune}
+          onChange={setNewCommune}
+          onAdd={() =>
+            void addLocation("communes", newCommune, {
+              key: "city_id",
+              value: cityId,
+            }).then(() => setNewCommune(""))
+          }
+          onDelete={(id) => void remove("communes", id)}
+          parentValue={cityId}
+          onParentChange={setCityId}
+          parentRows={cities}
+          parentLabel="Ville"
+        />
       </div>
+    </PageContainer>
+  );
+}
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {groups.map((group) => (
+function TabMedia({
+  supabase,
+  currentUserId,
+}: {
+  supabase: SupabaseClient;
+  currentUserId: string;
+}) {
+  const [rows, setRows] = useState<any[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [folder, setFolder] = useState("general");
+  const [altText, setAltText] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  const load = async () => {
+    const { data, error } = await supabase
+      .from("media")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) toast.error(error.message);
+    else setRows(data ?? []);
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const upload = async () => {
+    if (!file) {
+      toast.error("Sélectionnez un fichier");
+      return;
+    }
+
+    setUploading(true);
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+    const path = `${folder}/${Date.now()}-${safeName}`;
+    const storage = await supabase.storage
+      .from("cms-media")
+      .upload(path, file, {
+        upsert: false,
+        contentType: file.type,
+      });
+
+    if (storage.error) {
+      setUploading(false);
+      toast.error(storage.error.message);
+      return;
+    }
+
+    const { data: publicUrl } = supabase.storage
+      .from("cms-media")
+      .getPublicUrl(path);
+    const insert = await supabase.from("media").insert({
+      bucket_id: "cms-media",
+      name: file.name,
+      path,
+      public_url: publicUrl.publicUrl,
+      mime_type: file.type,
+      size_bytes: file.size,
+      alt_text: altText || null,
+      folder,
+      is_public: true,
+      uploaded_by: currentUserId,
+    });
+
+    setUploading(false);
+    if (insert.error) {
+      toast.error(insert.error.message);
+      return;
+    }
+
+    setFile(null);
+    setAltText("");
+    toast.success("Média téléversé");
+    await load();
+  };
+
+  const remove = async (row: any) => {
+    if (!window.confirm("Supprimer ce média ?")) return;
+    const storage = await supabase.storage.from("cms-media").remove([row.path]);
+    if (storage.error) {
+      toast.error(storage.error.message);
+      return;
+    }
+    const { error } = await supabase.from("media").delete().eq("id", row.id);
+    if (error) toast.error(error.message);
+    else await load();
+  };
+
+  return (
+    <PageContainer title="Médiathèque" description={`${rows.length} médias`}>
+      <Panel title="Téléverser un média">
+        <div className="grid gap-3 md:grid-cols-3">
+          <Input
+            type="file"
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            className="border-white/10 bg-slate-700 text-white"
+          />
+          <Input
+            value={folder}
+            onChange={(event) => setFolder(event.target.value)}
+            placeholder="Dossier"
+            className="border-white/10 bg-slate-700 text-white"
+          />
+          <Input
+            value={altText}
+            onChange={(event) => setAltText(event.target.value)}
+            placeholder="Texte alternatif"
+            className="border-white/10 bg-slate-700 text-white"
+          />
+        </div>
+        <Button
+          disabled={uploading}
+          onClick={() => void upload()}
+          className="mt-4 bg-blue-600 hover:bg-blue-700"
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          {uploading ? "Téléversement..." : "Téléverser"}
+        </Button>
+      </Panel>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {rows.map((row) => (
           <div
-            key={group.label}
-            className="rounded-2xl border border-white/10 bg-slate-800"
+            key={row.id}
+            className="overflow-hidden rounded-2xl border border-white/10 bg-slate-800"
           >
-            <div className="border-b border-white/10 px-5 py-4">
-              <p className="font-black text-white">{group.label}</p>
-              <p className="mt-1 text-xs text-slate-500">
-                {group.rows.length} éléments
-              </p>
-            </div>
-
-            <div className="max-h-[420px] overflow-y-auto p-2">
-              {group.rows.slice(0, 100).map((row) => (
-                <div
-                  key={row.id}
-                  className="rounded-xl px-3 py-2.5 transition hover:bg-white/5"
-                >
-                  <p className="text-sm font-semibold text-white">{row.name}</p>
-                  {row.slug && (
-                    <p className="mt-0.5 text-[11px] text-slate-500">
-                      {row.slug}
-                    </p>
-                  )}
+            <div className="aspect-video bg-slate-900">
+              {row.mime_type?.startsWith("image/") ? (
+                <img
+                  src={row.public_url}
+                  alt={row.alt_text || row.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <FileText className="h-10 w-10 text-slate-500" />
                 </div>
-              ))}
-
-              {!loading && group.rows.length === 0 && (
-                <p className="py-8 text-center text-xs text-slate-500">
-                  Aucun élément.
-                </p>
               )}
+            </div>
+            <div className="p-4">
+              <p className="truncate text-sm font-bold">{row.name}</p>
+              <p className="mt-1 text-xs text-slate-500">{row.folder}</p>
+              <div className="mt-3 flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => navigator.clipboard.writeText(row.public_url)}
+                  className="bg-slate-700 hover:bg-slate-600"
+                >
+                  Copier l'URL
+                </Button>
+                <ActionBtn
+                  color="slate"
+                  title="Supprimer"
+                  onClick={() => void remove(row)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </ActionBtn>
+              </div>
             </div>
           </div>
         ))}
       </div>
-    </div>
+      {rows.length === 0 && <EmptyRow text="Aucun média." />}
+    </PageContainer>
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   CMS — PAGE D'ACCUEIL
-════════════════════════════════════════════════════════════ */
+function TabHomepageCms({
+  supabase,
+  currentUserId,
+}: {
+  supabase: SupabaseClient;
+  currentUserId: string;
+}) {
+  const defaults = {
+    locale: "fr",
+    hero_badge: "Nouvelle marketplace locale en Guinée",
+    hero_title: "Vendez et trouvez vos bonnes affaires près de chez vous",
+    hero_subtitle:
+      "Publiez gratuitement et échangez directement avec les acheteurs partout en Guinée.",
+    hero_description:
+      "Téléphones, véhicules, immobilier, meubles, mode, électroménager et services.",
+    hero_background_url: "",
+    hero_primary_label: "Publier gratuitement",
+    hero_primary_url: "/publier",
+    hero_secondary_label: "Explorer",
+    hero_secondary_url: "/annonces",
+    search_placeholder: "Que recherchez-vous ?",
+    featured_categories_title: "Catégories populaires",
+    featured_listings_title: "Annonces récentes",
+    statistics: JSON.stringify(
+      [
+        { label: "Annonces publiées", value: "1 200+" },
+        { label: "Vendeurs actifs", value: "850+" },
+        { label: "Villes couvertes", value: "12" },
+      ],
+      null,
+      2,
+    ),
+    seo_title: "Kafoo — Petites annonces en Guinée",
+    seo_description:
+      "Achetez et vendez facilement près de chez vous en Guinée.",
+    og_image_url: "",
+    status: "published",
+  };
 
-function TabHomepageCms() {
-  const [heroTitle, setHeroTitle] = useState(
-    "Vendez et trouvez vos bonnes affaires près de chez vous",
-  );
-  const [heroSubtitle, setHeroSubtitle] = useState(
-    "Publiez gratuitement et échangez directement avec les acheteurs partout en Guinée.",
-  );
-  const [primaryCta, setPrimaryCta] = useState("Publier une annonce");
-  const [secondaryCta, setSecondaryCta] = useState("Explorer les annonces");
+  const [form, setForm] = useState<Record<string, any>>(defaults);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("cms_homepage")
+      .select("*")
+      .eq("locale", "fr")
+      .maybeSingle();
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (data) {
+      setForm({
+        ...defaults,
+        ...data,
+        statistics: JSON.stringify(data.statistics ?? [], null, 2),
+      });
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
 
   const save = async () => {
     setSaving(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 500));
+    let statistics: unknown;
+    try {
+      statistics = JSON.parse(form.statistics || "[]");
+    } catch {
+      setSaving(false);
+      toast.error("Le JSON des statistiques est invalide");
+      return;
+    }
+
+    const payload = {
+      ...form,
+      locale: "fr",
+      statistics,
+      options: form.options ?? {},
+      updated_by: currentUserId,
+      published_at:
+        form.status === "published" ? new Date().toISOString() : null,
+    };
+    delete payload.id;
+    delete payload.created_at;
+    delete payload.updated_at;
+
+    const { error } = await supabase
+      .from("cms_homepage")
+      .upsert(payload, { onConflict: "locale" });
     setSaving(false);
-    toast.success(
-      "Interface CMS prête. Connectez ensuite ces champs à une table cms_homepage ou settings pour rendre les modifications persistantes.",
-    );
+
+    if (error) toast.error(error.message);
+    else {
+      toast.success(
+        "Page d'accueil enregistrée. Le site public utilise maintenant ces données.",
+      );
+      await load();
+    }
   };
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">Page d'accueil</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Préparez les contenus éditoriaux du hero et des principales sections
-          du site.
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-slate-800 p-5">
-        <div className="mb-5">
-          <h2 className="font-black text-white">Hero principal</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Zone principale visible en haut de la page d'accueil.
-          </p>
-        </div>
-
-        <div className="grid gap-4">
-          <CmsField
-            label="Titre principal"
-            value={heroTitle}
-            onChange={setHeroTitle}
+    <PageContainer
+      title="Page d'accueil"
+      description="Tous les champs publiés sont lus automatiquement par la page publique."
+      action={<RefreshButton onClick={() => void load()} loading={loading} />}
+    >
+      <Panel title="Hero principal">
+        <div className="grid gap-4 md:grid-cols-2">
+          <CmsInput
+            label="Badge"
+            value={form.hero_badge}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, hero_badge: value }))
+            }
           />
-          <CmsTextarea
-            label="Sous-titre"
-            value={heroSubtitle}
-            onChange={setHeroSubtitle}
+          <CmsInput
+            label="Image de fond"
+            value={form.hero_background_url}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, hero_background_url: value }))
+            }
           />
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <CmsField
-              label="Bouton principal"
-              value={primaryCta}
-              onChange={setPrimaryCta}
+          <div className="md:col-span-2">
+            <CmsInput
+              label="Titre principal"
+              value={form.hero_title}
+              onChange={(value) =>
+                setForm((current) => ({ ...current, hero_title: value }))
+              }
             />
-            <CmsField
-              label="Bouton secondaire"
-              value={secondaryCta}
-              onChange={setSecondaryCta}
+          </div>
+          <div className="md:col-span-2">
+            <CmsTextarea
+              label="Sous-titre"
+              value={form.hero_subtitle}
+              onChange={(value) =>
+                setForm((current) => ({ ...current, hero_subtitle: value }))
+              }
+            />
+          </div>
+          <div className="md:col-span-2">
+            <CmsTextarea
+              label="Description"
+              value={form.hero_description}
+              onChange={(value) =>
+                setForm((current) => ({ ...current, hero_description: value }))
+              }
+            />
+          </div>
+          <CmsInput
+            label="Bouton principal"
+            value={form.hero_primary_label}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, hero_primary_label: value }))
+            }
+          />
+          <CmsInput
+            label="Lien principal"
+            value={form.hero_primary_url}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, hero_primary_url: value }))
+            }
+          />
+          <CmsInput
+            label="Bouton secondaire"
+            value={form.hero_secondary_label}
+            onChange={(value) =>
+              setForm((current) => ({
+                ...current,
+                hero_secondary_label: value,
+              }))
+            }
+          />
+          <CmsInput
+            label="Lien secondaire"
+            value={form.hero_secondary_url}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, hero_secondary_url: value }))
+            }
+          />
+          <CmsInput
+            label="Placeholder recherche"
+            value={form.search_placeholder}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, search_placeholder: value }))
+            }
+          />
+        </div>
+      </Panel>
+
+      <Panel title="Sections et statistiques">
+        <div className="grid gap-4 md:grid-cols-2">
+          <CmsInput
+            label="Titre catégories"
+            value={form.featured_categories_title}
+            onChange={(value) =>
+              setForm((current) => ({
+                ...current,
+                featured_categories_title: value,
+              }))
+            }
+          />
+          <CmsInput
+            label="Titre annonces"
+            value={form.featured_listings_title}
+            onChange={(value) =>
+              setForm((current) => ({
+                ...current,
+                featured_listings_title: value,
+              }))
+            }
+          />
+          <div className="md:col-span-2">
+            <CmsTextarea
+              label="Statistiques JSON"
+              value={form.statistics}
+              onChange={(value) =>
+                setForm((current) => ({ ...current, statistics: value }))
+              }
+              rows={8}
             />
           </div>
         </div>
+      </Panel>
 
+      <Panel title="SEO de l'accueil">
+        <div className="grid gap-4">
+          <CmsInput
+            label="Titre SEO"
+            value={form.seo_title}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, seo_title: value }))
+            }
+          />
+          <CmsTextarea
+            label="Description SEO"
+            value={form.seo_description}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, seo_description: value }))
+            }
+          />
+          <CmsInput
+            label="Image Open Graph"
+            value={form.og_image_url}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, og_image_url: value }))
+            }
+          />
+          <FormLabel label="Statut">
+            <select
+              value={form.status}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
+              className="h-11 w-full rounded-xl border border-white/10 bg-slate-700 px-3 text-sm text-white"
+            >
+              <option value="draft">Brouillon</option>
+              <option value="published">Publié</option>
+              <option value="archived">Archivé</option>
+            </select>
+          </FormLabel>
+        </div>
+      </Panel>
+
+      <Button
+        disabled={saving}
+        onClick={() => void save()}
+        className="bg-blue-600 px-6 hover:bg-blue-700"
+      >
+        <Save className="mr-2 h-4 w-4" />
+        {saving ? "Enregistrement..." : "Enregistrer et publier"}
+      </Button>
+    </PageContainer>
+  );
+}
+
+function TabMenus({ supabase }: { supabase: SupabaseClient }) {
+  const [menus, setMenus] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
+  const [menuForm, setMenuForm] = useState({
+    name: "",
+    slug: "",
+    location: "header",
+  });
+  const [itemForm, setItemForm] = useState({
+    menu_id: "",
+    label: "",
+    url: "",
+    sort_order: "0",
+  });
+
+  const load = async () => {
+    const [menusResult, itemsResult] = await Promise.all([
+      supabase.from("navigation_menus").select("*").order("name"),
+      supabase.from("navigation_items").select("*").order("sort_order"),
+    ]);
+    if (menusResult.error) toast.error(menusResult.error.message);
+    if (itemsResult.error) toast.error(itemsResult.error.message);
+    setMenus(menusResult.data ?? []);
+    setItems(itemsResult.data ?? []);
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const addMenu = async () => {
+    const { error } = await supabase.from("navigation_menus").insert({
+      ...menuForm,
+      is_active: true,
+    });
+    if (error) toast.error(error.message);
+    else {
+      setMenuForm({ name: "", slug: "", location: "header" });
+      await load();
+    }
+  };
+
+  const addItem = async () => {
+    const { error } = await supabase.from("navigation_items").insert({
+      menu_id: itemForm.menu_id,
+      label: itemForm.label,
+      url: itemForm.url,
+      sort_order: Number(itemForm.sort_order || 0),
+      is_active: true,
+    });
+    if (error) toast.error(error.message);
+    else {
+      setItemForm({ menu_id: "", label: "", url: "", sort_order: "0" });
+      await load();
+    }
+  };
+
+  const remove = async (table: string, id: string) => {
+    const { error } = await supabase.from(table).delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else await load();
+  };
+
+  return (
+    <PageContainer
+      title="Menus de navigation"
+      description="Gérez les menus du header et du pied de page."
+    >
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Panel title="Créer un menu">
+          <div className="grid gap-3">
+            <Input
+              value={menuForm.name}
+              onChange={(e) =>
+                setMenuForm((current) => ({ ...current, name: e.target.value }))
+              }
+              placeholder="Nom"
+              className="border-white/10 bg-slate-700 text-white"
+            />
+            <Input
+              value={menuForm.slug}
+              onChange={(e) =>
+                setMenuForm((current) => ({ ...current, slug: e.target.value }))
+              }
+              placeholder="Slug"
+              className="border-white/10 bg-slate-700 text-white"
+            />
+            <select
+              value={menuForm.location}
+              onChange={(e) =>
+                setMenuForm((current) => ({
+                  ...current,
+                  location: e.target.value,
+                }))
+              }
+              className="h-11 rounded-xl border border-white/10 bg-slate-700 px-3 text-white"
+            >
+              <option value="header">Header</option>
+              <option value="footer">Footer</option>
+            </select>
+            <Button
+              onClick={() => void addMenu()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Ajouter le menu
+            </Button>
+          </div>
+          <div className="mt-5 space-y-2">
+            {menus.map((menu) => (
+              <div
+                key={menu.id}
+                className="flex items-center justify-between rounded-xl bg-slate-900 p-3"
+              >
+                <div>
+                  <p className="font-bold">{menu.name}</p>
+                  <p className="text-xs text-slate-500">{menu.location}</p>
+                </div>
+                <ActionBtn
+                  color="slate"
+                  title="Supprimer"
+                  onClick={() => void remove("navigation_menus", menu.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </ActionBtn>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="Ajouter un élément">
+          <div className="grid gap-3">
+            <select
+              value={itemForm.menu_id}
+              onChange={(e) =>
+                setItemForm((current) => ({
+                  ...current,
+                  menu_id: e.target.value,
+                }))
+              }
+              className="h-11 rounded-xl border border-white/10 bg-slate-700 px-3 text-white"
+            >
+              <option value="">Choisir un menu</option>
+              {menus.map((menu) => (
+                <option key={menu.id} value={menu.id}>
+                  {menu.name}
+                </option>
+              ))}
+            </select>
+            <Input
+              value={itemForm.label}
+              onChange={(e) =>
+                setItemForm((current) => ({
+                  ...current,
+                  label: e.target.value,
+                }))
+              }
+              placeholder="Libellé"
+              className="border-white/10 bg-slate-700 text-white"
+            />
+            <Input
+              value={itemForm.url}
+              onChange={(e) =>
+                setItemForm((current) => ({ ...current, url: e.target.value }))
+              }
+              placeholder="URL"
+              className="border-white/10 bg-slate-700 text-white"
+            />
+            <Input
+              type="number"
+              value={itemForm.sort_order}
+              onChange={(e) =>
+                setItemForm((current) => ({
+                  ...current,
+                  sort_order: e.target.value,
+                }))
+              }
+              placeholder="Ordre"
+              className="border-white/10 bg-slate-700 text-white"
+            />
+            <Button
+              onClick={() => void addItem()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Ajouter l'élément
+            </Button>
+          </div>
+          <div className="mt-5 space-y-2">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between rounded-xl bg-slate-900 p-3"
+              >
+                <div>
+                  <p className="font-bold">{item.label}</p>
+                  <p className="text-xs text-slate-500">{item.url}</p>
+                </div>
+                <ActionBtn
+                  color="slate"
+                  title="Supprimer"
+                  onClick={() => void remove("navigation_items", item.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </ActionBtn>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
+    </PageContainer>
+  );
+}
+
+function TabSponsored({ supabase }: { supabase: SupabaseClient }) {
+  const [rows, setRows] = useState<AdminListing[]>([]);
+  const [search, setSearch] = useState("");
+
+  const load = async () => {
+    const { data, error } = await supabase
+      .from("listings")
+      .select(
+        "id,title,slug,status,is_featured,is_sponsored,sponsored_until,created_at,price,currency,user_id",
+      )
+      .order("is_sponsored", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (error) toast.error(error.message);
+    else setRows((data ?? []) as AdminListing[]);
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const update = async (id: string, patch: Record<string, unknown>) => {
+    const { error } = await supabase
+      .from("listings")
+      .update(patch)
+      .eq("id", id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Mise en avant actualisée");
+      await load();
+    }
+  };
+
+  const filtered = rows.filter((row) =>
+    row.title.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  return (
+    <PageContainer
+      title="Annonces sponsorisées"
+      description="Contrôlez la priorité et la durée des mises en avant."
+    >
+      <SearchBox
+        value={search}
+        onChange={setSearch}
+        placeholder="Rechercher une annonce…"
+      />
+      <DataTable
+        headers={["Annonce", "À la une", "Sponsorisé", "Expiration", "Actions"]}
+      >
+        {filtered.map((row) => (
+          <tr key={row.id} className="border-b border-white/5">
+            <td className="px-5 py-3 font-semibold">{row.title}</td>
+            <td className="px-5 py-3">{row.is_featured ? "Oui" : "Non"}</td>
+            <td className="px-5 py-3">{row.is_sponsored ? "Oui" : "Non"}</td>
+            <td className="px-5 py-3 text-xs text-slate-400">
+              {row.sponsored_until
+                ? new Date(row.sponsored_until).toLocaleDateString("fr-FR")
+                : "—"}
+            </td>
+            <td className="px-5 py-3">
+              <div className="flex gap-1">
+                <ActionBtn
+                  color="blue"
+                  title="À la une"
+                  onClick={() =>
+                    void update(row.id, { is_featured: !row.is_featured })
+                  }
+                >
+                  <Star className="h-3.5 w-3.5" />
+                </ActionBtn>
+                <ActionBtn
+                  color="emerald"
+                  title="Sponsoriser 30 jours"
+                  onClick={() =>
+                    void update(row.id, {
+                      is_sponsored: true,
+                      sponsored_until: new Date(
+                        Date.now() + 30 * 86400000,
+                      ).toISOString(),
+                    })
+                  }
+                >
+                  <TrendingUp className="h-3.5 w-3.5" />
+                </ActionBtn>
+                <ActionBtn
+                  color="orange"
+                  title="Retirer le sponsoring"
+                  onClick={() =>
+                    void update(row.id, {
+                      is_sponsored: false,
+                      sponsored_until: null,
+                    })
+                  }
+                >
+                  <X className="h-3.5 w-3.5" />
+                </ActionBtn>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+    </PageContainer>
+  );
+}
+
+function TabSettings({
+  supabase,
+  currentUserId,
+  user,
+}: {
+  supabase: SupabaseClient;
+  currentUserId: string;
+  user: any;
+}) {
+  const settingKeys = [
+    {
+      key: "general.site_name",
+      label: "Nom du site",
+      group_name: "general",
+      public: true,
+      fallback: "Kafoo",
+    },
+    {
+      key: "general.site_description",
+      label: "Description",
+      group_name: "general",
+      public: true,
+      fallback: "",
+    },
+    {
+      key: "general.default_country",
+      label: "Pays par défaut",
+      group_name: "general",
+      public: true,
+      fallback: "Guinée",
+    },
+    {
+      key: "general.default_currency",
+      label: "Devise",
+      group_name: "general",
+      public: true,
+      fallback: "GNF",
+    },
+    {
+      key: "contact.support_email",
+      label: "E-mail support",
+      group_name: "contact",
+      public: true,
+      fallback: "",
+    },
+    {
+      key: "listings.max_images",
+      label: "Nombre maximal d'images",
+      group_name: "listings",
+      public: false,
+      fallback: "10",
+    },
+    {
+      key: "listings.require_moderation",
+      label: "Modération obligatoire (true/false)",
+      group_name: "listings",
+      public: false,
+      fallback: "true",
+    },
+    {
+      key: "maintenance.enabled",
+      label: "Mode maintenance (true/false)",
+      group_name: "maintenance",
+      public: false,
+      fallback: "false",
+    },
+  ];
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    const { data, error } = await supabase.from("site_settings").select("*");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    const mapped: Record<string, string> = {};
+    for (const definition of settingKeys) {
+      const row = (data ?? []).find((item: any) => item.key === definition.key);
+      const value = row?.value;
+      mapped[definition.key] =
+        typeof value === "string"
+          ? value
+          : value === undefined
+            ? definition.fallback
+            : JSON.stringify(value);
+    }
+    setValues(mapped);
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const parseSetting = (value: string): unknown => {
+    if (value === "true") return true;
+    if (value === "false") return false;
+    if (/^-?\d+(\.\d+)?$/.test(value.trim())) return Number(value);
+    return value;
+  };
+
+  const save = async () => {
+    setSaving(true);
+    const rows = settingKeys.map((definition) => ({
+      key: definition.key,
+      group_name: definition.group_name,
+      value: parseSetting(values[definition.key] ?? definition.fallback),
+      is_public: definition.public,
+      updated_by: currentUserId,
+    }));
+    const { error } = await supabase
+      .from("site_settings")
+      .upsert(rows, { onConflict: "key" });
+    setSaving(false);
+    if (error) toast.error(error.message);
+    else toast.success("Paramètres enregistrés");
+  };
+
+  return (
+    <PageContainer
+      title="Paramètres"
+      description="Configuration générale de Kafoo."
+    >
+      <Panel title="Paramètres de la plateforme">
+        <div className="grid gap-4 md:grid-cols-2">
+          {settingKeys.map((definition) => (
+            <CmsInput
+              key={definition.key}
+              label={definition.label}
+              value={values[definition.key] ?? definition.fallback}
+              onChange={(value) =>
+                setValues((current) => ({
+                  ...current,
+                  [definition.key]: value,
+                }))
+              }
+            />
+          ))}
+        </div>
         <Button
-          type="button"
           disabled={saving}
           onClick={() => void save()}
-          className="mt-5 rounded-xl bg-blue-600 px-6 font-bold text-white hover:bg-blue-700"
+          className="mt-5 bg-blue-600 hover:bg-blue-700"
         >
-          {saving ? "Enregistrement…" : "Enregistrer le contenu"}
+          <Save className="mr-2 h-4 w-4" />
+          Enregistrer
         </Button>
-      </div>
+      </Panel>
+      <Panel title="Compte administrateur">
+        <p className="text-sm text-slate-400">
+          Connecté en tant que{" "}
+          <strong className="text-white">{user.email}</strong>
+        </p>
+      </Panel>
+    </PageContainer>
+  );
+}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <CmsSectionCard
-          title="Catégories populaires"
-          description="Choisir les catégories mises en avant et leur ordre."
+function TabAdmins({
+  supabase,
+  currentUserId,
+}: {
+  supabase: SupabaseClient;
+  currentUserId: string;
+}) {
+  const [rows, setRows] = useState<AdminUser[]>([]);
+
+  const load = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(
+        "id,user_id,display_name,phone,created_at,is_admin,is_suspended,admin_label",
+      )
+      .or("is_admin.eq.true,admin_label.not.is.null")
+      .order("created_at", { ascending: false });
+    if (error) toast.error(error.message);
+    else setRows((data ?? []) as AdminUser[]);
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const update = async (row: AdminUser, patch: Record<string, unknown>) => {
+    if (row.user_id === currentUserId && patch.is_admin === false) {
+      toast.error("Impossible de retirer vos propres droits.");
+      return;
+    }
+    const { error } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("user_id", row.user_id);
+    if (error) toast.error(error.message);
+    else await load();
+  };
+
+  return (
+    <PageContainer
+      title="Administrateurs"
+      description="Comptes autorisés à accéder au back-office."
+    >
+      <DataTable headers={["Nom", "UUID", "Libellé", "État", "Actions"]}>
+        {rows.map((row) => (
+          <tr key={row.id} className="border-b border-white/5">
+            <td className="px-5 py-3 font-semibold">
+              {row.display_name || "Sans nom"}
+            </td>
+            <td className="px-5 py-3 font-mono text-xs text-slate-500">
+              {row.user_id}
+            </td>
+            <td className="px-5 py-3 text-slate-400">
+              {row.admin_label || "Administrateur"}
+            </td>
+            <td className="px-5 py-3">
+              {row.is_suspended ? (
+                <Badge status="suspended" />
+              ) : (
+                <Badge status="active" />
+              )}
+            </td>
+            <td className="px-5 py-3">
+              <div className="flex gap-1">
+                <ActionBtn
+                  color="orange"
+                  title="Suspendre/réactiver"
+                  onClick={() =>
+                    void update(row, { is_suspended: !row.is_suspended })
+                  }
+                >
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                </ActionBtn>
+                <ActionBtn
+                  color="red"
+                  title="Retirer l'accès"
+                  onClick={() =>
+                    void update(row, { is_admin: false, admin_label: null })
+                  }
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                </ActionBtn>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+    </PageContainer>
+  );
+}
+
+function TabRoles({ supabase }: { supabase: SupabaseClient }) {
+  const [roles, setRoles] = useState<any[]>([]);
+  const [permissions, setPermissions] = useState<any[]>([]);
+  const [links, setLinks] = useState<any[]>([]);
+  const [newRole, setNewRole] = useState({
+    name: "",
+    slug: "",
+    description: "",
+  });
+
+  const load = async () => {
+    const [r, p, l] = await Promise.all([
+      supabase.from("admin_roles").select("*").order("name"),
+      supabase.from("admin_permissions").select("*").order("module"),
+      supabase.from("admin_role_permissions").select("*"),
+    ]);
+    if (r.error) toast.error(r.error.message);
+    if (p.error) toast.error(p.error.message);
+    if (l.error) toast.error(l.error.message);
+    setRoles(r.data ?? []);
+    setPermissions(p.data ?? []);
+    setLinks(l.data ?? []);
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const addRole = async () => {
+    const { error } = await supabase
+      .from("admin_roles")
+      .insert({ ...newRole, is_system: false });
+    if (error) toast.error(error.message);
+    else {
+      setNewRole({ name: "", slug: "", description: "" });
+      await load();
+    }
+  };
+
+  const togglePermission = async (roleId: string, permissionId: string) => {
+    const exists = links.some(
+      (link) => link.role_id === roleId && link.permission_id === permissionId,
+    );
+    const result = exists
+      ? await supabase
+          .from("admin_role_permissions")
+          .delete()
+          .eq("role_id", roleId)
+          .eq("permission_id", permissionId)
+      : await supabase
+          .from("admin_role_permissions")
+          .insert({ role_id: roleId, permission_id: permissionId });
+    if (result.error) toast.error(result.error.message);
+    else await load();
+  };
+
+  return (
+    <PageContainer
+      title="Rôles & permissions"
+      description="Définissez les droits des équipes d'administration."
+    >
+      <Panel title="Créer un rôle">
+        <div className="grid gap-3 md:grid-cols-3">
+          <Input
+            value={newRole.name}
+            onChange={(e) =>
+              setNewRole((current) => ({ ...current, name: e.target.value }))
+            }
+            placeholder="Nom"
+            className="border-white/10 bg-slate-700 text-white"
+          />
+          <Input
+            value={newRole.slug}
+            onChange={(e) =>
+              setNewRole((current) => ({ ...current, slug: e.target.value }))
+            }
+            placeholder="Slug"
+            className="border-white/10 bg-slate-700 text-white"
+          />
+          <Input
+            value={newRole.description}
+            onChange={(e) =>
+              setNewRole((current) => ({
+                ...current,
+                description: e.target.value,
+              }))
+            }
+            placeholder="Description"
+            className="border-white/10 bg-slate-700 text-white"
+          />
+        </div>
+        <Button
+          onClick={() => void addRole()}
+          className="mt-4 bg-blue-600 hover:bg-blue-700"
+        >
+          Ajouter
+        </Button>
+      </Panel>
+
+      <div className="space-y-4">
+        {roles.map((role) => (
+          <Panel key={role.id} title={role.name}>
+            <p className="mb-4 text-sm text-slate-500">{role.description}</p>
+            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+              {permissions.map((permission) => {
+                const checked = links.some(
+                  (link) =>
+                    link.role_id === role.id &&
+                    link.permission_id === permission.id,
+                );
+                return (
+                  <label
+                    key={permission.id}
+                    className="flex items-start gap-3 rounded-xl bg-slate-900 p-3"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        void togglePermission(role.id, permission.id)
+                      }
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="block text-sm font-bold">
+                        {permission.code}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {permission.description}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </Panel>
+        ))}
+      </div>
+    </PageContainer>
+  );
+}
+
+function TabAudit({ supabase }: { supabase: SupabaseClient }) {
+  const [rows, setRows] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+
+  const load = async () => {
+    const { data, error } = await supabase
+      .from("admin_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (error) toast.error(error.message);
+    else setRows(data ?? []);
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const filtered = rows.filter((row) =>
+    `${row.action} ${row.module} ${row.entity_type} ${row.entity_id}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+
+  return (
+    <PageContainer
+      title="Journal d'activité"
+      description="Historique automatique des opérations sensibles."
+      action={<RefreshButton onClick={() => void load()} />}
+    >
+      <SearchBox
+        value={search}
+        onChange={setSearch}
+        placeholder="Rechercher dans le journal…"
+      />
+      <DataTable
+        headers={["Date", "Action", "Module", "Entité", "Administrateur"]}
+      >
+        {filtered.map((row) => (
+          <tr key={row.id} className="border-b border-white/5">
+            <td className="px-5 py-3 text-xs text-slate-400">
+              {new Date(row.created_at).toLocaleString("fr-FR")}
+            </td>
+            <td className="px-5 py-3 font-semibold">{row.action}</td>
+            <td className="px-5 py-3 text-slate-400">{row.module}</td>
+            <td className="px-5 py-3 text-xs text-slate-400">
+              {row.entity_type} {row.entity_id}
+            </td>
+            <td className="px-5 py-3 font-mono text-xs text-slate-500">
+              {row.admin_user_id || "—"}
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+    </PageContainer>
+  );
+}
+
+function GenericCrudManager({
+  supabase,
+  currentUserId,
+  config,
+}: {
+  supabase: SupabaseClient;
+  currentUserId: string;
+  config: CrudConfig;
+}) {
+  const [rows, setRows] = useState<any[]>([]);
+  const [form, setForm] = useState<Record<string, any>>(() =>
+    createEmptyForm(config.fields),
+  );
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    let query = supabase.from(config.table).select(config.select ?? "*");
+    if (config.orderBy) {
+      query = query.order(config.orderBy, {
+        ascending: config.ascending ?? false,
+      });
+    }
+    const { data, error } = await query;
+    setLoading(false);
+    if (error) toast.error(error.message);
+    else setRows(data ?? []);
+  };
+
+  useEffect(() => {
+    void load();
+  }, [config.table]);
+
+  const reset = () => {
+    setForm(createEmptyForm(config.fields));
+    setEditingId(null);
+  };
+
+  const edit = (row: any) => {
+    const next: Record<string, any> = {};
+    for (const field of config.fields) {
+      next[field.key] = formatForForm(row[field.key], field.type);
+    }
+    setForm(next);
+    setEditingId(row.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const save = async () => {
+    for (const field of config.fields) {
+      if (field.required && !String(form[field.key] ?? "").trim()) {
+        toast.error(`${field.label} est obligatoire`);
+        return;
+      }
+    }
+
+    setSaving(true);
+    let payload: Record<string, unknown> = {};
+    try {
+      for (const field of config.fields) {
+        payload[field.key] = parseFieldValue(form[field.key], field.type);
+      }
+    } catch (error) {
+      setSaving(false);
+      toast.error(error instanceof Error ? error.message : "Donnée invalide");
+      return;
+    }
+
+    if (config.userColumns?.createdBy && !editingId) {
+      payload[config.userColumns.createdBy] = currentUserId;
+    }
+    if (config.userColumns?.updatedBy) {
+      payload[config.userColumns.updatedBy] = currentUserId;
+    }
+    if (config.transformBeforeSave) {
+      payload = config.transformBeforeSave(payload);
+    }
+
+    const result = editingId
+      ? await supabase.from(config.table).update(payload).eq("id", editingId)
+      : await supabase.from(config.table).insert(payload);
+
+    setSaving(false);
+    if (result.error) {
+      toast.error(result.error.message);
+      return;
+    }
+
+    toast.success(`${config.singular} ${editingId ? "modifié(e)" : "créé(e)"}`);
+    reset();
+    await load();
+  };
+
+  const remove = async (id: string) => {
+    if (!window.confirm(`Supprimer cette ${config.singular} ?`)) return;
+    const { error } = await supabase.from(config.table).delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Élément supprimé");
+      await load();
+    }
+  };
+
+  const listFields = config.fields.filter((field) => field.list).slice(0, 5);
+  const filtered = rows.filter((row) =>
+    listFields
+      .map((field) => String(row[field.key] ?? ""))
+      .join(" ")
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+
+  return (
+    <PageContainer
+      title={config.title}
+      description={config.description}
+      action={<RefreshButton onClick={() => void load()} loading={loading} />}
+    >
+      <Panel
+        title={
+          editingId
+            ? `Modifier la ${config.singular}`
+            : `Ajouter une ${config.singular}`
+        }
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          {config.fields.map((field) => (
+            <DynamicField
+              key={field.key}
+              field={field}
+              value={form[field.key]}
+              onChange={(value) =>
+                setForm((current) => ({ ...current, [field.key]: value }))
+              }
+            />
+          ))}
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button
+            disabled={saving}
+            onClick={() => void save()}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {saving
+              ? "Enregistrement..."
+              : editingId
+                ? "Enregistrer"
+                : "Ajouter"}
+          </Button>
+          {editingId && (
+            <Button onClick={reset} className="bg-slate-700 hover:bg-slate-600">
+              <X className="mr-2 h-4 w-4" />
+              Annuler
+            </Button>
+          )}
+        </div>
+      </Panel>
+
+      <SearchBox
+        value={search}
+        onChange={setSearch}
+        placeholder={`Rechercher une ${config.singular}…`}
+      />
+
+      <DataTable
+        headers={[...listFields.map((field) => field.label), "Actions"]}
+      >
+        {filtered.map((row) => (
+          <tr key={row.id} className="border-b border-white/5">
+            {listFields.map((field) => (
+              <td key={field.key} className="max-w-xs px-5 py-3 text-sm">
+                <ListValue value={row[field.key]} field={field} />
+              </td>
+            ))}
+            <td className="px-5 py-3">
+              <div className="flex gap-1">
+                <ActionBtn
+                  color="blue"
+                  title="Modifier"
+                  onClick={() => edit(row)}
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                </ActionBtn>
+                <ActionBtn
+                  color="slate"
+                  title="Supprimer"
+                  onClick={() => void remove(row.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </ActionBtn>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+      {!loading && filtered.length === 0 && <EmptyRow text="Aucun élément." />}
+    </PageContainer>
+  );
+}
+
+function DynamicField({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldConfig;
+  value: any;
+  onChange: (value: any) => void;
+}) {
+  if (field.type === "boolean") {
+    return (
+      <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-700 p-3">
+        <input
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(event) => onChange(event.target.checked)}
         />
-        <CmsSectionCard
-          title="Annonces à la une"
-          description="Sélectionner les annonces prioritaires de la page d'accueil."
-        />
-        <CmsSectionCard
-          title="Statistiques"
-          description="Configurer les chiffres clés affichés aux visiteurs."
-        />
-        <CmsSectionCard
-          title="Bloc promotionnel"
-          description="Créer une section éditoriale ou commerciale personnalisée."
+        <span className="text-sm font-bold text-slate-300">{field.label}</span>
+      </label>
+    );
+  }
+
+  if (field.type === "select") {
+    return (
+      <FormLabel label={field.label}>
+        <select
+          value={value ?? ""}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-11 w-full rounded-xl border border-white/10 bg-slate-700 px-3 text-sm text-white"
+        >
+          <option value="">Choisir</option>
+          {field.options?.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </FormLabel>
+    );
+  }
+
+  if (field.type === "textarea" || field.type === "json") {
+    return (
+      <div className="md:col-span-2">
+        <CmsTextarea
+          label={field.label}
+          value={value ?? ""}
+          onChange={onChange}
+          rows={field.type === "json" ? 7 : 4}
         />
       </div>
+    );
+  }
+
+  return (
+    <FormLabel label={field.label}>
+      <Input
+        type={
+          field.type === "number"
+            ? "number"
+            : field.type === "datetime"
+              ? "datetime-local"
+              : "text"
+        }
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={field.placeholder}
+        className="border-white/10 bg-slate-700 text-white"
+      />
+    </FormLabel>
+  );
+}
+
+function createEmptyForm(fields: FieldConfig[]) {
+  return Object.fromEntries(
+    fields.map((field) => [
+      field.key,
+      field.type === "json"
+        ? JSON.stringify(field.defaultValue ?? {}, null, 2)
+        : field.type === "tags"
+          ? Array.isArray(field.defaultValue)
+            ? field.defaultValue.join(", ")
+            : ""
+          : (field.defaultValue ?? (field.type === "boolean" ? false : "")),
+    ]),
+  );
+}
+
+function formatForForm(value: unknown, type?: FieldType) {
+  if (type === "json") return JSON.stringify(value ?? {}, null, 2);
+  if (type === "tags") return Array.isArray(value) ? value.join(", ") : "";
+  if (type === "datetime" && value)
+    return new Date(String(value)).toISOString().slice(0, 16);
+  return value ?? (type === "boolean" ? false : "");
+}
+
+function parseFieldValue(value: any, type?: FieldType): unknown {
+  if (type === "boolean") return Boolean(value);
+  if (type === "number")
+    return value === "" || value == null ? null : Number(value);
+  if (type === "datetime") return value ? new Date(value).toISOString() : null;
+  if (type === "json") {
+    try {
+      return JSON.parse(value || "{}");
+    } catch {
+      throw new Error("Un champ JSON contient une syntaxe invalide.");
+    }
+  }
+  if (type === "tags") {
+    return String(value ?? "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return value === "" ? null : value;
+}
+
+function ListValue({ value, field }: { value: any; field: FieldConfig }) {
+  if (field.type === "boolean") return <span>{value ? "Oui" : "Non"}</span>;
+  if (field.key === "status") return <Badge status={String(value)} />;
+  if (field.type === "datetime" && value)
+    return <span>{new Date(value).toLocaleString("fr-FR")}</span>;
+  if (field.type === "json")
+    return (
+      <span className="line-clamp-2 text-xs text-slate-500">
+        {JSON.stringify(value)}
+      </span>
+    );
+  if (Array.isArray(value)) return <span>{value.join(", ")}</span>;
+  return <span className="line-clamp-2">{String(value ?? "—")}</span>;
+}
+
+function LocationPanel({
+  title,
+  rows,
+  value,
+  onChange,
+  onAdd,
+  onDelete,
+  parentValue,
+  onParentChange,
+  parentRows,
+  parentLabel,
+}: {
+  title: string;
+  rows: any[];
+  value: string;
+  onChange: (value: string) => void;
+  onAdd: () => void;
+  onDelete: (id: string) => void;
+  parentValue?: string;
+  onParentChange?: (value: string) => void;
+  parentRows?: any[];
+  parentLabel?: string;
+}) {
+  return (
+    <Panel title={title}>
+      <div className="space-y-2">
+        {parentRows && onParentChange && (
+          <select
+            value={parentValue}
+            onChange={(e) => onParentChange(e.target.value)}
+            className="h-11 w-full rounded-xl border border-white/10 bg-slate-700 px-3 text-white"
+          >
+            <option value="">{parentLabel || "Parent"}</option>
+            {parentRows.map((row) => (
+              <option key={row.id} value={row.id}>
+                {row.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <div className="flex gap-2">
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={`Nouvelle ${title.toLowerCase()}`}
+            className="border-white/10 bg-slate-700 text-white"
+          />
+          <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <div className="mt-4 max-h-[420px] space-y-1 overflow-y-auto">
+        {rows.map((row) => (
+          <div
+            key={row.id}
+            className="flex items-center justify-between rounded-xl bg-slate-900 px-3 py-2"
+          >
+            <div>
+              <p className="text-sm font-semibold">{row.name}</p>
+              <p className="text-[11px] text-slate-500">{row.slug}</p>
+            </div>
+            <ActionBtn
+              color="slate"
+              title="Supprimer"
+              onClick={() => onDelete(row.id)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </ActionBtn>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+function PageContainer({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string;
+  description: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-white">{title}</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+            {description}
+          </p>
+        </div>
+        {action}
+      </div>
+      {children}
     </div>
   );
 }
 
-function CmsField({
+function Panel({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-800 p-5">
+      <h2 className="mb-4 font-black text-white">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function FormLabel({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-bold text-slate-400">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function CmsInput({
   label,
   value,
   onChange,
@@ -2477,16 +3830,13 @@ function CmsField({
   onChange: (value: string) => void;
 }) {
   return (
-    <div>
-      <label className="mb-1 block text-xs font-bold text-slate-400">
-        {label}
-      </label>
+    <FormLabel label={label}>
       <Input
-        value={value}
+        value={value ?? ""}
         onChange={(event) => onChange(event.target.value)}
-        className="rounded-xl border-white/10 bg-slate-700 text-white"
+        className="border-white/10 bg-slate-700 text-white"
       />
-    </div>
+    </FormLabel>
   );
 }
 
@@ -2494,272 +3844,90 @@ function CmsTextarea({
   label,
   value,
   onChange,
+  rows = 4,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  rows?: number;
 }) {
   return (
-    <div>
-      <label className="mb-1 block text-xs font-bold text-slate-400">
-        {label}
-      </label>
+    <FormLabel label={label}>
       <textarea
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value)}
+        rows={rows}
+        className="w-full resize-y rounded-xl border border-white/10 bg-slate-700 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
+      />
+    </FormLabel>
+  );
+}
+
+function SearchBox({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="relative max-w-sm">
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <Input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        rows={4}
-        className="w-full resize-none rounded-xl border border-white/10 bg-slate-700 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
+        placeholder={placeholder}
+        className="border-white/10 bg-slate-800 pl-9 text-white placeholder:text-slate-500"
       />
     </div>
   );
 }
 
-function CmsSectionCard({
-  title,
-  description,
+function RefreshButton({
+  onClick,
+  loading,
 }: {
-  title: string;
-  description: string;
+  onClick: () => void;
+  loading?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-800 p-5">
-      <p className="font-black text-white">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
-      <Button
-        type="button"
-        className="mt-4 rounded-xl bg-slate-700 text-slate-200 hover:bg-slate-600"
-      >
-        Configurer
-      </Button>
-    </div>
+    <Button onClick={onClick} className="bg-slate-800 hover:bg-slate-700">
+      <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+      Actualiser
+    </Button>
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   TAB — SEO
-════════════════════════════════════════════════════════════ */
-
-function TabSeo() {
-  const [siteTitle, setSiteTitle] = useState("Kafoo — Petites annonces");
-  const [metaDescription, setMetaDescription] = useState(
-    "Achetez et vendez facilement près de chez vous en Guinée.",
-  );
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    setSaving(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 500));
-    setSaving(false);
-    toast.success(
-      "Configuration SEO prête. Connectez ces valeurs à la table settings pour les rendre persistantes.",
-    );
-  };
-
-  return (
-    <div className="max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">SEO</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Préparez les métadonnées principales de la plateforme.
-        </p>
-      </div>
-
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-800 p-5">
-        <CmsField
-          label="Titre du site"
-          value={siteTitle}
-          onChange={setSiteTitle}
-        />
-        <CmsTextarea
-          label="Meta description"
-          value={metaDescription}
-          onChange={setMetaDescription}
-        />
-
-        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-          <p className="text-xs font-black uppercase tracking-wider text-blue-300">
-            Aperçu
-          </p>
-          <p className="mt-2 text-lg font-semibold text-blue-400">{siteTitle}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-400">
-            {metaDescription}
-          </p>
-        </div>
-
-        <Button
-          type="button"
-          disabled={saving}
-          onClick={() => void save()}
-          className="rounded-xl bg-blue-600 px-6 font-bold text-white hover:bg-blue-700"
-        >
-          {saving ? "Enregistrement…" : "Enregistrer le SEO"}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════
-   TAB — PARAMÈTRES
-════════════════════════════════════════════════════════════ */
-
-function TabSettings({ user }: { user: any }) {
-  const [siteName, setSiteName] = useState("Kafoo");
-  const [siteDesc, setSiteDesc] = useState("");
-  const [supportEmail, setSupportEmail] = useState("");
-  const [currency, setCurrency] = useState("GNF");
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    try {
-      setSaving(true);
-      await new Promise((resolve) => window.setTimeout(resolve, 600));
-      toast.success(
-        "Interface de paramètres prête. Connectez ensuite ces champs à la table settings pour rendre les changements persistants.",
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">Paramètres</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Configuration générale de la plateforme.
-        </p>
-      </div>
-
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-800 p-5">
-        <h2 className="font-black text-white">Général</h2>
-
-        <CmsField label="Nom du site" value={siteName} onChange={setSiteName} />
-        <CmsTextarea
-          label="Description"
-          value={siteDesc}
-          onChange={setSiteDesc}
-        />
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <CmsField
-            label="E-mail support"
-            value={supportEmail}
-            onChange={setSupportEmail}
-          />
-          <CmsField
-            label="Devise par défaut"
-            value={currency}
-            onChange={setCurrency}
-          />
-        </div>
-
-        <Button
-          type="button"
-          onClick={() => void save()}
-          disabled={saving}
-          className="rounded-full bg-blue-600 px-6 font-bold text-white hover:bg-blue-700"
-        >
-          {saving ? "Enregistrement…" : "Enregistrer"}
-        </Button>
-      </div>
-
-      <div className="space-y-3 rounded-2xl border border-white/10 bg-slate-800 p-5">
-        <h2 className="font-black text-white">Compte admin</h2>
-
-        <p className="text-sm text-slate-400">
-          Connecté en tant que{" "}
-          <span className="font-bold text-white">{user?.email}</span>
-        </p>
-
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-700/30 bg-emerald-900/30 px-4 py-3">
-          <Shield className="h-4 w-4 shrink-0 text-emerald-400" />
-          <span className="text-sm font-bold text-emerald-300">
-            Accès administrateur actif
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════
-   MODULES CMS / BACK-OFFICE À CONNECTER
-════════════════════════════════════════════════════════════ */
-
-function ModulePlaceholder({
-  title,
-  description,
-  icon,
-  features,
-  tables,
+function DataTable({
+  headers,
+  children,
 }: {
-  title: string;
-  description: string;
-  icon: ReactNode;
-  features: string[];
-  tables: string[];
+  headers: string[];
+  children: ReactNode;
 }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">{title}</h1>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
-          {description}
-        </p>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-2xl border border-white/10 bg-slate-800 p-5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
-            {icon}
-          </div>
-
-          <h2 className="mt-5 font-black text-white">Fonctionnalités prévues</h2>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {features.map((feature) => (
-              <div
-                key={feature}
-                className="flex items-start gap-3 rounded-xl bg-slate-900/70 p-3"
-              >
-                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                <span className="text-sm text-slate-300">{feature}</span>
-              </div>
+    <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-800">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-white/10 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+            {headers.map((header) => (
+              <th key={header} className="whitespace-nowrap px-5 py-3">
+                {header}
+              </th>
             ))}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-slate-900 p-5">
-          <p className="text-xs font-black uppercase tracking-wider text-slate-500">
-            Connexion Supabase
-          </p>
-
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            Ce module est intégré à l'administration. Pour activer la gestion
-            complète, créez ou confirmez les tables ci-dessous et leurs règles
-            RLS.
-          </p>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {tables.map((table) => (
-              <span
-                key={table}
-                className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-300"
-              >
-                {table}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   BOUTONS D'ACTION
-════════════════════════════════════════════════════════════ */
+function EmptyRow({ text }: { text: string }) {
+  return <p className="py-10 text-center text-sm text-slate-500">{text}</p>;
+}
 
 const COLOR_MAP: Record<string, string> = {
   emerald:
@@ -2770,8 +3938,6 @@ const COLOR_MAP: Record<string, string> = {
   blue: "bg-blue-900/40 text-blue-400 hover:bg-blue-800/60 border-blue-700/30",
   slate:
     "bg-slate-700/60 text-slate-400 hover:bg-slate-600/60 border-slate-600/30",
-  violet:
-    "bg-violet-900/40 text-violet-400 hover:bg-violet-800/60 border-violet-700/30",
 };
 
 function ActionBtn({
@@ -2790,11 +3956,10 @@ function ActionBtn({
       type="button"
       title={title}
       onClick={onClick}
-      className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border text-xs transition ${
-        COLOR_MAP[color] ?? COLOR_MAP.slate
-      }`}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition ${COLOR_MAP[color] ?? COLOR_MAP.slate}`}
     >
       {children}
     </button>
   );
 }
+
