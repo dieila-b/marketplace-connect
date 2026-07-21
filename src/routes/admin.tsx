@@ -1,6 +1,3 @@
-from pathlib import Path
-
-code = r'''import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   useEffect,
   useMemo,
@@ -2800,9 +2797,3 @@ function ActionBtn({
     </button>
   );
 }
-'''
-
-out = Path("/mnt/data/admin_enrichi.tsx")
-out.write_text(code, encoding="utf-8")
-print(f"Fichier créé : {out}")
-print(f"Lignes : {len(code.splitlines())}")
