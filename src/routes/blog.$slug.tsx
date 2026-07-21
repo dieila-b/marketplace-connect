@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { useSupabase } from "@/integrations/supabase/provider";
-import { loadPublicPost } from "@/integrations/cms/public-cms";
+import { loadPublicPost } from "@/integrations/supabase/cms/public-cms";
 
 export const Route = createFileRoute("/blog/$slug")({
   component: BlogPostPage,
