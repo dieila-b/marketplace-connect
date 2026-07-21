@@ -32,7 +32,7 @@ import {
   type CmsBanner,
   type CmsHomepage,
   type CmsSection,
-} from "@/integrations/cms/public-cms";
+} from "@/integrations/supabase/cms/public-cms";
 
 export const Route = createFileRoute("/")({
   head: () => ({
