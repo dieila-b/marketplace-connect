@@ -1,10 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   ArrowLeft,
   Box,
@@ -33,10 +29,6 @@ export const Route = createFileRoute("/annonces/$slug")({
   }),
 });
 
-type NamedRelation = {
-  name: string;
-};
-
 type Seller = {
   display_name: string | null;
   business_name: string | null;
@@ -45,83 +37,74 @@ type Seller = {
   account_type: string | null;
 };
 
+type NamedRelation = {
+  name: string;
+};
+
 type ListingImage = {
   id: string;
   image_url: string;
+  storage_path?: string | null;
   is_main: boolean;
-  sort_order: number;
+  sort_order?: number | null;
 };
 
 type Listing = {
   id: string;
   user_id: string;
-  slug: string;
   title: string;
   description: string | null;
   price: number | null;
   currency: string;
   condition: string | null;
-  created_at: string;
-  status: string;
-
   phone_visible: boolean;
   whatsapp_enabled: boolean;
   negotiable: boolean;
+  created_at: string;
   address_text: string | null;
+  status: string;
 
+  category_id: string | null;
+  region_id: string | null;
+  city_id: string | null;
+  commune_id: string | null;
+  district_id: string | null;
+
+  seller: Seller | null;
   category: NamedRelation | null;
   region: NamedRelation | null;
   city: NamedRelation | null;
   commune: NamedRelation | null;
-
-  seller: Seller | null;
+  district: NamedRelation | null;
   images: ListingImage[];
 };
 
-function safeString(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
+type BaseListingRow = Omit<
+  Listing,
+  | "seller"
+  | "category"
+  | "region"
+  | "city"
+  | "commune"
+  | "district"
+  | "images"
+>;
+
+function sortImages(images: ListingImage[]): ListingImage[] {
+  return [...images].sort((a, b) => {
+    if (a.is_main && !b.is_main) return -1;
+    if (!a.is_main && b.is_main) return 1;
+
+    return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  });
 }
 
-function safeBoolean(value: unknown, fallback = false): boolean {
-  return typeof value === "boolean" ? value : fallback;
-}
-
-function safeNumberOrNull(value: unknown): number | null {
-  if (typeof value === "number") return value;
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
-
-function conditionLabel(condition?: string | null) {
-  if (!condition) return null;
-
-  const normalized = condition.toLowerCase();
-
-  const labels: Record<string, string> = {
-    new: "NEUF",
-    neuf: "NEUF",
-    like_new: "COMME NEUF",
-    "like-new": "COMME NEUF",
-    very_good: "TRÈS BON ÉTAT",
-    "very-good": "TRÈS BON ÉTAT",
-    good: "BON ÉTAT",
-    bon: "BON ÉTAT",
-    used: "OCCASION",
-    fair: "ÉTAT CORRECT",
-  };
-
-  return labels[normalized] ?? condition.replace(/[_-]+/g, " ").toUpperCase();
-}
-
-async function loadRelationById(
-  supabase: any,
-  table: "categories" | "regions" | "cities" | "communes",
-  id: unknown,
+async function loadNamedRelation(
+  supabase: SupabaseClient,
+  table: "categories" | "regions" | "cities" | "communes" | "districts",
+  id: string | null,
 ): Promise<NamedRelation | null> {
-  if (typeof id !== "string" || !id) return null;
+  if (!id) return null;
 
   const { data, error } = await supabase
     .from(table)
@@ -130,147 +113,170 @@ async function loadRelationById(
     .maybeSingle();
 
   if (error) {
-    console.warn(`[ListingDetail] ${table}:`, error);
+    console.warn(`[ListingDetail] Relation ${table} indisponible :`, error);
     return null;
   }
 
-  return data ? { name: safeString(data.name) } : null;
+  return (data as NamedRelation | null) ?? null;
 }
 
 async function loadSeller(
-  supabase: any,
+  supabase: SupabaseClient,
   userId: string,
 ): Promise<Seller | null> {
-  /*
-   * select("*") évite de casser la fiche si le schéma profiles
-   * n'a pas exactement les colonnes prévues par l'ancienne version.
-   */
-  const { data, error } = await supabase
+  const rich = await supabase
     .from("profiles")
-    .select("*")
+    .select("display_name,business_name,phone,whatsapp,account_type")
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (error) {
-    console.warn("[ListingDetail] Vendeur :", error);
+  if (!rich.error) {
+    return (rich.data as Seller | null) ?? null;
+  }
+
+  console.warn(
+    "[ListingDetail] Profil vendeur complet indisponible, fallback minimal :",
+    rich.error,
+  );
+
+  const basic = await supabase
+    .from("profiles")
+    .select("display_name,phone")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (basic.error) {
+    console.warn("[ListingDetail] Profil vendeur indisponible :", basic.error);
     return null;
   }
 
-  if (!data) return null;
+  const row = basic.data as
+    | { display_name: string | null; phone: string | null }
+    | null;
+
+  if (!row) return null;
 
   return {
-    display_name:
-      typeof data.display_name === "string" ? data.display_name : null,
-    business_name:
-      typeof data.business_name === "string" ? data.business_name : null,
-    phone: typeof data.phone === "string" ? data.phone : null,
-    whatsapp: typeof data.whatsapp === "string" ? data.whatsapp : null,
-    account_type:
-      typeof data.account_type === "string" ? data.account_type : null,
+    display_name: row.display_name,
+    business_name: null,
+    phone: row.phone,
+    whatsapp: null,
+    account_type: null,
   };
 }
 
-async function loadImages(
-  supabase: any,
+async function loadListingImages(
+  supabase: SupabaseClient,
   listingId: string,
 ): Promise<ListingImage[]> {
-  /*
-   * On charge toutes les colonnes existantes de listing_images.
-   * Cela correspond au schéma vérifié dans Supabase :
-   * id, listing_id, image_url, storage_path, is_main,
-   * sort_order, created_at.
-   */
-  const { data, error } = await supabase
+  const full = await supabase
     .from("listing_images")
-    .select("*")
+    .select("id,image_url,storage_path,is_main,sort_order")
     .eq("listing_id", listingId)
     .order("is_main", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (error) {
-    console.error("[ListingDetail] Images :", error);
+  if (!full.error) {
+    return sortImages((full.data ?? []) as ListingImage[]);
+  }
+
+  console.warn(
+    "[ListingDetail] Chargement complet des images impossible, fallback :",
+    full.error,
+  );
+
+  const fallback = await supabase
+    .from("listing_images")
+    .select("id,image_url,is_main")
+    .eq("listing_id", listingId)
+    .order("is_main", { ascending: false });
+
+  if (fallback.error) {
+    console.error(
+      "[ListingDetail] Impossible de charger les images :",
+      fallback.error,
+    );
     return [];
   }
 
-  return (data ?? [])
-    .filter((row: any) => typeof row.image_url === "string" && row.image_url)
-    .map((row: any) => ({
-      id: String(row.id),
-      image_url: String(row.image_url),
-      is_main: Boolean(row.is_main),
-      sort_order:
-        typeof row.sort_order === "number" ? row.sort_order : 0,
-    }));
+  return sortImages((fallback.data ?? []) as ListingImage[]);
 }
 
-async function loadListing(
-  supabase: any,
+async function loadListingDetail(
+  supabase: SupabaseClient,
   slug: string,
 ): Promise<Listing | null> {
   /*
-   * CORRECTION PRINCIPALE :
+   * La fiche est volontairement chargée SANS jointures PostgREST.
    *
-   * On ne nomme PLUS les colonnes optionnelles une par une.
-   * Avec select("*"), une colonne absente ne peut plus provoquer
-   * l'échec complet de la requête.
+   * Ainsi, une relation mal configurée (districts, profiles, etc.)
+   * ne peut plus faire échouer toute l'annonce, sa description
+   * ou sa galerie d'images.
    */
   const { data, error } = await supabase
     .from("listings")
-    .select("*")
+    .select(
+      `
+      id,
+      user_id,
+      title,
+      description,
+      price,
+      currency,
+      condition,
+      phone_visible,
+      whatsapp_enabled,
+      negotiable,
+      created_at,
+      address_text,
+      status,
+      category_id,
+      region_id,
+      city_id,
+      commune_id,
+      district_id
+    `,
+    )
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
 
   if (error) {
-    console.error("[ListingDetail] Requête annonce :", error);
-    throw new Error(error.message);
+    console.error("[ListingDetail] Impossible de charger l'annonce :", error);
+    throw error;
   }
 
   if (!data) return null;
 
-  const id = safeString(data.id);
-  const userId = safeString(data.user_id);
+  const base = data as BaseListingRow;
 
-  if (!id) {
-    throw new Error("L'annonce ne possède pas d'identifiant.");
-  }
-
-  const [images, seller, category, region, city, commune] = await Promise.all([
-    loadImages(supabase, id),
-    userId ? loadSeller(supabase, userId) : Promise.resolve(null),
-    loadRelationById(supabase, "categories", data.category_id),
-    loadRelationById(supabase, "regions", data.region_id),
-    loadRelationById(supabase, "cities", data.city_id),
-    loadRelationById(supabase, "communes", data.commune_id),
-  ]);
-
-  return {
-    id,
-    user_id: userId,
-    slug: safeString(data.slug, slug),
-    title: safeString(data.title, "Annonce"),
-    description:
-      typeof data.description === "string" ? data.description : null,
-    price: safeNumberOrNull(data.price),
-    currency: safeString(data.currency, "GNF"),
-    condition:
-      typeof data.condition === "string" ? data.condition : null,
-    created_at: safeString(data.created_at, new Date().toISOString()),
-    status: safeString(data.status, "published"),
-
-    phone_visible: safeBoolean(data.phone_visible, false),
-    whatsapp_enabled: safeBoolean(data.whatsapp_enabled, false),
-    negotiable: safeBoolean(data.negotiable, false),
-    address_text:
-      typeof data.address_text === "string" ? data.address_text : null,
-
+  const [
+    seller,
     category,
     region,
     city,
     commune,
+    district,
+    images,
+  ] = await Promise.all([
+    loadSeller(supabase, base.user_id),
+    loadNamedRelation(supabase, "categories", base.category_id),
+    loadNamedRelation(supabase, "regions", base.region_id),
+    loadNamedRelation(supabase, "cities", base.city_id),
+    loadNamedRelation(supabase, "communes", base.commune_id),
+    loadNamedRelation(supabase, "districts", base.district_id),
+    loadListingImages(supabase, base.id),
+  ]);
 
+  return {
+    ...base,
     seller,
+    category,
+    region,
+    city,
+    commune,
+    district,
     images,
   };
 }
@@ -285,7 +291,7 @@ function ListingDetail() {
   const [loadError, setLoadError] = useState("");
   const [imgIdx, setImgIdx] = useState(0);
   const [isFav, setIsFav] = useState(false);
-  const [showFullDescription, setShowFullDescription] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -297,9 +303,8 @@ function ListingDetail() {
         setLoading(true);
         setLoadError("");
         setImgIdx(0);
-        setShowFullDescription(false);
 
-        const result = await loadListing(supabase, slug);
+        const result = await loadListingDetail(supabase, slug);
 
         if (cancelled) return;
 
@@ -316,9 +321,8 @@ function ListingDetail() {
             ? error.message
             : "Impossible de charger cette annonce.";
 
-        console.error("[ListingDetail]", error);
-        setListing(null);
         setLoadError(message);
+        setListing(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -328,6 +332,26 @@ function ListingDetail() {
       cancelled = true;
     };
   }, [supabase, slug]);
+
+  useEffect(() => {
+    if (!listing) return;
+
+    document.title = `${listing.title} — Kafoo`;
+
+    let meta = document.querySelector('meta[name="description"]');
+
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("name", "description");
+      document.head.appendChild(meta);
+    }
+
+    const description =
+      listing.description?.trim() ||
+      `${listing.title} à vendre sur Kafoo.`;
+
+    meta.setAttribute("content", description.slice(0, 160));
+  }, [listing]);
 
   useEffect(() => {
     if (!user || !listing) {
@@ -345,15 +369,14 @@ function ListingDetail() {
         .eq("listing_id", listing.id)
         .maybeSingle();
 
-      if (cancelled) return;
-
-      if (error) {
-        console.warn("[ListingDetail] Favori :", error);
-        setIsFav(false);
-        return;
+      if (!cancelled) {
+        if (error) {
+          console.warn("[ListingDetail] Favori :", error);
+          setIsFav(false);
+        } else {
+          setIsFav(Boolean(data));
+        }
       }
-
-      setIsFav(Boolean(data));
     })();
 
     return () => {
@@ -361,14 +384,25 @@ function ListingDetail() {
     };
   }, [supabase, user, listing]);
 
-  const images = listing?.images ?? [];
+  const images = useMemo(
+    () => sortImages(listing?.images ?? []),
+    [listing?.images],
+  );
+
   const currentImage = images[imgIdx] ?? images[0] ?? null;
+
+  useEffect(() => {
+    if (imgIdx >= images.length && images.length > 0) {
+      setImgIdx(0);
+    }
+  }, [images.length, imgIdx]);
 
   const location = useMemo(() => {
     if (!listing) return "";
 
     return [
       listing.address_text,
+      listing.district?.name,
       listing.commune?.name,
       listing.city?.name,
       listing.region?.name,
@@ -376,6 +410,16 @@ function ListingDetail() {
       .filter(Boolean)
       .join(", ");
   }, [listing]);
+
+  const previousImage = () => {
+    if (images.length <= 1) return;
+    setImgIdx((current) => (current - 1 + images.length) % images.length);
+  };
+
+  const nextImage = () => {
+    if (images.length <= 1) return;
+    setImgIdx((current) => (current + 1) % images.length);
+  };
 
   const toggleFav = async () => {
     if (!listing) return;
@@ -385,35 +429,40 @@ function ListingDetail() {
       return;
     }
 
-    if (isFav) {
-      const { error } = await supabase
-        .from("favorites")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("listing_id", listing.id);
+    try {
+      setFavoriteLoading(true);
 
-      if (error) {
-        toast.error(error.message);
-        return;
+      if (isFav) {
+        const { error } = await supabase
+          .from("favorites")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("listing_id", listing.id);
+
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+
+        setIsFav(false);
+        toast.success("Annonce retirée des favoris");
+      } else {
+        const { error } = await supabase.from("favorites").insert({
+          user_id: user.id,
+          listing_id: listing.id,
+        });
+
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+
+        setIsFav(true);
+        toast.success("Annonce ajoutée aux favoris");
       }
-
-      setIsFav(false);
-      toast.success("Retiré des favoris");
-      return;
+    } finally {
+      setFavoriteLoading(false);
     }
-
-    const { error } = await supabase.from("favorites").insert({
-      user_id: user.id,
-      listing_id: listing.id,
-    });
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    setIsFav(true);
-    toast.success("Ajouté aux favoris");
   };
 
   const contactSeller = async () => {
@@ -453,7 +502,7 @@ function ListingDetail() {
       .maybeSingle();
 
     if (conversationError || !conversation) {
-      toast.error(conversationError?.message ?? "Erreur");
+      toast.error(conversationError?.message ?? "Impossible de créer la conversation.");
       return;
     }
 
@@ -504,30 +553,30 @@ function ListingDetail() {
     if (!listing) return;
 
     try {
+      const url = window.location.href;
+
       if (navigator.share) {
         await navigator.share({
           title: listing.title,
           text: listing.description ?? undefined,
-          url: window.location.href,
+          url,
         });
         return;
       }
 
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success("Lien copié");
-    } catch {
-      // Partage annulé.
+      await navigator.clipboard.writeText(url);
+      toast.success("Lien de l'annonce copié");
+    } catch (error) {
+      console.warn("[ListingDetail] Partage annulé ou indisponible :", error);
     }
   };
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-[60vh] max-w-6xl items-center justify-center px-4">
+      <main className="mx-auto flex min-h-[60vh] max-w-6xl items-center justify-center px-4 py-10">
         <div className="text-center">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-          <p className="mt-4 text-sm text-slate-500">
-            Chargement de l'annonce…
-          </p>
+          <p className="mt-4 text-sm text-slate-500">Chargement de l'annonce…</p>
         </div>
       </main>
     );
@@ -538,12 +587,10 @@ function ListingDetail() {
       <main className="mx-auto max-w-4xl px-4 py-16 text-center">
         <div className="rounded-3xl border bg-white p-8 shadow-sm">
           <Box className="mx-auto h-12 w-12 text-slate-400" />
-
           <h1 className="mt-4 text-2xl font-black text-slate-950">
             Annonce introuvable
           </h1>
-
-          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
+          <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">
             {loadError ||
               "Cette annonce n'existe plus ou n'est pas disponible publiquement."}
           </p>
@@ -559,20 +606,10 @@ function ListingDetail() {
     );
   }
 
-  const condition = conditionLabel(listing.condition);
-
   const sellerName =
     listing.seller?.business_name ||
     listing.seller?.display_name ||
     "Utilisateur Kafoo";
-
-  const description = listing.description?.trim() || "";
-  const shouldCollapse = description.length > 320;
-
-  const visibleDescription =
-    shouldCollapse && !showFullDescription
-      ? `${description.slice(0, 320).trim()}…`
-      : description;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -585,11 +622,14 @@ function ListingDetail() {
           Retour aux annonces
         </Link>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,.7fr)]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.75fr)]">
+          {/* ═══════════════════════════════════════════════
+              GALERIE + DESCRIPTION
+          ═══════════════════════════════════════════════ */}
+
           <div className="min-w-0 space-y-6">
-            {/* GALERIE */}
-            <section className="overflow-hidden rounded-[2rem] border bg-white shadow-sm">
-              <div className="relative flex min-h-[360px] items-center justify-center bg-slate-100 sm:min-h-[560px]">
+            <section className="overflow-hidden rounded-3xl border bg-white shadow-sm">
+              <div className="relative flex min-h-[360px] items-center justify-center bg-slate-100 sm:min-h-[520px]">
                 {currentImage ? (
                   <img
                     src={currentImage.image_url}
@@ -605,27 +645,12 @@ function ListingDetail() {
                   </div>
                 )}
 
-                <span className="absolute left-5 top-5 rounded-full bg-white/95 px-4 py-2 text-xs font-black text-slate-700 shadow-md">
-                  {listing.category?.name || "Annonce"}
-                </span>
-
-                {condition && (
-                  <span className="absolute right-5 top-5 rounded-full bg-emerald-500 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-md">
-                    {condition}
-                  </span>
-                )}
-
                 {images.length > 1 && (
                   <>
                     <button
                       type="button"
-                      onClick={() =>
-                        setImgIdx(
-                          (current) =>
-                            (current - 1 + images.length) % images.length,
-                        )
-                      }
-                      className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-lg"
+                      onClick={previousImage}
+                      className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:bg-white"
                       aria-label="Photo précédente"
                     >
                       <ChevronLeft className="h-5 w-5" />
@@ -633,34 +658,33 @@ function ListingDetail() {
 
                     <button
                       type="button"
-                      onClick={() =>
-                        setImgIdx((current) => (current + 1) % images.length)
-                      }
-                      className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-lg"
+                      onClick={nextImage}
+                      className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:bg-white"
                       aria-label="Photo suivante"
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
 
-                    <span className="absolute bottom-4 right-4 rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-white">
+                    <div className="absolute bottom-3 right-3 rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
                       {imgIdx + 1} / {images.length}
-                    </span>
+                    </div>
                   </>
                 )}
               </div>
 
               {images.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto border-t p-3">
+                <div className="flex gap-2 overflow-x-auto border-t bg-white p-3">
                   {images.map((image, index) => (
                     <button
                       type="button"
                       key={image.id}
                       onClick={() => setImgIdx(index)}
-                      className={`h-20 w-24 shrink-0 overflow-hidden rounded-xl border-2 ${
+                      className={`h-20 w-24 shrink-0 overflow-hidden rounded-xl border-2 bg-slate-100 transition ${
                         index === imgIdx
-                          ? "border-blue-600"
-                          : "border-transparent"
+                          ? "border-blue-600 ring-2 ring-blue-100"
+                          : "border-transparent hover:border-slate-300"
                       }`}
+                      aria-label={`Afficher la photo ${index + 1}`}
                     >
                       <img
                         src={image.image_url}
@@ -673,33 +697,13 @@ function ListingDetail() {
               )}
             </section>
 
-            {/* DESCRIPTION */}
-            <section
-              id="description"
-              className="rounded-3xl border bg-white p-6 shadow-sm"
-            >
-              <h2 className="text-xl font-black text-slate-950">
-                Description de l'article
-              </h2>
+            <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
+              <h2 className="text-xl font-black text-slate-950">Description</h2>
 
-              {description ? (
-                <>
-                  <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-7 text-slate-600 sm:text-base">
-                    {visibleDescription}
-                  </p>
-
-                  {shouldCollapse && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowFullDescription((current) => !current)
-                      }
-                      className="mt-4 font-black text-blue-600 hover:underline"
-                    >
-                      {showFullDescription ? "Voir moins" : "Voir plus"}
-                    </button>
-                  )}
-                </>
+              {listing.description?.trim() ? (
+                <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-7 text-slate-600 sm:text-base">
+                  {listing.description}
+                </p>
               ) : (
                 <p className="mt-4 text-sm italic text-slate-400">
                   Le vendeur n'a pas ajouté de description.
@@ -708,50 +712,62 @@ function ListingDetail() {
             </section>
           </div>
 
-          {/* INFORMATIONS */}
-          <aside className="min-w-0 space-y-4">
-            <section className="rounded-[2rem] border bg-white p-6 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-wide text-blue-600">
-                    {listing.category?.name || "Petite annonce"}
-                  </p>
+          {/* ═══════════════════════════════════════════════
+              INFORMATIONS ANNONCE
+          ═══════════════════════════════════════════════ */}
 
-                  <h1 className="mt-2 break-words text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
+          <aside className="min-w-0 space-y-4">
+            <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h1 className="break-words text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
                     {listing.title}
                   </h1>
+
+                  <div className="mt-3 flex flex-wrap items-baseline gap-2">
+                    <p className="text-2xl font-black text-blue-600 sm:text-3xl">
+                      {formatPrice(listing.price, listing.currency)}
+                    </p>
+
+                    {listing.negotiable && (
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                        Négociable
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => void toggleFav()}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-white"
-                  aria-label="Favori"
+                  disabled={favoriteLoading}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
+                  aria-label={
+                    isFav ? "Retirer des favoris" : "Ajouter aux favoris"
+                  }
                 >
                   <Heart
                     className={`h-5 w-5 ${
-                      isFav ? "fill-current text-red-500" : "text-slate-500"
+                      isFav ? "fill-current text-red-500" : ""
                     }`}
                   />
                 </button>
               </div>
 
-              <p className="mt-7 text-3xl font-black text-slate-950">
-                {formatPrice(listing.price, listing.currency)}
-              </p>
+              <div className="mt-6 divide-y">
+                {listing.category?.name && (
+                  <DetailRow
+                    icon={<Tag className="h-4 w-4" />}
+                    label="Catégorie"
+                    value={listing.category.name}
+                  />
+                )}
 
-              {listing.negotiable && (
-                <span className="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                  Prix négociable
-                </span>
-              )}
-
-              <div className="mt-6 border-t">
                 {listing.condition && (
                   <DetailRow
                     icon={<Tag className="h-4 w-4" />}
                     label="État"
-                    value={condition || listing.condition}
+                    value={listing.condition}
                   />
                 )}
 
@@ -763,32 +779,34 @@ function ListingDetail() {
 
                 <DetailRow
                   icon={<Calendar className="h-4 w-4" />}
-                  label="Publié le"
+                  label="Publication"
                   value={new Date(listing.created_at).toLocaleDateString(
                     "fr-FR",
+                    {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    },
                   )}
                 />
               </div>
 
-              <a
-                href="#description"
-                className="mt-4 inline-flex w-full items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 hover:bg-blue-100"
-              >
-                Voir plus de détails
-              </a>
-
-              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+              <div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 <Button
                   type="button"
                   onClick={() => void contactSeller()}
-                  className="rounded-xl bg-blue-600 font-bold hover:bg-blue-700"
+                  className="h-11 rounded-xl bg-blue-600 font-bold hover:bg-blue-700"
                 >
                   <MessageCircle className="mr-2 h-4 w-4" />
                   Message
                 </Button>
 
                 {listing.phone_visible && listing.seller?.phone && (
-                  <Button asChild variant="outline" className="rounded-xl">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="h-11 rounded-xl"
+                  >
                     <a href={`tel:${listing.seller.phone}`}>
                       <Phone className="mr-2 h-4 w-4" />
                       Appeler
@@ -797,7 +815,11 @@ function ListingDetail() {
                 )}
 
                 {listing.whatsapp_enabled && listing.seller?.whatsapp && (
-                  <Button asChild variant="outline" className="rounded-xl">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="h-11 rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                  >
                     <a
                       href={`https://wa.me/${listing.seller.whatsapp.replace(
                         /\D/g,
@@ -806,6 +828,7 @@ function ListingDetail() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
+                      <MessageCircle className="mr-2 h-4 w-4" />
                       WhatsApp
                     </a>
                   </Button>
@@ -815,7 +838,7 @@ function ListingDetail() {
                   type="button"
                   variant="outline"
                   onClick={() => void share()}
-                  className="rounded-xl"
+                  className="h-11 rounded-xl"
                 >
                   <Share2 className="mr-2 h-4 w-4" />
                   Partager
@@ -823,7 +846,7 @@ function ListingDetail() {
               </div>
             </section>
 
-            <section className="rounded-3xl border bg-white p-5 shadow-sm">
+            <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
                   <User className="h-5 w-5" />
@@ -833,21 +856,29 @@ function ListingDetail() {
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
                     Vendeur
                   </p>
-                  <p className="truncate text-lg font-black text-slate-950">
+                  <h2 className="truncate text-lg font-black text-slate-950">
                     {sellerName}
-                  </p>
+                  </h2>
+
+                  {listing.seller?.account_type && (
+                    <p className="mt-0.5 text-xs capitalize text-slate-500">
+                      {listing.seller.account_type}
+                    </p>
+                  )}
                 </div>
               </div>
             </section>
 
-            <button
-              type="button"
-              onClick={() => void report()}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border bg-white px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-red-50 hover:text-red-600"
-            >
-              <Flag className="h-4 w-4" />
-              Signaler l'annonce
-            </button>
+            <section className="rounded-3xl border bg-white p-5 shadow-sm">
+              <button
+                type="button"
+                onClick={() => void report()}
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-sm font-semibold text-slate-500 transition hover:bg-red-50 hover:text-red-600"
+              >
+                <Flag className="h-4 w-4" />
+                Signaler cette annonce
+              </button>
+            </section>
           </aside>
         </div>
       </div>
@@ -865,12 +896,12 @@ function DetailRow({
   value: string;
 }) {
   return (
-    <div className="flex items-start gap-3 border-b py-4 last:border-b-0">
+    <div className="flex items-start gap-3 py-3 text-sm">
       <div className="mt-0.5 text-slate-400">{icon}</div>
 
       <div className="min-w-0">
         <p className="text-xs font-semibold text-slate-400">{label}</p>
-        <p className="mt-1 break-words text-sm font-semibold text-slate-700">
+        <p className="mt-0.5 break-words font-semibold text-slate-700">
           {value}
         </p>
       </div>
