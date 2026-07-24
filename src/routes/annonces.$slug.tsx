@@ -877,3 +877,4 @@ function DetailRow({
     </div>
   );
 }
+
