@@ -1588,7 +1588,6 @@ function TabListings({ supabase }: { supabase: SupabaseClient }) {
         {[
           "all",
           "pending",
-          "active",
           "published",
           "rejected",
           "suspended",
@@ -3962,4 +3961,3 @@ function ActionBtn({
     </button>
   );
 }
-
