@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   useEffect,
   useMemo,
@@ -70,6 +71,173 @@ const categoryStyles = [
   "bg-cyan-50 text-cyan-700 border-cyan-100",
 ];
 
+
+/* ════════════════════════════════════════════════════════════
+   ANNONCES PUBLIÉES — CHARGEMENT ROBUSTE
+════════════════════════════════════════════════════════════ */
+
+/**
+ * Charge les annonces visibles publiquement.
+ *
+ * IMPORTANT :
+ * listing_status est un enum PostgreSQL et la valeur "active"
+ * n'existe pas dans le schéma actuel. On filtre donc uniquement
+ * sur "published".
+ *
+ * Plusieurs fallbacks sont utilisés afin qu'une relation PostgREST
+ * manquante (regions, cities, communes ou listing_images) n'empêche
+ * pas l'affichage des annonces sur la page d'accueil.
+ */
+async function loadRecentListings(
+  supabase: SupabaseClient,
+): Promise<ListingRow[]> {
+  const normalizeRows = (rows: any[] | null | undefined): ListingRow[] =>
+    (rows ?? []).map((row) => ({
+      ...row,
+      region: row.region ?? null,
+      city: row.city ?? null,
+      commune: row.commune ?? null,
+      images: Array.isArray(row.images) ? row.images : [],
+      is_featured: Boolean(row.is_featured),
+      is_sponsored: Boolean(row.is_sponsored),
+    })) as unknown as ListingRow[];
+
+  /*
+   * 1. Requête complète avec toutes les relations.
+   */
+  const fullQuery = await supabase
+    .from("listings")
+    .select(
+      `
+      id,
+      slug,
+      title,
+      price,
+      currency,
+      condition,
+      is_featured,
+      is_sponsored,
+      created_at,
+      region:regions(name),
+      city:cities(name),
+      commune:communes(name),
+      images:listing_images(image_url,is_main)
+    `,
+    )
+    .eq("status", "published")
+    .order("is_sponsored", { ascending: false })
+    .order("is_featured", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  if (!fullQuery.error) {
+    return normalizeRows(fullQuery.data);
+  }
+
+  console.warn(
+    "[Homepage] Requête annonces complète impossible :",
+    fullQuery.error,
+  );
+
+  /*
+   * 2. Fallback sans les relations géographiques.
+   */
+  const withoutLocations = await supabase
+    .from("listings")
+    .select(
+      `
+      id,
+      slug,
+      title,
+      price,
+      currency,
+      condition,
+      is_featured,
+      is_sponsored,
+      created_at,
+      images:listing_images(image_url,is_main)
+    `,
+    )
+    .eq("status", "published")
+    .order("is_sponsored", { ascending: false })
+    .order("is_featured", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  if (!withoutLocations.error) {
+    return normalizeRows(withoutLocations.data);
+  }
+
+  console.warn(
+    "[Homepage] Relations géographiques indisponibles :",
+    withoutLocations.error,
+  );
+
+  /*
+   * 3. Fallback sans aucune relation PostgREST.
+   */
+  const withoutRelations = await supabase
+    .from("listings")
+    .select(
+      `
+      id,
+      slug,
+      title,
+      price,
+      currency,
+      condition,
+      is_featured,
+      is_sponsored,
+      created_at
+    `,
+    )
+    .eq("status", "published")
+    .order("is_sponsored", { ascending: false })
+    .order("is_featured", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  if (!withoutRelations.error) {
+    return normalizeRows(withoutRelations.data);
+  }
+
+  console.warn(
+    "[Homepage] Requête annonces sans relations impossible :",
+    withoutRelations.error,
+  );
+
+  /*
+   * 4. Dernier fallback avec seulement les colonnes essentielles.
+   * Il permet notamment de continuer à afficher une annonce si une
+   * colonne optionnelle telle que "condition" diffère dans le schéma.
+   */
+  const coreQuery = await supabase
+    .from("listings")
+    .select(
+      `
+      id,
+      slug,
+      title,
+      price,
+      currency,
+      created_at
+    `,
+    )
+    .eq("status", "published")
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  if (coreQuery.error) {
+    console.error(
+      "[Homepage] Impossible de charger les annonces publiées :",
+      coreQuery.error,
+    );
+    return [];
+  }
+
+  return normalizeRows(coreQuery.data);
+}
+
 function HomePage() {
   const { supabase } = useSupabase();
   const navigate = useNavigate();
@@ -111,20 +279,7 @@ function HomePage() {
           supabase.from("regions").select("id,name,slug").order("name"),
           supabase.from("cities").select("id,name,slug").order("name"),
           supabase.from("communes").select("id,name,slug").order("name"),
-          supabase
-            .from("listings")
-            .select(
-              `
-              id,slug,title,price,currency,condition,is_featured,is_sponsored,created_at,
-              region:regions(name), city:cities(name), commune:communes(name),
-              images:listing_images(image_url,is_main)
-            `,
-            )
-            .in("status", ["active", "published"])
-            .order("is_sponsored", { ascending: false })
-            .order("is_featured", { ascending: false })
-            .order("created_at", { ascending: false })
-            .limit(12),
+          loadRecentListings(supabase),
         ]);
 
       if (cancelled) return;
@@ -136,7 +291,7 @@ function HomePage() {
       setRegions((regionRows.data ?? []) as LocationOption[]);
       setCities((cityRows.data ?? []) as LocationOption[]);
       setCommunes((communeRows.data ?? []) as LocationOption[]);
-      setRecent((list.data ?? []) as unknown as ListingRow[]);
+      setRecent(list);
     })();
 
     return () => {
@@ -494,7 +649,7 @@ function HomePage() {
         {recent.length === 0 ? (
           <EmptyState
             title="Aucune annonce publiée"
-            description="Les annonces actives apparaîtront automatiquement ici."
+            description="Les annonces publiées apparaîtront automatiquement ici."
           />
         ) : (
           <div className="kafoo-listing-grid mt-6">
@@ -719,4 +874,3 @@ function EmptyState({
     </div>
   );
 }
-
