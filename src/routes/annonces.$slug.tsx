@@ -29,16 +29,16 @@ export const Route = createFileRoute("/annonces/$slug")({
   }),
 });
 
+type NamedRelation = {
+  name: string;
+};
+
 type Seller = {
   display_name: string | null;
   business_name: string | null;
   phone: string | null;
   whatsapp: string | null;
   account_type: string | null;
-};
-
-type NamedRelation = {
-  name: string;
 };
 
 type ListingImage = {
@@ -51,24 +51,20 @@ type ListingImage = {
 
 type Listing = {
   id: string;
+  slug: string;
   user_id: string;
   title: string;
   description: string | null;
   price: number | null;
   currency: string;
   condition: string | null;
+  status: string;
+  created_at: string;
+
   phone_visible: boolean;
   whatsapp_enabled: boolean;
   negotiable: boolean;
-  created_at: string;
   address_text: string | null;
-  status: string;
-
-  category_id: string | null;
-  region_id: string | null;
-  city_id: string | null;
-  commune_id: string | null;
-  district_id: string | null;
 
   seller: Seller | null;
   category: NamedRelation | null;
@@ -76,25 +72,22 @@ type Listing = {
   city: NamedRelation | null;
   commune: NamedRelation | null;
   district: NamedRelation | null;
+
   images: ListingImage[];
 };
 
-type BaseListingRow = Omit<
-  Listing,
-  | "seller"
-  | "category"
-  | "region"
-  | "city"
-  | "commune"
-  | "district"
-  | "images"
->;
+function asString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
 
-function sortImages(images: ListingImage[]): ListingImage[] {
-  return [...images].sort((a, b) => {
+function asBoolean(value: unknown, fallback = false): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function sortImages(rows: ListingImage[]): ListingImage[] {
+  return [...rows].sort((a, b) => {
     if (a.is_main && !b.is_main) return -1;
     if (!a.is_main && b.is_main) return 1;
-
     return (a.sort_order ?? 0) - (b.sort_order ?? 0);
   });
 }
@@ -102,9 +95,9 @@ function sortImages(images: ListingImage[]): ListingImage[] {
 async function loadNamedRelation(
   supabase: SupabaseClient,
   table: "categories" | "regions" | "cities" | "communes" | "districts",
-  id: string | null,
+  id: unknown,
 ): Promise<NamedRelation | null> {
-  if (!id) return null;
+  if (typeof id !== "string" || !id) return null;
 
   const { data, error } = await supabase
     .from(table)
@@ -113,7 +106,7 @@ async function loadNamedRelation(
     .maybeSingle();
 
   if (error) {
-    console.warn(`[ListingDetail] Relation ${table} indisponible :`, error);
+    console.warn(`[Annonce] ${table} non chargé :`, error);
     return null;
   }
 
@@ -124,21 +117,11 @@ async function loadSeller(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Seller | null> {
-  const rich = await supabase
-    .from("profiles")
-    .select("display_name,business_name,phone,whatsapp,account_type")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (!rich.error) {
-    return (rich.data as Seller | null) ?? null;
-  }
-
-  console.warn(
-    "[ListingDetail] Profil vendeur complet indisponible, fallback minimal :",
-    rich.error,
-  );
-
+  /*
+   * On commence par les colonnes minimales connues.
+   * Cela évite que la fiche entière disparaisse si business_name,
+   * whatsapp ou account_type n'existent pas encore.
+   */
   const basic = await supabase
     .from("profiles")
     .select("display_name,phone")
@@ -146,26 +129,45 @@ async function loadSeller(
     .maybeSingle();
 
   if (basic.error) {
-    console.warn("[ListingDetail] Profil vendeur indisponible :", basic.error);
+    console.warn("[Annonce] Profil vendeur non chargé :", basic.error);
     return null;
   }
 
-  const row = basic.data as
-    | { display_name: string | null; phone: string | null }
+  const basicRow = basic.data as
+    | { display_name?: string | null; phone?: string | null }
     | null;
 
-  if (!row) return null;
-
-  return {
-    display_name: row.display_name,
+  let seller: Seller = {
+    display_name: basicRow?.display_name ?? null,
     business_name: null,
-    phone: row.phone,
+    phone: basicRow?.phone ?? null,
     whatsapp: null,
     account_type: null,
   };
+
+  /*
+   * Enrichissement facultatif.
+   */
+  const rich = await supabase
+    .from("profiles")
+    .select("display_name,business_name,phone,whatsapp,account_type")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!rich.error && rich.data) {
+    seller = {
+      display_name: rich.data.display_name ?? seller.display_name,
+      business_name: rich.data.business_name ?? null,
+      phone: rich.data.phone ?? seller.phone,
+      whatsapp: rich.data.whatsapp ?? null,
+      account_type: rich.data.account_type ?? null,
+    };
+  }
+
+  return seller;
 }
 
-async function loadListingImages(
+async function loadImages(
   supabase: SupabaseClient,
   listingId: string,
 ): Promise<ListingImage[]> {
@@ -174,17 +176,13 @@ async function loadListingImages(
     .select("id,image_url,storage_path,is_main,sort_order")
     .eq("listing_id", listingId)
     .order("is_main", { ascending: false })
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
+    .order("sort_order", { ascending: true });
 
   if (!full.error) {
     return sortImages((full.data ?? []) as ListingImage[]);
   }
 
-  console.warn(
-    "[ListingDetail] Chargement complet des images impossible, fallback :",
-    full.error,
-  );
+  console.warn("[Annonce] Fallback images :", full.error);
 
   const fallback = await supabase
     .from("listing_images")
@@ -193,84 +191,87 @@ async function loadListingImages(
     .order("is_main", { ascending: false });
 
   if (fallback.error) {
-    console.error(
-      "[ListingDetail] Impossible de charger les images :",
-      fallback.error,
-    );
+    console.error("[Annonce] Images non chargées :", fallback.error);
     return [];
   }
 
   return sortImages((fallback.data ?? []) as ListingImage[]);
 }
 
-async function loadListingDetail(
+async function loadListing(
   supabase: SupabaseClient,
   slug: string,
 ): Promise<Listing | null> {
   /*
-   * La fiche est volontairement chargée SANS jointures PostgREST.
-   *
-   * Ainsi, une relation mal configurée (districts, profiles, etc.)
-   * ne peut plus faire échouer toute l'annonce, sa description
-   * ou sa galerie d'images.
+   * IMPORTANT :
+   * select("*") évite de faire échouer la requête parce qu'une colonne
+   * optionnelle attendue par le frontend n'existe pas dans le schéma.
    */
   const { data, error } = await supabase
     .from("listings")
-    .select(
-      `
-      id,
-      user_id,
-      title,
-      description,
-      price,
-      currency,
-      condition,
-      phone_visible,
-      whatsapp_enabled,
-      negotiable,
-      created_at,
-      address_text,
-      status,
-      category_id,
-      region_id,
-      city_id,
-      commune_id,
-      district_id
-    `,
-    )
+    .select("*")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
 
   if (error) {
-    console.error("[ListingDetail] Impossible de charger l'annonce :", error);
+    console.error("[Annonce] Erreur listings :", error);
     throw error;
   }
 
   if (!data) return null;
 
-  const base = data as BaseListingRow;
+  const row = data as Record<string, unknown>;
+
+  const id = asString(row.id);
+  const userId = asString(row.user_id);
+  const title = asString(row.title);
+
+  if (!id || !userId || !title) {
+    console.error("[Annonce] Données essentielles manquantes :", row);
+    throw new Error("Annonce incomplète dans la base de données.");
+  }
 
   const [
+    images,
     seller,
     category,
     region,
     city,
     commune,
     district,
-    images,
   ] = await Promise.all([
-    loadSeller(supabase, base.user_id),
-    loadNamedRelation(supabase, "categories", base.category_id),
-    loadNamedRelation(supabase, "regions", base.region_id),
-    loadNamedRelation(supabase, "cities", base.city_id),
-    loadNamedRelation(supabase, "communes", base.commune_id),
-    loadNamedRelation(supabase, "districts", base.district_id),
-    loadListingImages(supabase, base.id),
+    loadImages(supabase, id),
+    loadSeller(supabase, userId),
+    loadNamedRelation(supabase, "categories", row.category_id),
+    loadNamedRelation(supabase, "regions", row.region_id),
+    loadNamedRelation(supabase, "cities", row.city_id),
+    loadNamedRelation(supabase, "communes", row.commune_id),
+    loadNamedRelation(supabase, "districts", row.district_id),
   ]);
 
   return {
-    ...base,
+    id,
+    slug: asString(row.slug) ?? slug,
+    user_id: userId,
+    title,
+    description: asString(row.description),
+    price:
+      typeof row.price === "number"
+        ? row.price
+        : row.price != null
+          ? Number(row.price)
+          : null,
+    currency: asString(row.currency) ?? "GNF",
+    condition: asString(row.condition),
+    status: asString(row.status) ?? "published",
+    created_at: asString(row.created_at) ?? new Date().toISOString(),
+
+    phone_visible: asBoolean(row.phone_visible, true),
+    whatsapp_enabled: asBoolean(row.whatsapp_enabled, false),
+    negotiable: asBoolean(row.negotiable, false),
+    address_text: asString(row.address_text),
+
     seller,
     category,
     region,
@@ -291,7 +292,6 @@ function ListingDetail() {
   const [loadError, setLoadError] = useState("");
   const [imgIdx, setImgIdx] = useState(0);
   const [isFav, setIsFav] = useState(false);
-  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -304,25 +304,25 @@ function ListingDetail() {
         setLoadError("");
         setImgIdx(0);
 
-        const result = await loadListingDetail(supabase, slug);
+        const result = await loadListing(supabase, slug);
 
-        if (cancelled) return;
+        if (!cancelled) {
+          setListing(result);
 
-        setListing(result);
-
-        if (!result) {
-          setLoadError("Cette annonce est introuvable ou n'est plus publiée.");
+          if (!result) {
+            setLoadError("Cette annonce est introuvable ou n'est plus publiée.");
+          }
         }
       } catch (error) {
-        if (cancelled) return;
-
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Impossible de charger cette annonce.";
-
-        setLoadError(message);
-        setListing(null);
+        if (!cancelled) {
+          console.error("[Annonce] Chargement :", error);
+          setListing(null);
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "Impossible de charger cette annonce.",
+          );
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -337,20 +337,6 @@ function ListingDetail() {
     if (!listing) return;
 
     document.title = `${listing.title} — Kafoo`;
-
-    let meta = document.querySelector('meta[name="description"]');
-
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.setAttribute("name", "description");
-      document.head.appendChild(meta);
-    }
-
-    const description =
-      listing.description?.trim() ||
-      `${listing.title} à vendre sur Kafoo.`;
-
-    meta.setAttribute("content", description.slice(0, 160));
   }, [listing]);
 
   useEffect(() => {
@@ -362,21 +348,14 @@ function ListingDetail() {
     let cancelled = false;
 
     void (async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("favorites")
         .select("id")
         .eq("user_id", user.id)
         .eq("listing_id", listing.id)
         .maybeSingle();
 
-      if (!cancelled) {
-        if (error) {
-          console.warn("[ListingDetail] Favori :", error);
-          setIsFav(false);
-        } else {
-          setIsFav(Boolean(data));
-        }
-      }
+      if (!cancelled) setIsFav(Boolean(data));
     })();
 
     return () => {
@@ -390,12 +369,6 @@ function ListingDetail() {
   );
 
   const currentImage = images[imgIdx] ?? images[0] ?? null;
-
-  useEffect(() => {
-    if (imgIdx >= images.length && images.length > 0) {
-      setImgIdx(0);
-    }
-  }, [images.length, imgIdx]);
 
   const location = useMemo(() => {
     if (!listing) return "";
@@ -411,16 +384,6 @@ function ListingDetail() {
       .join(", ");
   }, [listing]);
 
-  const previousImage = () => {
-    if (images.length <= 1) return;
-    setImgIdx((current) => (current - 1 + images.length) % images.length);
-  };
-
-  const nextImage = () => {
-    if (images.length <= 1) return;
-    setImgIdx((current) => (current + 1) % images.length);
-  };
-
   const toggleFav = async () => {
     if (!listing) return;
 
@@ -429,40 +392,33 @@ function ListingDetail() {
       return;
     }
 
-    try {
-      setFavoriteLoading(true);
+    if (isFav) {
+      const { error } = await supabase
+        .from("favorites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("listing_id", listing.id);
 
-      if (isFav) {
-        const { error } = await supabase
-          .from("favorites")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("listing_id", listing.id);
-
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-
-        setIsFav(false);
-        toast.success("Annonce retirée des favoris");
-      } else {
-        const { error } = await supabase.from("favorites").insert({
-          user_id: user.id,
-          listing_id: listing.id,
-        });
-
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-
-        setIsFav(true);
-        toast.success("Annonce ajoutée aux favoris");
+      if (error) {
+        toast.error(error.message);
+        return;
       }
-    } finally {
-      setFavoriteLoading(false);
+
+      setIsFav(false);
+      return;
     }
+
+    const { error } = await supabase.from("favorites").insert({
+      user_id: user.id,
+      listing_id: listing.id,
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setIsFav(true);
   };
 
   const contactSeller = async () => {
@@ -494,9 +450,7 @@ function ListingDetail() {
           last_message: message,
           last_message_at: new Date().toISOString(),
         },
-        {
-          onConflict: "listing_id,buyer_id,seller_id",
-        },
+        { onConflict: "listing_id,buyer_id,seller_id" },
       )
       .select("id")
       .maybeSingle();
@@ -553,21 +507,18 @@ function ListingDetail() {
     if (!listing) return;
 
     try {
-      const url = window.location.href;
-
       if (navigator.share) {
         await navigator.share({
           title: listing.title,
           text: listing.description ?? undefined,
-          url,
+          url: window.location.href,
         });
-        return;
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Lien copié");
       }
-
-      await navigator.clipboard.writeText(url);
-      toast.success("Lien de l'annonce copié");
-    } catch (error) {
-      console.warn("[ListingDetail] Partage annulé ou indisponible :", error);
+    } catch {
+      // L'utilisateur peut simplement avoir fermé la fenêtre de partage.
     }
   };
 
@@ -591,8 +542,7 @@ function ListingDetail() {
             Annonce introuvable
           </h1>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">
-            {loadError ||
-              "Cette annonce n'existe plus ou n'est pas disponible publiquement."}
+            {loadError}
           </p>
 
           <Button asChild className="mt-6 rounded-full bg-blue-600">
@@ -623,10 +573,6 @@ function ListingDetail() {
         </Link>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.75fr)]">
-          {/* ═══════════════════════════════════════════════
-              GALERIE + DESCRIPTION
-          ═══════════════════════════════════════════════ */}
-
           <div className="min-w-0 space-y-6">
             <section className="overflow-hidden rounded-3xl border bg-white shadow-sm">
               <div className="relative flex min-h-[360px] items-center justify-center bg-slate-100 sm:min-h-[520px]">
@@ -649,8 +595,13 @@ function ListingDetail() {
                   <>
                     <button
                       type="button"
-                      onClick={previousImage}
-                      className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:bg-white"
+                      onClick={() =>
+                        setImgIdx(
+                          (current) =>
+                            (current - 1 + images.length) % images.length,
+                        )
+                      }
+                      className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg"
                       aria-label="Photo précédente"
                     >
                       <ChevronLeft className="h-5 w-5" />
@@ -658,14 +609,16 @@ function ListingDetail() {
 
                     <button
                       type="button"
-                      onClick={nextImage}
-                      className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:bg-white"
+                      onClick={() =>
+                        setImgIdx((current) => (current + 1) % images.length)
+                      }
+                      className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg"
                       aria-label="Photo suivante"
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
 
-                    <div className="absolute bottom-3 right-3 rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
+                    <div className="absolute bottom-3 right-3 rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-white">
                       {imgIdx + 1} / {images.length}
                     </div>
                   </>
@@ -679,12 +632,11 @@ function ListingDetail() {
                       type="button"
                       key={image.id}
                       onClick={() => setImgIdx(index)}
-                      className={`h-20 w-24 shrink-0 overflow-hidden rounded-xl border-2 bg-slate-100 transition ${
+                      className={`h-20 w-24 shrink-0 overflow-hidden rounded-xl border-2 bg-slate-100 ${
                         index === imgIdx
                           ? "border-blue-600 ring-2 ring-blue-100"
                           : "border-transparent hover:border-slate-300"
                       }`}
-                      aria-label={`Afficher la photo ${index + 1}`}
                     >
                       <img
                         src={image.image_url}
@@ -700,7 +652,7 @@ function ListingDetail() {
             <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
               <h2 className="text-xl font-black text-slate-950">Description</h2>
 
-              {listing.description?.trim() ? (
+              {listing.description ? (
                 <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-7 text-slate-600 sm:text-base">
                   {listing.description}
                 </p>
@@ -711,10 +663,6 @@ function ListingDetail() {
               )}
             </section>
           </div>
-
-          {/* ═══════════════════════════════════════════════
-              INFORMATIONS ANNONCE
-          ═══════════════════════════════════════════════ */}
 
           <aside className="min-w-0 space-y-4">
             <section className="rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
@@ -740,11 +688,8 @@ function ListingDetail() {
                 <button
                   type="button"
                   onClick={() => void toggleFav()}
-                  disabled={favoriteLoading}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
-                  aria-label={
-                    isFav ? "Retirer des favoris" : "Ajouter aux favoris"
-                  }
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-white text-slate-600"
+                  aria-label="Favori"
                 >
                   <Heart
                     className={`h-5 w-5 ${
@@ -782,11 +727,6 @@ function ListingDetail() {
                   label="Publication"
                   value={new Date(listing.created_at).toLocaleDateString(
                     "fr-FR",
-                    {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    },
                   )}
                 />
               </div>
@@ -818,7 +758,7 @@ function ListingDetail() {
                   <Button
                     asChild
                     variant="outline"
-                    className="h-11 rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                    className="h-11 rounded-xl border-emerald-200 text-emerald-700"
                   >
                     <a
                       href={`https://wa.me/${listing.seller.whatsapp.replace(
@@ -859,12 +799,6 @@ function ListingDetail() {
                   <h2 className="truncate text-lg font-black text-slate-950">
                     {sellerName}
                   </h2>
-
-                  {listing.seller?.account_type && (
-                    <p className="mt-0.5 text-xs capitalize text-slate-500">
-                      {listing.seller.account_type}
-                    </p>
-                  )}
                 </div>
               </div>
             </section>
@@ -873,7 +807,7 @@ function ListingDetail() {
               <button
                 type="button"
                 onClick={() => void report()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-sm font-semibold text-slate-500 transition hover:bg-red-50 hover:text-red-600"
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-sm font-semibold text-slate-500 hover:bg-red-50 hover:text-red-600"
               >
                 <Flag className="h-4 w-4" />
                 Signaler cette annonce
@@ -898,7 +832,6 @@ function DetailRow({
   return (
     <div className="flex items-start gap-3 py-3 text-sm">
       <div className="mt-0.5 text-slate-400">{icon}</div>
-
       <div className="min-w-0">
         <p className="text-xs font-semibold text-slate-400">{label}</p>
         <p className="mt-0.5 break-words font-semibold text-slate-700">
