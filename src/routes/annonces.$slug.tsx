@@ -5,7 +5,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   ArrowLeft,
   Box,
@@ -34,6 +33,10 @@ export const Route = createFileRoute("/annonces/$slug")({
   }),
 });
 
+type NamedRelation = {
+  name: string;
+};
+
 type Seller = {
   display_name: string | null;
   business_name: string | null;
@@ -42,16 +45,11 @@ type Seller = {
   account_type: string | null;
 };
 
-type NamedRelation = {
-  name: string;
-};
-
 type ListingImage = {
   id: string;
   image_url: string;
-  storage_path?: string | null;
   is_main: boolean;
-  sort_order?: number | null;
+  sort_order: number;
 };
 
 type Listing = {
@@ -63,38 +61,38 @@ type Listing = {
   price: number | null;
   currency: string;
   condition: string | null;
+  created_at: string;
+  status: string;
+
   phone_visible: boolean;
   whatsapp_enabled: boolean;
   negotiable: boolean;
-  created_at: string;
   address_text: string | null;
-  status: string;
 
-  category_id: string | null;
-  region_id: string | null;
-  city_id: string | null;
-  commune_id: string | null;
-
-  seller: Seller | null;
   category: NamedRelation | null;
   region: NamedRelation | null;
   city: NamedRelation | null;
   commune: NamedRelation | null;
+
+  seller: Seller | null;
   images: ListingImage[];
 };
 
-type RawListing = Omit<
-  Listing,
-  "seller" | "category" | "region" | "city" | "commune" | "images"
->;
+function safeString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
 
-function sortImages(images: ListingImage[]) {
-  return [...images].sort((a, b) => {
-    if (a.is_main && !b.is_main) return -1;
-    if (!a.is_main && b.is_main) return 1;
+function safeBoolean(value: unknown, fallback = false): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
 
-    return (a.sort_order ?? 0) - (b.sort_order ?? 0);
-  });
+function safeNumberOrNull(value: unknown): number | null {
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 function conditionLabel(condition?: string | null) {
@@ -115,18 +113,15 @@ function conditionLabel(condition?: string | null) {
     fair: "ÉTAT CORRECT",
   };
 
-  return (
-    labels[normalized] ??
-    condition.replace(/[_-]+/g, " ").toUpperCase()
-  );
+  return labels[normalized] ?? condition.replace(/[_-]+/g, " ").toUpperCase();
 }
 
-async function loadNamedRelation(
-  supabase: SupabaseClient,
+async function loadRelationById(
+  supabase: any,
   table: "categories" | "regions" | "cities" | "communes",
-  id: string | null,
+  id: unknown,
 ): Promise<NamedRelation | null> {
-  if (!id) return null;
+  if (typeof id !== "string" || !id) return null;
 
   const { data, error } = await supabase
     .from(table)
@@ -139,201 +134,143 @@ async function loadNamedRelation(
     return null;
   }
 
-  return (data as NamedRelation | null) ?? null;
+  return data ? { name: safeString(data.name) } : null;
 }
 
 async function loadSeller(
-  supabase: SupabaseClient,
+  supabase: any,
   userId: string,
 ): Promise<Seller | null> {
-  const complete = await supabase
+  /*
+   * select("*") évite de casser la fiche si le schéma profiles
+   * n'a pas exactement les colonnes prévues par l'ancienne version.
+   */
+  const { data, error } = await supabase
     .from("profiles")
-    .select("display_name,business_name,phone,whatsapp,account_type")
+    .select("*")
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (!complete.error) {
-    return (complete.data as Seller | null) ?? null;
-  }
-
-  const fallback = await supabase
-    .from("profiles")
-    .select("display_name,phone")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (fallback.error || !fallback.data) {
-    console.warn(
-      "[ListingDetail] Profil vendeur indisponible :",
-      fallback.error,
-    );
+  if (error) {
+    console.warn("[ListingDetail] Vendeur :", error);
     return null;
   }
 
-  const row = fallback.data as {
-    display_name: string | null;
-    phone: string | null;
-  };
+  if (!data) return null;
 
   return {
-    display_name: row.display_name,
-    business_name: null,
-    phone: row.phone,
-    whatsapp: null,
-    account_type: null,
+    display_name:
+      typeof data.display_name === "string" ? data.display_name : null,
+    business_name:
+      typeof data.business_name === "string" ? data.business_name : null,
+    phone: typeof data.phone === "string" ? data.phone : null,
+    whatsapp: typeof data.whatsapp === "string" ? data.whatsapp : null,
+    account_type:
+      typeof data.account_type === "string" ? data.account_type : null,
   };
 }
 
-async function loadListingImages(
-  supabase: SupabaseClient,
+async function loadImages(
+  supabase: any,
   listingId: string,
 ): Promise<ListingImage[]> {
-  const complete = await supabase
+  /*
+   * On charge toutes les colonnes existantes de listing_images.
+   * Cela correspond au schéma vérifié dans Supabase :
+   * id, listing_id, image_url, storage_path, is_main,
+   * sort_order, created_at.
+   */
+  const { data, error } = await supabase
     .from("listing_images")
-    .select("id,image_url,storage_path,is_main,sort_order")
+    .select("*")
     .eq("listing_id", listingId)
     .order("is_main", { ascending: false })
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
 
-  if (!complete.error) {
-    return sortImages((complete.data ?? []) as ListingImage[]);
-  }
-
-  console.warn(
-    "[ListingDetail] Galerie complète indisponible, fallback :",
-    complete.error,
-  );
-
-  const fallback = await supabase
-    .from("listing_images")
-    .select("id,image_url,is_main")
-    .eq("listing_id", listingId)
-    .order("is_main", { ascending: false });
-
-  if (fallback.error) {
-    console.error("[ListingDetail] Images :", fallback.error);
+  if (error) {
+    console.error("[ListingDetail] Images :", error);
     return [];
   }
 
-  return sortImages((fallback.data ?? []) as ListingImage[]);
-}
-
-async function loadRawListing(
-  supabase: SupabaseClient,
-  slug: string,
-): Promise<RawListing | null> {
-  /*
-   * Requête détaillée.
-   * On n'utilise aucune jointure PostgREST ici : une relation
-   * cassée ne peut donc plus masquer toute l'annonce.
-   */
-  const complete = await supabase
-    .from("listings")
-    .select(
-      `
-      id,
-      user_id,
-      slug,
-      title,
-      description,
-      price,
-      currency,
-      condition,
-      phone_visible,
-      whatsapp_enabled,
-      negotiable,
-      created_at,
-      address_text,
-      status,
-      category_id,
-      region_id,
-      city_id,
-      commune_id
-    `,
-    )
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-
-  if (!complete.error) {
-    return complete.data as RawListing | null;
-  }
-
-  console.warn(
-    "[ListingDetail] Requête détaillée impossible, fallback :",
-    complete.error,
-  );
-
-  /*
-   * Fallback minimal. Les champs secondaires prennent ensuite
-   * des valeurs par défaut, mais titre, description et photos
-   * restent affichables.
-   */
-  const fallback = await supabase
-    .from("listings")
-    .select(
-      `
-      id,
-      user_id,
-      slug,
-      title,
-      description,
-      price,
-      currency,
-      condition,
-      created_at,
-      status,
-      category_id,
-      region_id,
-      city_id,
-      commune_id
-    `,
-    )
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-
-  if (fallback.error) {
-    console.error("[ListingDetail] Annonce :", fallback.error);
-    throw fallback.error;
-  }
-
-  if (!fallback.data) return null;
-
-  return {
-    ...(fallback.data as any),
-    phone_visible: false,
-    whatsapp_enabled: false,
-    negotiable: false,
-    address_text: null,
-  } as RawListing;
+  return (data ?? [])
+    .filter((row: any) => typeof row.image_url === "string" && row.image_url)
+    .map((row: any) => ({
+      id: String(row.id),
+      image_url: String(row.image_url),
+      is_main: Boolean(row.is_main),
+      sort_order:
+        typeof row.sort_order === "number" ? row.sort_order : 0,
+    }));
 }
 
 async function loadListing(
-  supabase: SupabaseClient,
+  supabase: any,
   slug: string,
 ): Promise<Listing | null> {
-  const raw = await loadRawListing(supabase, slug);
+  /*
+   * CORRECTION PRINCIPALE :
+   *
+   * On ne nomme PLUS les colonnes optionnelles une par une.
+   * Avec select("*"), une colonne absente ne peut plus provoquer
+   * l'échec complet de la requête.
+   */
+  const { data, error } = await supabase
+    .from("listings")
+    .select("*")
+    .eq("slug", slug)
+    .eq("status", "published")
+    .maybeSingle();
 
-  if (!raw) return null;
+  if (error) {
+    console.error("[ListingDetail] Requête annonce :", error);
+    throw new Error(error.message);
+  }
 
-  const [seller, category, region, city, commune, images] =
-    await Promise.all([
-      loadSeller(supabase, raw.user_id),
-      loadNamedRelation(supabase, "categories", raw.category_id),
-      loadNamedRelation(supabase, "regions", raw.region_id),
-      loadNamedRelation(supabase, "cities", raw.city_id),
-      loadNamedRelation(supabase, "communes", raw.commune_id),
-      loadListingImages(supabase, raw.id),
-    ]);
+  if (!data) return null;
+
+  const id = safeString(data.id);
+  const userId = safeString(data.user_id);
+
+  if (!id) {
+    throw new Error("L'annonce ne possède pas d'identifiant.");
+  }
+
+  const [images, seller, category, region, city, commune] = await Promise.all([
+    loadImages(supabase, id),
+    userId ? loadSeller(supabase, userId) : Promise.resolve(null),
+    loadRelationById(supabase, "categories", data.category_id),
+    loadRelationById(supabase, "regions", data.region_id),
+    loadRelationById(supabase, "cities", data.city_id),
+    loadRelationById(supabase, "communes", data.commune_id),
+  ]);
 
   return {
-    ...raw,
-    seller,
+    id,
+    user_id: userId,
+    slug: safeString(data.slug, slug),
+    title: safeString(data.title, "Annonce"),
+    description:
+      typeof data.description === "string" ? data.description : null,
+    price: safeNumberOrNull(data.price),
+    currency: safeString(data.currency, "GNF"),
+    condition:
+      typeof data.condition === "string" ? data.condition : null,
+    created_at: safeString(data.created_at, new Date().toISOString()),
+    status: safeString(data.status, "published"),
+
+    phone_visible: safeBoolean(data.phone_visible, false),
+    whatsapp_enabled: safeBoolean(data.whatsapp_enabled, false),
+    negotiable: safeBoolean(data.negotiable, false),
+    address_text:
+      typeof data.address_text === "string" ? data.address_text : null,
+
     category,
     region,
     city,
     commune,
+
+    seller,
     images,
   };
 }
@@ -374,9 +311,14 @@ function ListingDetail() {
       } catch (error) {
         if (cancelled) return;
 
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Impossible de charger cette annonce.";
+
         console.error("[ListingDetail]", error);
         setListing(null);
-        setLoadError("Impossible de charger cette annonce.");
+        setLoadError(message);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -396,14 +338,22 @@ function ListingDetail() {
     let cancelled = false;
 
     void (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("favorites")
         .select("id")
         .eq("user_id", user.id)
         .eq("listing_id", listing.id)
         .maybeSingle();
 
-      if (!cancelled) setIsFav(Boolean(data));
+      if (cancelled) return;
+
+      if (error) {
+        console.warn("[ListingDetail] Favori :", error);
+        setIsFav(false);
+        return;
+      }
+
+      setIsFav(Boolean(data));
     })();
 
     return () => {
@@ -411,11 +361,7 @@ function ListingDetail() {
     };
   }, [supabase, user, listing]);
 
-  const images = useMemo(
-    () => sortImages(listing?.images ?? []),
-    [listing?.images],
-  );
-
+  const images = listing?.images ?? [];
   const currentImage = images[imgIdx] ?? images[0] ?? null;
 
   const location = useMemo(() => {
@@ -452,6 +398,7 @@ function ListingDetail() {
       }
 
       setIsFav(false);
+      toast.success("Retiré des favoris");
       return;
     }
 
@@ -466,6 +413,7 @@ function ListingDetail() {
     }
 
     setIsFav(true);
+    toast.success("Ajouté aux favoris");
   };
 
   const contactSeller = async () => {
@@ -568,7 +516,7 @@ function ListingDetail() {
       await navigator.clipboard.writeText(window.location.href);
       toast.success("Lien copié");
     } catch {
-      // L'utilisateur peut simplement annuler la feuille de partage.
+      // Partage annulé.
     }
   };
 
@@ -577,7 +525,9 @@ function ListingDetail() {
       <main className="mx-auto flex min-h-[60vh] max-w-6xl items-center justify-center px-4">
         <div className="text-center">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-          <p className="mt-4 text-sm text-slate-500">Chargement…</p>
+          <p className="mt-4 text-sm text-slate-500">
+            Chargement de l'annonce…
+          </p>
         </div>
       </main>
     );
@@ -588,10 +538,15 @@ function ListingDetail() {
       <main className="mx-auto max-w-4xl px-4 py-16 text-center">
         <div className="rounded-3xl border bg-white p-8 shadow-sm">
           <Box className="mx-auto h-12 w-12 text-slate-400" />
+
           <h1 className="mt-4 text-2xl font-black text-slate-950">
             Annonce introuvable
           </h1>
-          <p className="mt-2 text-sm text-slate-500">{loadError}</p>
+
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
+            {loadError ||
+              "Cette annonce n'existe plus ou n'est pas disponible publiquement."}
+          </p>
 
           <Button asChild className="mt-6 rounded-full bg-blue-600">
             <Link to="/annonces">
@@ -605,6 +560,7 @@ function ListingDetail() {
   }
 
   const condition = conditionLabel(listing.condition);
+
   const sellerName =
     listing.seller?.business_name ||
     listing.seller?.display_name ||
@@ -612,6 +568,7 @@ function ListingDetail() {
 
   const description = listing.description?.trim() || "";
   const shouldCollapse = description.length > 320;
+
   const visibleDescription =
     shouldCollapse && !showFullDescription
       ? `${description.slice(0, 320).trim()}…`
@@ -622,29 +579,29 @@ function ListingDetail() {
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <Link
           to="/annonces"
-          className="mb-5 inline-flex items-center text-sm font-bold text-blue-600"
+          className="mb-5 inline-flex items-center text-sm font-bold text-blue-600 hover:text-blue-700"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour aux annonces
         </Link>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(340px,.75fr)]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,.7fr)]">
           <div className="min-w-0 space-y-6">
-            {/* Résumé visuel inspiré de la carte fournie */}
+            {/* GALERIE */}
             <section className="overflow-hidden rounded-[2rem] border bg-white shadow-sm">
               <div className="relative flex min-h-[360px] items-center justify-center bg-slate-100 sm:min-h-[560px]">
                 {currentImage ? (
                   <img
                     src={currentImage.image_url}
-                    alt={listing.title}
+                    alt={`${listing.title} — photo ${imgIdx + 1}`}
                     className="max-h-[720px] w-full object-contain"
                   />
                 ) : (
-                  <div className="flex min-h-[420px] flex-col items-center justify-center text-slate-400">
+                  <div className="flex min-h-[420px] w-full flex-col items-center justify-center text-slate-400">
                     <Box className="h-14 w-14" />
-                    <span className="mt-3 text-sm font-semibold">
-                      Aucune photo
-                    </span>
+                    <p className="mt-3 text-sm font-semibold">
+                      Aucune photo disponible
+                    </p>
                   </div>
                 )}
 
@@ -716,6 +673,7 @@ function ListingDetail() {
               )}
             </section>
 
+            {/* DESCRIPTION */}
             <section
               id="description"
               className="rounded-3xl border bg-white p-6 shadow-sm"
@@ -750,6 +708,7 @@ function ListingDetail() {
             </section>
           </div>
 
+          {/* INFORMATIONS */}
           <aside className="min-w-0 space-y-4">
             <section className="rounded-[2rem] border bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between gap-3">
