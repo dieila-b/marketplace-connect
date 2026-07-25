@@ -348,6 +348,10 @@ export function CmsDebugPanel() {
           )}
         </button>
       )}
+
+      {rawEvent && (
+        <RawResponseModal event={rawEvent} onClose={() => setRawEvent(null)} />
+      )}
     </div>
   );
 }
