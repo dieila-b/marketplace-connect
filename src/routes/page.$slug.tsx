@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { useSupabase } from "@/integrations/supabase/provider";
-import { loadPublicPage } from "@/integrations/cms/public-cms";
+import { loadPublicPage } from "@/integrations/supabase/cms/public-cms";
 
 export const Route = createFileRoute("/page/$slug")({
   component: CmsPage,
@@ -21,12 +21,12 @@ function CmsPage() {
 
     let cancelled = false;
     void loadPublicPage(supabase, slug)
-      .then((result) => {
+      .then((result: any) => {
         if (cancelled) return;
         setPage(result.page);
         setSections(result.sections);
       })
-      .catch((error) => console.error("[CMS Page]", error))
+      .catch((error: unknown) => console.error("[CMS Page]", error))
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
