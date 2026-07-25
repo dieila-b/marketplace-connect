@@ -411,6 +411,29 @@ export function CmsDebugPanel() {
             <div className="space-y-2 border-b border-border bg-muted/30 px-3 py-2.5">
               <div className="flex flex-col gap-1">
                 <label
+                  htmlFor="cms-debug-path"
+                  className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Chemin de champ
+                </label>
+                <input
+                  id="cms-debug-path"
+                  type="text"
+                  value={pathFilter}
+                  onChange={(e) => setPathFilter(e.target.value)}
+                  placeholder="ex. page, sections.title, CmsPage.page…"
+                  className="rounded border border-border bg-background px-2 py-1 font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+                <span className="text-[10px] text-muted-foreground">
+                  Recherche insensible à la casse —
+                  les chemins nested (ex. <code>sections.0.title</code>) et
+                  normalisés (ex. <code>sections.title</code>) sont pris en
+                  compte.
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label
                   htmlFor="cms-debug-context"
                   className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
                 >
