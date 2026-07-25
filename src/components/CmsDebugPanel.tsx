@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bug,
   Copy,
@@ -57,14 +57,30 @@ async function copyText(text: string) {
 function EventRow({
   event,
   onShowRaw,
+  selected,
 }: {
   event: CmsValidationEvent;
   onShowRaw: (event: CmsValidationEvent) => void;
+  selected: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selected && rowRef.current) {
+      rowRef.current.scrollIntoView({ block: "nearest" });
+    }
+  }, [selected]);
 
   return (
-    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs">
+    <div
+      ref={rowRef}
+      className={`rounded-lg border p-3 text-xs transition-colors ${
+        selected
+          ? "border-primary bg-primary/10 ring-1 ring-primary"
+          : "border-destructive/30 bg-destructive/5"
+      }`}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -316,6 +332,7 @@ export function CmsDebugPanel() {
   const [events, setEvents] = useState<CmsValidationEvent[]>([]);
   const [open, setOpen] = useState(false);
   const [rawEvent, setRawEvent] = useState<CmsValidationEvent | null>(null);
+  const [selectedRowIndex, setSelectedRowIndex] = useState(-1);
 
   // Filters
   const [showFilters, setShowFilters] = useState(false);
@@ -354,7 +371,81 @@ export function CmsDebugPanel() {
   // Reset to the first page whenever the active filters change.
   useEffect(() => {
     setPage(1);
+    setSelectedRowIndex(-1);
   }, [contextFilter, scopeFilter, requestIdFilter, pathFilter]);
+
+  // Latest-values snapshot for the keyboard handler. Keeping it in a ref
+  // avoids re-binding the window listener on every render.
+  const navRef = useRef({
+    pagedEvents: [] as CmsValidationEvent[],
+    safePage: 1,
+    totalPages: 1,
+    selectedRowIndex: -1,
+    rawEvent: null as CmsValidationEvent | null,
+    open: false,
+  });
+
+  useEffect(() => {
+    if (!enabled) return;
+    function onKeyDown(e: KeyboardEvent) {
+      const s = navRef.current;
+      if (!s.open) return;
+
+      // Escape: close the raw-response modal first, then clear the selection.
+      if (e.key === "Escape") {
+        if (s.rawEvent) {
+          e.preventDefault();
+          setRawEvent(null);
+        } else if (s.selectedRowIndex !== -1) {
+          e.preventDefault();
+          setSelectedRowIndex(-1);
+        }
+        return;
+      }
+
+      // Arrow / Enter navigation only when the modal is closed and focus is
+      // not in a form field.
+      if (s.rawEvent) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+
+      const len = s.pagedEvents.length;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (len === 0) return;
+        setSelectedRowIndex((prev) => {
+          if (prev === -1) return 0;
+          if (prev < len - 1) return prev + 1;
+          if (s.safePage < s.totalPages) {
+            setPage(s.safePage + 1);
+            return 0;
+          }
+          return prev;
+        });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (len === 0) return;
+        setSelectedRowIndex((prev) => {
+          if (prev === -1) return len - 1;
+          if (prev > 0) return prev - 1;
+          if (s.safePage > 1) {
+            setPage(s.safePage - 1);
+            return PAGE_SIZE - 1;
+          }
+          return prev;
+        });
+      } else if (e.key === "Enter") {
+        if (s.selectedRowIndex < 0) return;
+        const ev = s.pagedEvents[s.selectedRowIndex];
+        if (ev && ev.sample !== undefined) {
+          e.preventDefault();
+          setRawEvent(ev);
+        }
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [enabled]);
 
   const hasActiveFilter =
     contextFilter !== "all" ||
@@ -379,6 +470,22 @@ export function CmsDebugPanel() {
   const safePage = Math.min(Math.max(1, page), totalPages);
   const startIndex = (safePage - 1) * PAGE_SIZE;
   const pagedEvents = filteredEvents.slice(startIndex, startIndex + PAGE_SIZE);
+
+  // Keep the keyboard handler's snapshot in sync with the latest render.
+  navRef.current = {
+    pagedEvents,
+    safePage,
+    totalPages,
+    selectedRowIndex,
+    rawEvent,
+    open,
+  };
+
+  // Clamp the highlighted index to the current page's rows.
+  const safeSelected =
+    selectedRowIndex >= 0 && selectedRowIndex < pagedEvents.length
+      ? selectedRowIndex
+      : -1;
 
   return (
     <div className="fixed bottom-20 right-4 z-[9999] md:bottom-4">
@@ -533,8 +640,13 @@ export function CmsDebugPanel() {
                 Aucune erreur ne correspond aux filtres actifs.
               </p>
             ) : (
-              pagedEvents.map((e) => (
-                <EventRow key={e.id} event={e} onShowRaw={setRawEvent} />
+              pagedEvents.map((e, i) => (
+                <EventRow
+                  key={e.id}
+                  event={e}
+                  onShowRaw={setRawEvent}
+                  selected={i === safeSelected}
+                />
               ))
             )}
           </div>
@@ -565,6 +677,17 @@ export function CmsDebugPanel() {
 
 
           <div className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground">
+            <div className="mb-1">
+              Clavier :{" "}
+              <kbd className="rounded border border-border bg-background px-1 font-sans">↑</kbd>
+              /
+              <kbd className="rounded border border-border bg-background px-1 font-sans">↓</kbd>{" "}
+              naviguer ·{" "}
+              <kbd className="rounded border border-border bg-background px-1 font-sans">Entrée</kbd>{" "}
+              réponse brute ·{" "}
+              <kbd className="rounded border border-border bg-background px-1 font-sans">Esc</kbd>{" "}
+              fermer
+            </div>
             Désactiver : ajouter <code>?debug=off</code> à l'URL ou{" "}
             <button
               type="button"
