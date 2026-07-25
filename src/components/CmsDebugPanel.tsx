@@ -263,6 +263,42 @@ function RawResponseModal({
 
 
 
+/**
+ * Normalise a Zod issue path by dropping pure-numeric array index segments.
+ * e.g. "sections.0.title" -> "sections.title"
+ */
+function normalizePath(path: string): string {
+  return path
+    .split(".")
+    .filter((seg) => seg.length > 0 && !/^\d+$/.test(seg))
+    .join(".");
+}
+
+/**
+ * Returns true if any issue of the event has a field path matching the query.
+ * Matching is case-insensitive and tolerant of nested/array paths:
+ *   - raw path ("sections.0.title")
+ *   - normalized path ("sections.title")
+ *   - context-qualified ("CmsPage.sections.title", "CmsPage.page")
+ * A search for a leaf like "title" matches "sections.0.title".
+ */
+function eventHasMatchingPath(event: CmsValidationEvent, query: string): boolean {
+  if (!query) return true;
+  const ctx = event.context.toLowerCase();
+  for (const issue of event.issues) {
+    const raw = issue.path.toLowerCase();
+    const norm = normalizePath(issue.path).toLowerCase();
+    const candidates = [
+      raw,
+      norm,
+      `${ctx}.${raw}`,
+      `${ctx}.${norm}`,
+    ];
+    if (candidates.some((c) => c.includes(query))) return true;
+  }
+  return false;
+}
+
 const SCOPE_OPTIONS: Array<CmsValidationEvent["scope"] | "all"> = [
   "all",
   "single",
@@ -281,6 +317,7 @@ export function CmsDebugPanel() {
   const [contextFilter, setContextFilter] = useState<string>("all");
   const [scopeFilter, setScopeFilter] = useState<string>("all");
   const [requestIdFilter, setRequestIdFilter] = useState<string>("");
+  const [pathFilter, setPathFilter] = useState<string>("");
 
   useEffect(() => {
     if (!enabled) return;
@@ -296,23 +333,27 @@ export function CmsDebugPanel() {
 
   const filteredEvents = useMemo(() => {
     const rid = requestIdFilter.trim().toLowerCase();
+    const pathQ = pathFilter.trim().toLowerCase();
     return events.filter((e) => {
       if (contextFilter !== "all" && e.context !== contextFilter) return false;
       if (scopeFilter !== "all" && e.scope !== scopeFilter) return false;
       if (rid && !(e.requestId ?? "").toLowerCase().includes(rid)) return false;
+      if (pathQ && !eventHasMatchingPath(e, pathQ)) return false;
       return true;
     });
-  }, [events, contextFilter, scopeFilter, requestIdFilter]);
+  }, [events, contextFilter, scopeFilter, requestIdFilter, pathFilter]);
 
   const hasActiveFilter =
     contextFilter !== "all" ||
     scopeFilter !== "all" ||
-    requestIdFilter.trim() !== "";
+    requestIdFilter.trim() !== "" ||
+    pathFilter.trim() !== "";
 
   function resetFilters() {
     setContextFilter("all");
     setScopeFilter("all");
     setRequestIdFilter("");
+    setPathFilter("");
   }
 
   if (!enabled) return null;
@@ -368,6 +409,29 @@ export function CmsDebugPanel() {
 
           {showFilters && (
             <div className="space-y-2 border-b border-border bg-muted/30 px-3 py-2.5">
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="cms-debug-path"
+                  className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Chemin de champ
+                </label>
+                <input
+                  id="cms-debug-path"
+                  type="text"
+                  value={pathFilter}
+                  onChange={(e) => setPathFilter(e.target.value)}
+                  placeholder="ex. page, sections.title, CmsPage.page…"
+                  className="rounded border border-border bg-background px-2 py-1 font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+                <span className="text-[10px] text-muted-foreground">
+                  Recherche insensible à la casse —
+                  les chemins nested (ex. <code>sections.0.title</code>) et
+                  normalisés (ex. <code>sections.title</code>) sont pris en
+                  compte.
+                </span>
+              </div>
+
               <div className="flex flex-col gap-1">
                 <label
                   htmlFor="cms-debug-context"
