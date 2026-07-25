@@ -12,12 +12,17 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublierRouteImport } from './routes/publier'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as FavorisRouteImport } from './routes/favoris'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as BlogRouteImport } from './routes/blog'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnnoncesRouteImport } from './routes/annonces'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AnnoncesSlugRouteImport } from './routes/annonces.$slug'
+import { Route as AnnoncesIndexRouteImport } from './routes/annonces.index'
+import { Route as PageSlugRouteImport } from './routes/page.$slug'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AnnonceSlugRouteImport } from './routes/annonce.$slug'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 
 const PublierRoute = PublierRouteImport.update({
@@ -35,9 +40,19 @@ const FavorisRoute = FavorisRouteImport.update({
   path: '/favoris',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -60,10 +75,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AnnoncesSlugRoute = AnnoncesSlugRouteImport.update({
+const AnnoncesIndexRoute = AnnoncesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AnnoncesRoute,
+} as any)
+const PageSlugRoute = PageSlugRouteImport.update({
+  id: '/page/$slug',
+  path: '/page/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
-  getParentRoute: () => AnnoncesRoute,
+  getParentRoute: () => BlogRoute,
+} as any)
+const AnnonceSlugRoute = AnnonceSlugRouteImport.update({
+  id: '/annonce/$slug',
+  path: '/annonce/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
@@ -76,23 +106,32 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/annonces': typeof AnnoncesRouteWithChildren
   '/auth': typeof AuthRoute
+  '/blog': typeof BlogRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
   '/favoris': typeof FavorisRoute
   '/messages': typeof MessagesRoute
   '/publier': typeof PublierRoute
-  '/annonces/$slug': typeof AnnoncesSlugRoute
+  '/annonce/$slug': typeof AnnonceSlugRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/page/$slug': typeof PageSlugRoute
+  '/annonces/': typeof AnnoncesIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/annonces': typeof AnnoncesRouteWithChildren
   '/auth': typeof AuthRoute
+  '/blog': typeof BlogRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
   '/favoris': typeof FavorisRoute
   '/messages': typeof MessagesRoute
   '/publier': typeof PublierRoute
-  '/annonces/$slug': typeof AnnoncesSlugRoute
+  '/annonce/$slug': typeof AnnonceSlugRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/page/$slug': typeof PageSlugRoute
+  '/annonces': typeof AnnoncesIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
 }
 export interface FileRoutesById {
@@ -101,11 +140,16 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/annonces': typeof AnnoncesRouteWithChildren
   '/auth': typeof AuthRoute
+  '/blog': typeof BlogRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
   '/favoris': typeof FavorisRoute
   '/messages': typeof MessagesRoute
   '/publier': typeof PublierRoute
-  '/annonces/$slug': typeof AnnoncesSlugRoute
+  '/annonce/$slug': typeof AnnonceSlugRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/page/$slug': typeof PageSlugRoute
+  '/annonces/': typeof AnnoncesIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
 }
 export interface FileRouteTypes {
@@ -115,23 +159,32 @@ export interface FileRouteTypes {
     | '/admin'
     | '/annonces'
     | '/auth'
+    | '/blog'
     | '/dashboard'
+    | '/faq'
     | '/favoris'
     | '/messages'
     | '/publier'
-    | '/annonces/$slug'
+    | '/annonce/$slug'
+    | '/blog/$slug'
+    | '/page/$slug'
+    | '/annonces/'
     | '/api/public/health'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
-    | '/annonces'
     | '/auth'
+    | '/blog'
     | '/dashboard'
+    | '/faq'
     | '/favoris'
     | '/messages'
     | '/publier'
-    | '/annonces/$slug'
+    | '/annonce/$slug'
+    | '/blog/$slug'
+    | '/page/$slug'
+    | '/annonces'
     | '/api/public/health'
   id:
     | '__root__'
@@ -139,11 +192,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/annonces'
     | '/auth'
+    | '/blog'
     | '/dashboard'
+    | '/faq'
     | '/favoris'
     | '/messages'
     | '/publier'
-    | '/annonces/$slug'
+    | '/annonce/$slug'
+    | '/blog/$slug'
+    | '/page/$slug'
+    | '/annonces/'
     | '/api/public/health'
   fileRoutesById: FileRoutesById
 }
@@ -152,10 +210,14 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AnnoncesRoute: typeof AnnoncesRouteWithChildren
   AuthRoute: typeof AuthRoute
+  BlogRoute: typeof BlogRouteWithChildren
   DashboardRoute: typeof DashboardRoute
+  FaqRoute: typeof FaqRoute
   FavorisRoute: typeof FavorisRoute
   MessagesRoute: typeof MessagesRoute
   PublierRoute: typeof PublierRoute
+  AnnonceSlugRoute: typeof AnnonceSlugRoute
+  PageSlugRoute: typeof PageSlugRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
 }
 
@@ -182,11 +244,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FavorisRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -217,12 +293,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/annonces/$slug': {
-      id: '/annonces/$slug'
-      path: '/$slug'
-      fullPath: '/annonces/$slug'
-      preLoaderRoute: typeof AnnoncesSlugRouteImport
+    '/annonces/': {
+      id: '/annonces/'
+      path: '/'
+      fullPath: '/annonces/'
+      preLoaderRoute: typeof AnnoncesIndexRouteImport
       parentRoute: typeof AnnoncesRoute
+    }
+    '/page/$slug': {
+      id: '/page/$slug'
+      path: '/page/$slug'
+      fullPath: '/page/$slug'
+      preLoaderRoute: typeof PageSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/annonce/$slug': {
+      id: '/annonce/$slug'
+      path: '/annonce/$slug'
+      fullPath: '/annonce/$slug'
+      preLoaderRoute: typeof AnnonceSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/health': {
       id: '/api/public/health'
@@ -235,26 +332,40 @@ declare module '@tanstack/react-router' {
 }
 
 interface AnnoncesRouteChildren {
-  AnnoncesSlugRoute: typeof AnnoncesSlugRoute
+  AnnoncesIndexRoute: typeof AnnoncesIndexRoute
 }
 
 const AnnoncesRouteChildren: AnnoncesRouteChildren = {
-  AnnoncesSlugRoute: AnnoncesSlugRoute,
+  AnnoncesIndexRoute: AnnoncesIndexRoute,
 }
 
 const AnnoncesRouteWithChildren = AnnoncesRoute._addFileChildren(
   AnnoncesRouteChildren,
 )
 
+interface BlogRouteChildren {
+  BlogSlugRoute: typeof BlogSlugRoute
+}
+
+const BlogRouteChildren: BlogRouteChildren = {
+  BlogSlugRoute: BlogSlugRoute,
+}
+
+const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AnnoncesRoute: AnnoncesRouteWithChildren,
   AuthRoute: AuthRoute,
+  BlogRoute: BlogRouteWithChildren,
   DashboardRoute: DashboardRoute,
+  FaqRoute: FaqRoute,
   FavorisRoute: FavorisRoute,
   MessagesRoute: MessagesRoute,
   PublierRoute: PublierRoute,
+  AnnonceSlugRoute: AnnonceSlugRoute,
+  PageSlugRoute: PageSlugRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
 }
 export const routeTree = rootRouteImport

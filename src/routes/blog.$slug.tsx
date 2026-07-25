@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { useSupabase } from "@/integrations/supabase/provider";
-import { loadPublicPost } from "@/integrations/cms/public-cms";
+import { loadPublicPost } from "@/integrations/supabase/cms/public-cms";
 
 export const Route = createFileRoute("/blog/$slug")({
   component: BlogPostPage,
@@ -18,7 +18,7 @@ function BlogPostPage() {
     if (!supabase) return;
     void loadPublicPost(supabase, slug)
       .then(setPost)
-      .catch((error) => console.error("[Blog Post]", error));
+      .catch((error: unknown) => console.error("[Blog Post]", error));
   }, [supabase, slug]);
 
   useEffect(() => {

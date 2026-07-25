@@ -347,7 +347,7 @@ export function PublicCmsMenu({
                 ascending: true,
               });
 
-          data = fallback.data;
+          data = fallback.data as typeof data;
           itemsError = fallback.error;
         }
 

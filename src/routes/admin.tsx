@@ -2382,7 +2382,7 @@ function TabHomepageCms({
       return;
     }
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       ...form,
       locale: "fr",
       statistics,
