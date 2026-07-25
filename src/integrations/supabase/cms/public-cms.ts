@@ -194,42 +194,20 @@ function safeStatistics(value: unknown): CmsStatistic[] {
   return rows.length ? rows : DEFAULT_HOMEPAGE_CMS.statistics;
 }
 
-export function normalizeHomepageCms(row: any): CmsHomepage {
-  if (!row) return DEFAULT_HOMEPAGE_CMS;
+import {
+  cmsBannerSchema,
+  cmsFaqSchema,
+  cmsPostSchema,
+  cmsSectionSchema,
+  cmsSeoMetadataSchema,
+  parseArray,
+  parseHomepage,
+  parsePageBundle,
+  parseSingle,
+} from "./schemas";
 
-  return {
-    id: row.id,
-    locale: row.locale || "fr",
-    hero_badge: row.hero_badge || DEFAULT_HOMEPAGE_CMS.hero_badge,
-    hero_title: row.hero_title || DEFAULT_HOMEPAGE_CMS.hero_title,
-    hero_subtitle: row.hero_subtitle || DEFAULT_HOMEPAGE_CMS.hero_subtitle,
-    hero_description:
-      row.hero_description || DEFAULT_HOMEPAGE_CMS.hero_description,
-    hero_background_url: row.hero_background_url || "",
-    hero_primary_label:
-      row.hero_primary_label || DEFAULT_HOMEPAGE_CMS.hero_primary_label,
-    hero_primary_url:
-      row.hero_primary_url || DEFAULT_HOMEPAGE_CMS.hero_primary_url,
-    hero_secondary_label:
-      row.hero_secondary_label || DEFAULT_HOMEPAGE_CMS.hero_secondary_label,
-    hero_secondary_url:
-      row.hero_secondary_url || DEFAULT_HOMEPAGE_CMS.hero_secondary_url,
-    search_placeholder:
-      row.search_placeholder || DEFAULT_HOMEPAGE_CMS.search_placeholder,
-    featured_categories_title:
-      row.featured_categories_title ||
-      DEFAULT_HOMEPAGE_CMS.featured_categories_title,
-    featured_listings_title:
-      row.featured_listings_title ||
-      DEFAULT_HOMEPAGE_CMS.featured_listings_title,
-    statistics: safeStatistics(row.statistics),
-    options: safeObject(row.options),
-    seo_title: row.seo_title || DEFAULT_HOMEPAGE_CMS.seo_title,
-    seo_description:
-      row.seo_description || DEFAULT_HOMEPAGE_CMS.seo_description,
-    og_image_url: row.og_image_url || "",
-    status: row.status || "published",
-  };
+export function normalizeHomepageCms(row: unknown): CmsHomepage {
+  return parseHomepage(row);
 }
 
 export async function loadPublicSiteSettings(
@@ -245,9 +223,15 @@ export async function loadPublicSiteSettings(
     return {};
   }
 
-  return Object.fromEntries(
-    (data ?? []).map((row: any) => [row.key, row.value]),
-  );
+  const rows = Array.isArray(data) ? data : [];
+  const out: Record<string, unknown> = {};
+  for (const row of rows) {
+    if (row && typeof row === "object" && "key" in row) {
+      const key = String((row as { key: unknown }).key ?? "");
+      if (key) out[key] = (row as { value: unknown }).value;
+    }
+  }
+  return out;
 }
 
 export async function loadPublicHomeCms(
@@ -297,9 +281,9 @@ export async function loadPublicHomeCms(
   }
 
   return {
-    homepage: normalizeHomepageCms(homepageResult.data),
-    banners: (bannersResult.data ?? []) as CmsBanner[],
-    sections: (sectionsResult.data ?? []) as CmsSection[],
+    homepage: parseHomepage(homepageResult.data),
+    banners: parseArray(cmsBannerSchema, bannersResult.data, "banners"),
+    sections: parseArray(cmsSectionSchema, sectionsResult.data, "cms_sections"),
     settings,
   };
 }
@@ -329,10 +313,7 @@ export async function loadPublicPage(
   if (pageResult.error) throw pageResult.error;
   if (sectionsResult.error) throw sectionsResult.error;
 
-  return {
-    page: (pageResult.data ?? null) as CmsPage | null,
-    sections: (sectionsResult.data ?? []) as CmsSection[],
-  };
+  return parsePageBundle(pageResult.data, sectionsResult.data);
 }
 
 export async function loadPublicPosts(
@@ -348,7 +329,7 @@ export async function loadPublicPosts(
     .order("published_at", { ascending: false });
 
   if (error) throw error;
-  return (data ?? []) as CmsPost[];
+  return parseArray(cmsPostSchema, data, "posts");
 }
 
 export async function loadPublicPost(
@@ -365,7 +346,7 @@ export async function loadPublicPost(
     .maybeSingle();
 
   if (error) throw error;
-  return (data ?? null) as CmsPost | null;
+  return parseSingle(cmsPostSchema, data, "posts");
 }
 
 export async function loadPublicFaqs(
@@ -380,7 +361,7 @@ export async function loadPublicFaqs(
     .order("sort_order");
 
   if (error) throw error;
-  return (data ?? []) as CmsFaq[];
+  return parseArray(cmsFaqSchema, data, "faqs");
 }
 
 export async function loadPublicSeo(
@@ -400,6 +381,7 @@ export async function loadPublicSeo(
     return null;
   }
 
-  return (data ?? null) as CmsSeoMetadata | null;
+  return parseSingle(cmsSeoMetadataSchema, data, "seo_metadata");
 }
+
 
