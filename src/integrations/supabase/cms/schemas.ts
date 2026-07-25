@@ -12,6 +12,8 @@ import {
   type CmsStatistic,
   type PublicPageBundle,
 } from "./public-cms";
+import { reportCmsValidationIssue } from "./validation-reporter";
+
 
 /* Helpers --------------------------------------------------------------- */
 
