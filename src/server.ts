@@ -4,10 +4,12 @@ import process from "node:process";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { readRequestIdFromHeaders } from "./lib/request-id";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
+
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
@@ -87,32 +89,59 @@ function isMalformedServerFnRequest(request: Request) {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const requestId = readRequestIdFromHeaders(request.headers);
     try {
       if (isMalformedServerFnRequest(request)) {
+        console.warn(`[server] ${requestId} malformed serverFn request ${request.url}`);
         return new Response("Invalid request parameter", {
           status: 400,
-          headers: { "content-type": "text/plain; charset=utf-8" },
+          headers: {
+            "content-type": "text/plain; charset=utf-8",
+            "x-request-id": requestId,
+          },
         });
       }
 
       syncRuntimeEnv(env);
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      // Ensure every response carries a request-id so the UI can display it.
+      if (!normalized.headers.get("x-request-id")) {
+        try {
+          normalized.headers.set("x-request-id", requestId);
+        } catch {
+          // Some responses have immutable headers — build a new one.
+          const cloned = new Response(normalized.body, {
+            status: normalized.status,
+            statusText: normalized.statusText,
+            headers: new Headers(normalized.headers),
+          });
+          cloned.headers.set("x-request-id", requestId);
+          return cloned;
+        }
+      }
+      return normalized;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      // Bad client request to /_serverFn (missing/invalid id) — return 400, not the SSR error page.
       if (message.includes("Invalid server action param")) {
         return new Response(message, {
           status: 400,
-          headers: { "content-type": "text/plain; charset=utf-8" },
+          headers: {
+            "content-type": "text/plain; charset=utf-8",
+            "x-request-id": requestId,
+          },
         });
       }
-      console.error(error);
+      console.error(`[server] ${requestId} unhandled`, error);
       return new Response(renderErrorPage(), {
         status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "x-request-id": requestId,
+        },
       });
     }
   },
 };
+
