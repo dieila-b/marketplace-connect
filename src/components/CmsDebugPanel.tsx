@@ -44,7 +44,13 @@ async function copyText(text: string) {
   }
 }
 
-function EventRow({ event }: { event: CmsValidationEvent }) {
+function EventRow({
+  event,
+  onShowRaw,
+}: {
+  event: CmsValidationEvent;
+  onShowRaw: (event: CmsValidationEvent) => void;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -90,6 +96,18 @@ function EventRow({ event }: { event: CmsValidationEvent }) {
             </div>
           )}
 
+          <button
+            type="button"
+            onClick={() => onShowRaw(event)}
+            disabled={event.sample === undefined}
+            className="flex w-full items-center justify-center gap-1.5 rounded border border-border bg-background px-2 py-1.5 text-[11px] font-semibold hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FileJson className="h-3.5 w-3.5" />
+            {event.sample === undefined
+              ? "Réponse brute indisponible"
+              : "Voir la réponse brute"}
+          </button>
+
           <ul className="space-y-1">
             {event.issues.length === 0 && (
               <li className="text-muted-foreground">
@@ -120,6 +138,121 @@ function EventRow({ event }: { event: CmsValidationEvent }) {
     </div>
   );
 }
+
+function safeStringify(value: unknown): string {
+  const seen = new WeakSet();
+  try {
+    return JSON.stringify(
+      value,
+      (_key, val) => {
+        if (typeof val === "bigint") return `${val.toString()}n`;
+        if (val instanceof Error)
+          return { name: val.name, message: val.message, stack: val.stack };
+        if (val && typeof val === "object") {
+          if (seen.has(val as object)) return "[Circular]";
+          seen.add(val as object);
+        }
+        return val;
+      },
+      2,
+    ) ?? String(value);
+  } catch (err) {
+    return `// Sérialisation impossible : ${(err as Error).message}\n${String(value)}`;
+  }
+}
+
+function highlightPaths(issues: CmsValidationEvent["issues"]): Set<string> {
+  const set = new Set<string>();
+  for (const i of issues) if (i.path && i.path !== "(root)") set.add(i.path);
+  return set;
+}
+
+function RawResponseModal({
+  event,
+  onClose,
+}: {
+  event: CmsValidationEvent;
+  onClose: () => void;
+}) {
+  const json = useMemo(() => safeStringify(event.sample), [event.sample]);
+  const invalidPaths = useMemo(() => highlightPaths(event.issues), [event.issues]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[90vh] w-[min(96vw,720px)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-2 border-b border-border px-4 py-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <FileJson className="h-4 w-4 text-destructive" />
+              Réponse brute — {event.context}
+            </div>
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              {formatTime(event.timestamp)} · scope: {event.scope}
+              {event.requestId && ` · requestId: ${event.requestId}`}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded p-1 hover:bg-muted"
+            title="Fermer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {invalidPaths.size > 0 && (
+          <div className="border-b border-border bg-destructive/5 px-4 py-2">
+            <div className="text-[11px] font-semibold text-destructive">
+              Champs invalides :
+            </div>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {[...invalidPaths].map((p) => (
+                <code
+                  key={p}
+                  className="rounded bg-destructive/15 px-1.5 py-0.5 font-mono text-[10px] text-destructive"
+                >
+                  {p}
+                </code>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <pre className="flex-1 overflow-auto whitespace-pre bg-background p-4 font-mono text-[11px] leading-relaxed">
+          {event.sample === undefined ? "// Aucune donnée capturée" : json}
+        </pre>
+
+        <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-2">
+          {event.requestId && (
+            <button
+              type="button"
+              onClick={() => copyText(event.requestId!)}
+              className="flex items-center gap-1 rounded border border-border bg-background px-2 py-1 text-[11px] font-semibold hover:bg-muted"
+            >
+              <Copy className="h-3 w-3" /> requestId
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => copyText(json)}
+            className="flex items-center gap-1 rounded bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            <Copy className="h-3 w-3" /> Copier JSON
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
 export function CmsDebugPanel() {
   const [enabled, setEnabled] = useCmsDebugEnabled();
