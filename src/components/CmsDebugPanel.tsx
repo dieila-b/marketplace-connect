@@ -297,23 +297,27 @@ export function CmsDebugPanel() {
 
   const filteredEvents = useMemo(() => {
     const rid = requestIdFilter.trim().toLowerCase();
+    const pathQ = pathFilter.trim().toLowerCase();
     return events.filter((e) => {
       if (contextFilter !== "all" && e.context !== contextFilter) return false;
       if (scopeFilter !== "all" && e.scope !== scopeFilter) return false;
       if (rid && !(e.requestId ?? "").toLowerCase().includes(rid)) return false;
+      if (pathQ && !eventHasMatchingPath(e, pathQ)) return false;
       return true;
     });
-  }, [events, contextFilter, scopeFilter, requestIdFilter]);
+  }, [events, contextFilter, scopeFilter, requestIdFilter, pathFilter]);
 
   const hasActiveFilter =
     contextFilter !== "all" ||
     scopeFilter !== "all" ||
-    requestIdFilter.trim() !== "";
+    requestIdFilter.trim() !== "" ||
+    pathFilter.trim() !== "";
 
   function resetFilters() {
     setContextFilter("all");
     setScopeFilter("all");
     setRequestIdFilter("");
+    setPathFilter("");
   }
 
   if (!enabled) return null;
