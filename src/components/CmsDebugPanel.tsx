@@ -258,6 +258,7 @@ export function CmsDebugPanel() {
   const [enabled, setEnabled] = useCmsDebugEnabled();
   const [events, setEvents] = useState<CmsValidationEvent[]>([]);
   const [open, setOpen] = useState(false);
+  const [rawEvent, setRawEvent] = useState<CmsValidationEvent | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -303,7 +304,9 @@ export function CmsDebugPanel() {
                 Aucune erreur de validation CMS pour le moment.
               </p>
             ) : (
-              events.map((e) => <EventRow key={e.id} event={e} />)
+              events.map((e) => (
+                <EventRow key={e.id} event={e} onShowRaw={setRawEvent} />
+              ))
             )}
           </div>
 
