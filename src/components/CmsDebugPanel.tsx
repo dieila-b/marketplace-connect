@@ -6,6 +6,7 @@ import {
   Trash2,
   X,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   FileJson,
 } from "lucide-react";
@@ -306,6 +307,10 @@ const SCOPE_OPTIONS: Array<CmsValidationEvent["scope"] | "all"> = [
   "homepage",
 ];
 
+// Number of error rows rendered at once. Only the current page is kept in the
+// DOM, which keeps the panel cheap regardless of how many events accumulate.
+const PAGE_SIZE = 10;
+
 export function CmsDebugPanel() {
   const [enabled, setEnabled] = useCmsDebugEnabled();
   const [events, setEvents] = useState<CmsValidationEvent[]>([]);
@@ -318,6 +323,9 @@ export function CmsDebugPanel() {
   const [scopeFilter, setScopeFilter] = useState<string>("all");
   const [requestIdFilter, setRequestIdFilter] = useState<string>("");
   const [pathFilter, setPathFilter] = useState<string>("");
+
+  // Pagination
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (!enabled) return;
@@ -343,6 +351,11 @@ export function CmsDebugPanel() {
     });
   }, [events, contextFilter, scopeFilter, requestIdFilter, pathFilter]);
 
+  // Reset to the first page whenever the active filters change.
+  useEffect(() => {
+    setPage(1);
+  }, [contextFilter, scopeFilter, requestIdFilter, pathFilter]);
+
   const hasActiveFilter =
     contextFilter !== "all" ||
     scopeFilter !== "all" ||
@@ -360,6 +373,12 @@ export function CmsDebugPanel() {
 
   const count = events.length;
   const visibleCount = filteredEvents.length;
+
+  // Pagination: only the current page's rows are rendered.
+  const totalPages = Math.max(1, Math.ceil(visibleCount / PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const pagedEvents = filteredEvents.slice(startIndex, startIndex + PAGE_SIZE);
 
   return (
     <div className="fixed bottom-20 right-4 z-[9999] md:bottom-4">
@@ -514,11 +533,36 @@ export function CmsDebugPanel() {
                 Aucune erreur ne correspond aux filtres actifs.
               </p>
             ) : (
-              filteredEvents.map((e) => (
+              pagedEvents.map((e) => (
                 <EventRow key={e.id} event={e} onShowRaw={setRawEvent} />
               ))
             )}
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-1.5 text-[11px]">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Préc.
+              </button>
+              <span className="text-muted-foreground">
+                Page {safePage}/{totalPages} · {visibleCount} erreur(s)
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Suiv. <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
 
           <div className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground">
             Désactiver : ajouter <code>?debug=off</code> à l'URL ou{" "}
