@@ -17,6 +17,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { MobileNav } from "@/components/MobileNav";
 import { SupabaseHealthCheck } from "@/components/SupabaseHealthCheck";
 import { ErrorState } from "@/components/ErrorState";
+import { CmsDebugPanel } from "@/components/CmsDebugPanel";
 
 
 function NotFoundComponent() {
@@ -124,6 +125,7 @@ function RootComponent() {
         </div>
 
         <Toaster richColors position="top-center" />
+        <CmsDebugPanel />
       </SupabaseProvider>
     </QueryClientProvider>
   );

@@ -12,6 +12,8 @@ import {
   type CmsStatistic,
   type PublicPageBundle,
 } from "./public-cms";
+import { reportCmsValidationIssue } from "./validation-reporter";
+
 
 /* Helpers --------------------------------------------------------------- */
 
@@ -345,10 +347,12 @@ export function parseArray<T>(
     const res = schema.safeParse(row);
     if (res.success) out.push(res.data);
     else
-      console.warn(
-        `[CMS] Ligne ignorée (${context}) — validation Zod échouée:`,
-        res.error.issues,
-      );
+      reportCmsValidationIssue({
+        context,
+        scope: "array-item",
+        issues: res.error.issues,
+        sample: row,
+      });
   }
   return out;
 }
@@ -361,17 +365,24 @@ export function parseSingle<T>(
   if (data == null) return null;
   const res = schema.safeParse(data);
   if (res.success) return res.data;
-  console.warn(
-    `[CMS] Enregistrement invalide (${context}) — validation Zod échouée:`,
-    res.error.issues,
-  );
+  reportCmsValidationIssue({
+    context,
+    scope: "single",
+    issues: res.error.issues,
+    sample: data,
+  });
   return null;
 }
 
 export function parseHomepage(data: unknown): CmsHomepage {
   const res = cmsHomepageSchema.safeParse(data);
   if (res.success) return res.data;
-  console.warn("[CMS] Page d'accueil invalide, fallback appliqué:", res.error.issues);
+  reportCmsValidationIssue({
+    context: "cms_homepage",
+    scope: "homepage",
+    issues: res.error.issues,
+    sample: data,
+  });
   return DEFAULT_HOMEPAGE_CMS;
 }
 
@@ -384,3 +395,4 @@ export function parsePageBundle(
     sections: parseArray(cmsSectionSchema, sectionsData, "cms_sections"),
   };
 }
+
