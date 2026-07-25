@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import {
   ArrowRight,
   Box,
+  Camera,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -14,6 +15,9 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  Tag,
+  Users,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -63,6 +67,8 @@ const categoryStyles = [
   "bg-rose-50 text-rose-700 border-rose-100",
   "bg-cyan-50 text-cyan-700 border-cyan-100",
 ];
+
+const statIcons: LucideIcon[] = [Tag, Users, MapPin, Zap];
 
 /* ════════════════════════════════════════════════════════════
    ANNONCES PUBLIÉES — CHARGEMENT ROBUSTE
@@ -378,127 +384,181 @@ function HomePage() {
 
   return (
     <main className="min-h-screen w-full overflow-x-hidden bg-slate-50">
-      <section className="relative w-full overflow-hidden bg-slate-950 text-white" style={heroStyle}>
+      <section
+        className="relative w-full overflow-hidden bg-slate-950 text-white"
+        style={heroStyle}
+      >
         {!cms.hero_background_url && (
           <>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.50),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.44),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.34),transparent_38%)]" />
-            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/5 via-transparent to-slate-950/25" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(37,99,235,0.42),transparent_32%),radial-gradient(circle_at_86%_14%,rgba(147,51,234,0.40),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.28),transparent_38%)]" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0a1e55]/90 via-slate-950/85 to-[#31165f]/85" />
+            <div className="absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(255,255,255,.16)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.16)_1px,transparent_1px)] [background-size:58px_58px]" />
           </>
         )}
 
-        <div className="relative mx-auto flex w-full max-w-[1800px] flex-col items-center justify-center px-4 py-10 text-center sm:px-6 sm:py-11 lg:px-8 lg:py-12 xl:px-10">
-          {cms.hero_badge && (
-            <div className="mb-4 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-3.5 py-1.5 text-[11px] font-bold text-white/90 shadow-sm backdrop-blur-md">
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-yellow-300" />
-              <span className="truncate">{cms.hero_badge}</span>
+        <div className="relative mx-auto w-full max-w-[1650px] px-4 pt-8 sm:px-6 sm:pt-9 lg:px-8 lg:pt-10">
+          <div className="mx-auto flex max-w-[1500px] flex-col items-center text-center">
+            <h1 className="mx-auto max-w-[1480px] text-[2rem] font-black leading-[1.05] tracking-[-0.035em] text-white sm:text-[2.6rem] md:text-[3rem] lg:text-[3.25rem] xl:whitespace-nowrap xl:text-[clamp(2.85rem,3vw,3.55rem)]">
+              {cms.hero_title}
+            </h1>
+
+            {cms.hero_subtitle && (
+              <p className="mx-auto mt-3 max-w-[1050px] text-sm font-medium leading-6 text-slate-200 sm:text-base lg:text-[1.02rem]">
+                {cms.hero_subtitle}
+              </p>
+            )}
+
+            <div className="mt-6 w-full max-w-[1120px]">
+              <form
+                onSubmit={onSearch}
+                className="rounded-[1.8rem] border border-white/15 bg-white/[0.97] p-2.5 text-slate-950 shadow-2xl shadow-black/20 backdrop-blur-xl"
+              >
+                <div className="flex flex-col gap-2.5 lg:flex-row">
+                  <div className="relative min-w-0 flex-1">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      value={q}
+                      onChange={(event) => setQ(event.target.value)}
+                      placeholder={cms.search_placeholder}
+                      className="h-12 w-full rounded-2xl border-slate-200 bg-slate-50 pl-12 text-sm shadow-inner sm:h-[52px]"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-12 w-full rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-8 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 sm:h-[52px] lg:w-auto"
+                  >
+                    <Search className="mr-2 h-4 w-4" />
+                    Rechercher
+                  </Button>
+
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="ghost"
+                    onClick={() => setShowAdvancedSearch((current) => !current)}
+                    className="h-12 w-full rounded-2xl px-7 text-sm font-black text-slate-700 hover:bg-slate-100 sm:h-[52px] lg:w-auto"
+                  >
+                    <SlidersHorizontal className="mr-2 h-4 w-4" />
+                    {showAdvancedSearch ? "Fermer" : "Filtres"}
+                  </Button>
+                </div>
+
+                {showAdvancedSearch && (
+                  <div className="mt-3 grid gap-2.5 border-t border-slate-100 pt-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <SelectField
+                      label="Catégorie"
+                      value={category}
+                      onChange={setCategory}
+                      rows={categories}
+                    />
+                    <SelectField
+                      label="Région"
+                      value={region}
+                      onChange={setRegion}
+                      rows={regions}
+                    />
+                    <SelectField
+                      label="Ville"
+                      value={city}
+                      onChange={setCity}
+                      rows={cities}
+                    />
+                    <SelectField
+                      label="Commune"
+                      value={commune}
+                      onChange={setCommune}
+                      rows={communes}
+                    />
+                    <Input
+                      value={minPrice}
+                      onChange={(event) => setMinPrice(event.target.value)}
+                      type="number"
+                      placeholder="Prix minimum"
+                      className="h-11 rounded-xl bg-slate-50"
+                    />
+                    <Input
+                      value={maxPrice}
+                      onChange={(event) => setMaxPrice(event.target.value)}
+                      type="number"
+                      placeholder="Prix maximum"
+                      className="h-11 rounded-xl bg-slate-50"
+                    />
+                  </div>
+                )}
+              </form>
             </div>
-          )}
 
-          <h1 className="mx-auto max-w-[1650px] text-center text-[2rem] font-black leading-[1.05] tracking-[-0.035em] text-white sm:text-[2.6rem] md:text-[3.15rem] lg:text-[3.45rem] xl:whitespace-nowrap xl:text-[clamp(2.85rem,3vw,3.75rem)] 2xl:text-[clamp(3rem,3.1vw,4rem)]">
-            {cms.hero_title}
-          </h1>
+            <div className="mt-5 flex w-full max-w-md flex-col items-center justify-center gap-2.5 sm:max-w-none sm:flex-row">
+              <Button
+                asChild
+                size="lg"
+                className="h-11 w-full rounded-full bg-white px-7 text-sm font-black text-slate-950 shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-slate-100 sm:w-auto"
+              >
+                <a href={cms.hero_primary_url || "/publier"}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  {cms.hero_primary_label}
+                </a>
+              </Button>
 
-          <p className="mx-auto mt-4 max-w-[1180px] text-center text-sm font-medium leading-6 text-slate-200 sm:text-[15px] lg:text-base">
-            {cms.hero_subtitle}
-          </p>
-
-          <div className="mt-6 flex w-full max-w-md flex-col items-center justify-center gap-2.5 sm:max-w-none sm:flex-row">
-            <Button
-              asChild
-              size="lg"
-              className="h-11 w-full rounded-full bg-white px-6 text-sm font-black text-slate-950 shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-slate-100 sm:w-auto"
-            >
-              <a href={cms.hero_primary_url || "/publier"}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                {cms.hero_primary_label}
-              </a>
-            </Button>
-
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="h-11 w-full rounded-full border-white/20 bg-white/[0.08] px-6 text-sm font-black text-white shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/15 hover:text-white sm:w-auto"
-            >
-              <a href={cms.hero_secondary_url || "/annonces"}>
-                {cms.hero_secondary_label}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </a>
-            </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="h-11 w-full rounded-full border-white/20 bg-white/[0.05] px-7 text-sm font-black text-white shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/10 hover:text-white sm:w-auto"
+              >
+                <a href={cms.hero_secondary_url || "/annonces"}>
+                  {cms.hero_secondary_label}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+            </div>
           </div>
+        </div>
 
-          <div className="mt-7 grid w-full max-w-4xl grid-cols-2 gap-2.5 lg:grid-cols-4">
-            {stats.map((stat) => (
-              <MiniStat key={`${stat.label}-${stat.value}`} value={stat.value} label={stat.label} />
+        <div className="relative mt-7 border-t border-white/10 bg-slate-950/35 backdrop-blur-sm">
+          <div className="mx-auto grid w-full max-w-[1500px] grid-cols-2 gap-x-4 gap-y-3 px-5 py-4 sm:px-6 lg:grid-cols-4 lg:px-8">
+            {stats.map((stat, index) => (
+              <MiniStat
+                key={`${stat.label}-${stat.value}`}
+                icon={statIcons[index % statIcons.length]}
+                value={stat.value}
+                label={stat.label}
+              />
             ))}
-          </div>
-
-          <div className="mt-7 w-full max-w-5xl">
-            <form
-              onSubmit={onSearch}
-              className="rounded-[1.5rem] border border-white/20 bg-white/[0.97] p-2.5 text-slate-950 shadow-xl shadow-black/15 backdrop-blur-xl sm:p-3"
-            >
-              <div className="flex flex-col gap-2.5 lg:flex-row">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    value={q}
-                    onChange={(event) => setQ(event.target.value)}
-                    placeholder={cms.search_placeholder}
-                    className="h-11 w-full rounded-xl border-slate-200 bg-slate-50 pl-11 text-sm shadow-inner sm:h-12"
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 px-7 text-sm font-black text-white shadow-md shadow-blue-600/20 transition hover:-translate-y-0.5 sm:h-12 lg:w-auto"
-                >
-                  <Search className="mr-2 h-4 w-4" />
-                  Rechercher
-                </Button>
-
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="outline"
-                  onClick={() => setShowAdvancedSearch((current) => !current)}
-                  className="h-11 w-full rounded-xl border-slate-200 bg-slate-50 px-5 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100 sm:h-12 lg:w-auto"
-                >
-                  <SlidersHorizontal className="mr-2 h-4 w-4" />
-                  {showAdvancedSearch ? "Fermer" : "Filtres"}
-                </Button>
-              </div>
-
-              {showAdvancedSearch && (
-                <div className="mt-3 grid gap-2.5 border-t border-slate-100 pt-3 sm:grid-cols-2 lg:grid-cols-3">
-                  <SelectField label="Catégorie" value={category} onChange={setCategory} rows={categories} />
-                  <SelectField label="Région" value={region} onChange={setRegion} rows={regions} />
-                  <SelectField label="Ville" value={city} onChange={setCity} rows={cities} />
-                  <SelectField label="Commune" value={commune} onChange={setCommune} rows={communes} />
-                  <Input
-                    value={minPrice}
-                    onChange={(event) => setMinPrice(event.target.value)}
-                    type="number"
-                    placeholder="Prix minimum"
-                    className="h-12 rounded-xl bg-slate-50"
-                  />
-                  <Input
-                    value={maxPrice}
-                    onChange={(event) => setMaxPrice(event.target.value)}
-                    type="number"
-                    placeholder="Prix maximum"
-                    className="h-12 rounded-xl bg-slate-50"
-                  />
-                </div>
-              )}
-            </form>
           </div>
         </div>
       </section>
 
+      <section className="kafoo-container py-4">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <TrustItem
+            icon={Camera}
+            title="Publier en 2 minutes"
+            description="Photos, prix, description : votre annonce est en ligne instantanément."
+            color="bg-blue-600 text-white"
+            decoration="bg-blue-100"
+          />
+          <TrustItem
+            icon={MapPin}
+            title="100% local"
+            description="Filtrez par région, ville ou commune pour trouver des vendeurs près de vous."
+            color="bg-emerald-500 text-white"
+            decoration="bg-emerald-100"
+          />
+          <TrustItem
+            icon={ShieldCheck}
+            title="Échanges sécurisés"
+            description="Discutez, négociez et rencontrez-vous en toute confiance."
+            color="bg-gradient-to-br from-orange-500 to-red-500 text-white"
+            decoration="bg-orange-100"
+          />
+        </div>
+      </section>
+
       {banners.length > 0 && (
-        <section className="kafoo-container py-6">
+        <section className="kafoo-container py-7">
           <div className="grid gap-4 lg:grid-cols-2">
             {banners.map((banner) => (
               <a
@@ -529,29 +589,6 @@ function HomePage() {
           </div>
         </section>
       )}
-
-      <section className="kafoo-container py-5">
-        <div className="grid gap-3 rounded-3xl bg-white p-3 shadow-sm sm:grid-cols-3">
-          <TrustItem
-            icon={PlusCircle}
-            title="Publier rapidement"
-            description="Ajoutez photos, prix et localisation en quelques minutes."
-            color="bg-blue-100 text-blue-700"
-          />
-          <TrustItem
-            icon={MapPin}
-            title="Acheter localement"
-            description="Recherchez par région, ville, commune ou quartier."
-            color="bg-emerald-100 text-emerald-700"
-          />
-          <TrustItem
-            icon={MessageCircle}
-            title="Contacter facilement"
-            description="Échangez par message, téléphone ou WhatsApp."
-            color="bg-orange-100 text-orange-700"
-          />
-        </div>
-      </section>
 
       <section className="kafoo-container py-10">
         <SectionHeader
@@ -778,11 +815,28 @@ function SectionHeader({
   );
 }
 
-function MiniStat({ value, label }: { value: string | number; label: string }) {
+function MiniStat({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: LucideIcon;
+  value: string | number;
+  label: string;
+}) {
   return (
-    <div className="rounded-2xl border border-white/12 bg-white/[0.08] px-3 py-3 text-center shadow-sm backdrop-blur-md">
-      <div className="text-xl font-black leading-none text-white">{value}</div>
-      <div className="mt-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-300">{label}</div>
+    <div className="flex min-w-0 items-center justify-center gap-3 lg:justify-start">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/10">
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 text-left">
+        <div className="text-xl font-black leading-none text-white sm:text-2xl">
+          {value}
+        </div>
+        <div className="mt-1 truncate text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:text-[11px]">
+          {label}
+        </div>
+      </div>
     </div>
   );
 }
@@ -792,20 +846,31 @@ function TrustItem({
   title,
   description,
   color,
+  decoration,
 }: {
   icon: LucideIcon;
   title: string;
   description: string;
   color: string;
+  decoration: string;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-2xl bg-slate-50/80 px-4 py-3">
-      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${color}`}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <div>
-        <h3 className="text-[13px] font-black text-slate-950">{title}</h3>
-        <p className="mt-0.5 text-[11px] leading-4 text-slate-500">{description}</p>
+    <div className="relative min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
+      <div
+        className={`pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-70 ${decoration}`}
+      />
+      <div className="relative flex items-start gap-3.5">
+        <div
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-md ${color}`}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-sm font-black text-slate-950">{title}</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            {description}
+          </p>
+        </div>
       </div>
     </div>
   );
