@@ -1,12 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowRight,
   Box,
@@ -41,8 +35,7 @@ export const Route = createFileRoute("/")({
       { title: "Kafoo — Petites annonces en Guinée" },
       {
         name: "description",
-        content:
-          "Kafoo Marketplace : achetez, vendez et publiez vos annonces en Guinée.",
+        content: "Kafoo Marketplace : achetez, vendez et publiez vos annonces en Guinée.",
       },
     ],
   }),
@@ -71,7 +64,6 @@ const categoryStyles = [
   "bg-cyan-50 text-cyan-700 border-cyan-100",
 ];
 
-
 /* ════════════════════════════════════════════════════════════
    ANNONCES PUBLIÉES — CHARGEMENT ROBUSTE
 ════════════════════════════════════════════════════════════ */
@@ -88,9 +80,7 @@ const categoryStyles = [
  * manquante (regions, cities, communes ou listing_images) n'empêche
  * pas l'affichage des annonces sur la page d'accueil.
  */
-async function loadRecentListings(
-  supabase: SupabaseClient,
-): Promise<ListingRow[]> {
+async function loadRecentListings(supabase: SupabaseClient): Promise<ListingRow[]> {
   const normalizeRows = (rows: any[] | null | undefined): ListingRow[] =>
     (rows ?? []).map((row) => ({
       ...row,
@@ -134,10 +124,7 @@ async function loadRecentListings(
     return normalizeRows(fullQuery.data);
   }
 
-  console.warn(
-    "[Homepage] Requête annonces complète impossible :",
-    fullQuery.error,
-  );
+  console.warn("[Homepage] Requête annonces complète impossible :", fullQuery.error);
 
   /*
    * 2. Fallback sans les relations géographiques.
@@ -168,10 +155,7 @@ async function loadRecentListings(
     return normalizeRows(withoutLocations.data);
   }
 
-  console.warn(
-    "[Homepage] Relations géographiques indisponibles :",
-    withoutLocations.error,
-  );
+  console.warn("[Homepage] Relations géographiques indisponibles :", withoutLocations.error);
 
   /*
    * 3. Fallback sans aucune relation PostgREST.
@@ -201,10 +185,7 @@ async function loadRecentListings(
     return normalizeRows(withoutRelations.data);
   }
 
-  console.warn(
-    "[Homepage] Requête annonces sans relations impossible :",
-    withoutRelations.error,
-  );
+  console.warn("[Homepage] Requête annonces sans relations impossible :", withoutRelations.error);
 
   /*
    * 4. Dernier fallback avec seulement les colonnes essentielles.
@@ -228,10 +209,7 @@ async function loadRecentListings(
     .limit(12);
 
   if (coreQuery.error) {
-    console.error(
-      "[Homepage] Impossible de charger les annonces publiées :",
-      coreQuery.error,
-    );
+    console.error("[Homepage] Impossible de charger les annonces publiées :", coreQuery.error);
     return [];
   }
 
@@ -282,11 +260,7 @@ function HomePage() {
         if (!cancelled) {
           console.error("[Homepage] Chargement annonces :", error);
           setRecent([]);
-          setRecentError(
-            error instanceof Error
-              ? error.message
-              : "Impossible de charger les annonces publiées.",
-          );
+          setRecentError(error instanceof Error ? error.message : "Impossible de charger les annonces publiées.");
         }
       } finally {
         if (!cancelled) setRecentLoading(false);
@@ -360,15 +334,10 @@ function HomePage() {
       meta.setAttribute("name", "description");
       document.head.appendChild(meta);
     }
-    meta.setAttribute(
-      "content",
-      cms.seo_description || DEFAULT_HOMEPAGE_CMS.seo_description,
-    );
+    meta.setAttribute("content", cms.seo_description || DEFAULT_HOMEPAGE_CMS.seo_description);
   }, [cms.seo_title, cms.seo_description]);
 
-  const displayedCategories = showAllCategories
-    ? categories
-    : categories.slice(0, 10);
+  const displayedCategories = showAllCategories ? categories : categories.slice(0, 10);
   const hasMoreCategories = categories.length > 10;
 
   const stats = useMemo(() => {
@@ -409,10 +378,7 @@ function HomePage() {
 
   return (
     <main className="min-h-screen w-full overflow-x-hidden bg-slate-50">
-      <section
-        className="relative w-full overflow-hidden bg-slate-950 text-white"
-        style={heroStyle}
-      >
+      <section className="relative w-full overflow-hidden bg-slate-950 text-white" style={heroStyle}>
         {!cms.hero_background_url && (
           <>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.50),transparent_34%),radial-gradient(circle_at_82%_10%,rgba(168,85,247,0.44),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,0.34),transparent_38%)]" />
@@ -433,9 +399,7 @@ function HomePage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-[1500px] text-center text-sm font-medium leading-7 text-slate-100 sm:text-base lg:text-lg xl:text-[1.05rem]">
-            {[cms.hero_description, cms.hero_subtitle]
-              .filter(Boolean)
-              .join(" ")}
+            {[cms.hero_description, cms.hero_subtitle].filter(Boolean).join(" ")}
           </p>
 
           <div className="mt-8 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
@@ -465,11 +429,7 @@ function HomePage() {
 
           <div className="mt-10 grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat) => (
-              <MiniStat
-                key={`${stat.label}-${stat.value}`}
-                value={stat.value}
-                label={stat.label}
-              />
+              <MiniStat key={`${stat.label}-${stat.value}`} value={stat.value} label={stat.label} />
             ))}
           </div>
 
@@ -512,30 +472,10 @@ function HomePage() {
 
               {showAdvancedSearch && (
                 <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <SelectField
-                    label="Catégorie"
-                    value={category}
-                    onChange={setCategory}
-                    rows={categories}
-                  />
-                  <SelectField
-                    label="Région"
-                    value={region}
-                    onChange={setRegion}
-                    rows={regions}
-                  />
-                  <SelectField
-                    label="Ville"
-                    value={city}
-                    onChange={setCity}
-                    rows={cities}
-                  />
-                  <SelectField
-                    label="Commune"
-                    value={commune}
-                    onChange={setCommune}
-                    rows={communes}
-                  />
+                  <SelectField label="Catégorie" value={category} onChange={setCategory} rows={categories} />
+                  <SelectField label="Région" value={region} onChange={setRegion} rows={regions} />
+                  <SelectField label="Ville" value={city} onChange={setCity} rows={cities} />
+                  <SelectField label="Commune" value={commune} onChange={setCommune} rows={communes} />
                   <Input
                     value={minPrice}
                     onChange={(event) => setMinPrice(event.target.value)}
@@ -576,11 +516,7 @@ function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/65 to-transparent" />
                 <div className="relative max-w-lg p-7">
                   <h2 className="text-2xl font-black">{banner.title}</h2>
-                  {banner.subtitle && (
-                    <p className="mt-2 text-sm leading-6 text-slate-200">
-                      {banner.subtitle}
-                    </p>
-                  )}
+                  {banner.subtitle && <p className="mt-2 text-sm leading-6 text-slate-200">{banner.subtitle}</p>}
                   {banner.cta_label && (
                     <span className="mt-5 inline-flex items-center font-bold text-white">
                       {banner.cta_label}
@@ -639,11 +575,7 @@ function HomePage() {
                   )}
                 </Button>
               )}
-              <Button
-                asChild
-                variant="outline"
-                className="rounded-full bg-white"
-              >
+              <Button asChild variant="outline" className="rounded-full bg-white">
                 <Link to="/annonces">
                   Tout voir
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -701,15 +633,10 @@ function HomePage() {
         {recentLoading ? (
           <div className="mt-6 rounded-3xl border bg-white p-10 text-center shadow-sm">
             <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-            <p className="mt-4 text-sm font-semibold text-slate-500">
-              Chargement des annonces…
-            </p>
+            <p className="mt-4 text-sm font-semibold text-slate-500">Chargement des annonces…</p>
           </div>
         ) : recentError ? (
-          <EmptyState
-            title="Impossible de charger les annonces"
-            description={recentError}
-          />
+          <EmptyState title="Impossible de charger les annonces" description={recentError} />
         ) : recent.length === 0 ? (
           <EmptyState
             title="Aucune annonce publiée"
@@ -729,19 +656,13 @@ function HomePage() {
           <div className="grid gap-6 rounded-3xl border bg-white p-6 shadow-sm lg:grid-cols-2 lg:items-center">
             <div>
               {section.subtitle && (
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
-                  {section.subtitle}
-                </p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">{section.subtitle}</p>
               )}
               {section.title && (
-                <h2 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
-                  {section.title}
-                </h2>
+                <h2 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">{section.title}</h2>
               )}
               {section.body && (
-                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">
-                  {section.body}
-                </p>
+                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">{section.body}</p>
               )}
               {section.cta_label && section.cta_url && (
                 <Button asChild className="mt-5 rounded-full bg-blue-600">
@@ -766,19 +687,12 @@ function HomePage() {
       <section className="kafoo-container py-10">
         <div className="grid gap-6 rounded-3xl bg-slate-950 p-6 text-white sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
-            <h2 className="text-2xl font-black sm:text-3xl">
-              Vous avez quelque chose à vendre ?
-            </h2>
+            <h2 className="text-2xl font-black sm:text-3xl">Vous avez quelque chose à vendre ?</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              Publiez gratuitement votre annonce et contactez directement les
-              acheteurs.
+              Publiez gratuitement votre annonce et contactez directement les acheteurs.
             </p>
           </div>
-          <Button
-            asChild
-            size="lg"
-            className="rounded-full bg-white text-slate-950 hover:bg-slate-100"
-          >
+          <Button asChild size="lg" className="rounded-full bg-white text-slate-950 hover:bg-slate-100">
             <a href={cms.hero_primary_url || "/publier"}>
               <PlusCircle className="mr-2 h-5 w-5" />
               {cms.hero_primary_label}
@@ -794,12 +708,9 @@ function HomePage() {
               <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
                 <ShieldCheck className="h-5 w-5" />
               </div>
-              <h2 className="text-xl font-black text-slate-950">
-                Conseils sécurité
-              </h2>
+              <h2 className="text-xl font-black text-slate-950">Conseils sécurité</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Vérifiez toujours le produit avant paiement et privilégiez les
-                lieux publics.
+                Vérifiez toujours le produit avant paiement et privilégiez les lieux publics.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
@@ -827,9 +738,7 @@ function SelectField({
 }) {
   return (
     <label className="block min-w-0">
-      <span className="mb-1 block text-xs font-bold text-slate-600">
-        {label}
-      </span>
+      <span className="mb-1 block text-xs font-bold text-slate-600">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -860,15 +769,9 @@ function SectionHeader({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
-          {eyebrow}
-        </p>
-        <h2 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">
-          {title}
-        </h2>
-        <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-          {description}
-        </p>
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">{eyebrow}</p>
+        <h2 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">{title}</h2>
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">{description}</p>
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
@@ -897,9 +800,7 @@ function TrustItem({
 }) {
   return (
     <div className="flex min-w-0 items-start gap-3 rounded-2xl bg-slate-50 p-4">
-      <div
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${color}`}
-      >
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${color}`}>
         <Icon className="h-5 w-5" />
       </div>
       <div>
@@ -919,22 +820,14 @@ function SecurityTip({ text }: { text: string }) {
   );
 }
 
-function EmptyState({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
+function EmptyState({ title, description }: { title: string; description: string }) {
   return (
     <div className="mt-6 rounded-3xl border border-dashed bg-white p-8 text-center shadow-sm">
       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
         <Box className="h-7 w-7" />
       </div>
       <h3 className="text-lg font-black text-slate-950">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-        {description}
-      </p>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">{description}</p>
     </div>
   );
 }
