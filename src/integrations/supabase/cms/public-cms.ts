@@ -63,6 +63,86 @@ export type PublicHomeCmsBundle = {
   settings: PublicSiteSettings;
 };
 
+/* ─── Pages ─────────────────────────────────────────────── */
+export type CmsPage = {
+  id: string;
+  locale: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string | null;
+  cover_image_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  og_image_url: string | null;
+  status: string;
+  published_at: string | null;
+};
+
+export type PublicPageBundle = {
+  page: CmsPage | null;
+  sections: CmsSection[];
+};
+
+/* ─── Posts / Blog ──────────────────────────────────────── */
+export type CmsPost = {
+  id: string;
+  locale: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string | null;
+  cover_image_url: string | null;
+  category: string | null;
+  tags: string[] | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  og_image_url: string | null;
+  status: string;
+  is_featured: boolean | null;
+  published_at: string | null;
+};
+
+/* ─── FAQ ───────────────────────────────────────────────── */
+export type CmsFaq = {
+  id: string;
+  locale: string;
+  question: string;
+  answer: string;
+  category: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+/* ─── SEO metadata ──────────────────────────────────────── */
+export type CmsSeoMetadata = {
+  id: string;
+  locale: string;
+  route: string;
+  title: string | null;
+  description: string | null;
+  og_image_url: string | null;
+  canonical_url: string | null;
+  meta: Record<string, unknown> | null;
+};
+
+/* ─── Navigation ────────────────────────────────────────── */
+export type CmsPageReference = {
+  slug: string | null;
+  status?: string | null;
+};
+
+export type CmsNavigationItemRow = {
+  id: string;
+  label: string;
+  url: string | null;
+  target: "_self" | "_blank" | string | null;
+  icon: string | null;
+  sort_order: number;
+  parent_id: string | null;
+  page?: CmsPageReference | CmsPageReference[] | null;
+};
+
 export const DEFAULT_HOMEPAGE_CMS: CmsHomepage = {
   locale: "fr",
   hero_badge: "Nouvelle marketplace locale en Guinée",
