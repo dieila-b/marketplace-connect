@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bug, Copy, Trash2, X, ChevronDown, ChevronRight, FileJson } from "lucide-react";
+import {
+  Bug,
+  Copy,
+  Filter,
+  Trash2,
+  X,
+  ChevronDown,
+  ChevronRight,
+  FileJson,
+} from "lucide-react";
 import {
   clearCmsValidationEvents,
   subscribeCmsValidationEvents,
