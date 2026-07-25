@@ -3,17 +3,22 @@ import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { useSupabase } from "@/integrations/supabase/provider";
-import { loadPublicPage } from "@/integrations/supabase/cms/public-cms";
+import {
+  loadPublicPage,
+  type CmsPage,
+  type CmsSection,
+  type PublicPageBundle,
+} from "@/integrations/cms/public-cms";
 
 export const Route = createFileRoute("/page/$slug")({
-  component: CmsPage,
+  component: CmsPageView,
 });
 
-function CmsPage() {
+function CmsPageView() {
   const { slug } = Route.useParams();
   const { supabase } = useSupabase();
-  const [page, setPage] = useState<any>(null);
-  const [sections, setSections] = useState<any[]>([]);
+  const [page, setPage] = useState<CmsPage | null>(null);
+  const [sections, setSections] = useState<CmsSection[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +26,7 @@ function CmsPage() {
 
     let cancelled = false;
     void loadPublicPage(supabase, slug)
-      .then((result: any) => {
+      .then((result: PublicPageBundle) => {
         if (cancelled) return;
         setPage(result.page);
         setSections(result.sections);
