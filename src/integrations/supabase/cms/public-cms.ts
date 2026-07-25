@@ -308,7 +308,7 @@ export async function loadPublicPage(
   supabase: SupabaseClient,
   slug: string,
   locale = "fr",
-) {
+): Promise<PublicPageBundle> {
   const [pageResult, sectionsResult] = await Promise.all([
     supabase
       .from("cms_pages")
@@ -330,12 +330,15 @@ export async function loadPublicPage(
   if (sectionsResult.error) throw sectionsResult.error;
 
   return {
-    page: pageResult.data,
-    sections: sectionsResult.data ?? [],
+    page: (pageResult.data ?? null) as CmsPage | null,
+    sections: (sectionsResult.data ?? []) as CmsSection[],
   };
 }
 
-export async function loadPublicPosts(supabase: SupabaseClient, locale = "fr") {
+export async function loadPublicPosts(
+  supabase: SupabaseClient,
+  locale = "fr",
+): Promise<CmsPost[]> {
   const { data, error } = await supabase
     .from("posts")
     .select("*")
@@ -345,14 +348,14 @@ export async function loadPublicPosts(supabase: SupabaseClient, locale = "fr") {
     .order("published_at", { ascending: false });
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as CmsPost[];
 }
 
 export async function loadPublicPost(
   supabase: SupabaseClient,
   slug: string,
   locale = "fr",
-) {
+): Promise<CmsPost | null> {
   const { data, error } = await supabase
     .from("posts")
     .select("*")
@@ -362,10 +365,13 @@ export async function loadPublicPost(
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+  return (data ?? null) as CmsPost | null;
 }
 
-export async function loadPublicFaqs(supabase: SupabaseClient, locale = "fr") {
+export async function loadPublicFaqs(
+  supabase: SupabaseClient,
+  locale = "fr",
+): Promise<CmsFaq[]> {
   const { data, error } = await supabase
     .from("faqs")
     .select("*")
@@ -374,14 +380,14 @@ export async function loadPublicFaqs(supabase: SupabaseClient, locale = "fr") {
     .order("sort_order");
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as CmsFaq[];
 }
 
 export async function loadPublicSeo(
   supabase: SupabaseClient,
   route: string,
   locale = "fr",
-) {
+): Promise<CmsSeoMetadata | null> {
   const { data, error } = await supabase
     .from("seo_metadata")
     .select("*")
@@ -394,6 +400,6 @@ export async function loadPublicSeo(
     return null;
   }
 
-  return data;
+  return (data ?? null) as CmsSeoMetadata | null;
 }
 
