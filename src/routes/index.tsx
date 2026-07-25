@@ -343,8 +343,11 @@ function HomePage() {
     meta.setAttribute("content", cms.seo_description || DEFAULT_HOMEPAGE_CMS.seo_description);
   }, [cms.seo_title, cms.seo_description]);
 
-  const displayedCategories = showAllCategories ? categories : categories.slice(0, 10);
-  const hasMoreCategories = categories.length > 10;
+  const initialCategoryCount = 6;
+  const displayedCategories = showAllCategories
+    ? categories
+    : categories.slice(0, initialCategoryCount);
+  const hasMoreCategories = categories.length > initialCategoryCount;
 
   const stats = useMemo(() => {
     if (Array.isArray(cms.statistics) && cms.statistics.length) {
@@ -398,7 +401,7 @@ function HomePage() {
 
         <div className="relative mx-auto w-full max-w-[1650px] px-4 pt-8 sm:px-6 sm:pt-9 lg:px-8 lg:pt-10">
           <div className="mx-auto flex max-w-[1500px] flex-col items-center text-center">
-            <h1 className="mx-auto max-w-[1480px] text-[2rem] font-black leading-[1.05] tracking-[-0.035em] text-white sm:text-[2.6rem] md:text-[3rem] lg:text-[3.25rem] xl:whitespace-nowrap xl:text-[clamp(2.85rem,3vw,3.55rem)]">
+            <h1 className="mx-auto max-w-[1480px] text-[1.75rem] font-black leading-[1.08] tracking-[-0.03em] text-white sm:text-[2.2rem] md:text-[2.55rem] lg:text-[2.8rem] xl:whitespace-nowrap xl:text-[clamp(2.45rem,2.55vw,3rem)]">
               {cms.hero_title}
             </h1>
 
@@ -628,21 +631,27 @@ function HomePage() {
             description="Les catégories seront affichées dès leur activation dans Supabase."
           />
         ) : (
-          <div className="kafoo-category-grid mt-6">
+          <div
+            className={`mt-6 grid gap-3 ${
+              showAllCategories
+                ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
+                : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
+            }`}
+          >
             {displayedCategories.map((item, index) => (
               <Link
                 key={item.id}
                 to="/annonces"
                 search={{ category: item.slug } as never}
-                className={`group flex min-h-[132px] min-w-0 flex-col rounded-2xl border p-4 transition hover:-translate-y-1 hover:shadow-lg ${categoryStyles[index % categoryStyles.length]}`}
+                className={`group flex min-h-[112px] min-w-0 flex-col rounded-2xl border p-3.5 transition hover:-translate-y-1 hover:shadow-lg ${categoryStyles[index % categoryStyles.length]}`}
               >
-                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm">
+                <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm">
                   <Box className="h-5 w-5" />
                 </div>
-                <h3 className="line-clamp-2 min-h-[36px] text-sm font-black leading-tight text-slate-950">
+                <h3 className="line-clamp-2 min-h-[34px] text-[13px] font-black leading-tight text-slate-950">
                   {item.name}
                 </h3>
-                <p className="mt-auto flex items-center pt-3 text-xs font-semibold text-slate-500">
+                <p className="mt-auto flex items-center pt-2 text-[11px] font-semibold text-slate-500">
                   Voir
                   <ArrowRight className="ml-1 h-3 w-3" />
                 </p>
