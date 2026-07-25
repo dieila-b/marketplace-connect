@@ -19,9 +19,6 @@ type NavigationItem = NavigationItemRow & {
 // Re-export for local backwards compatibility.
 export type { CmsPageReference };
 
-type NavigationItem = NavigationItemRow & {
-  children: NavigationItem[];
-};
 
 type PublicCmsMenuProps = {
   menuSlug: string;
