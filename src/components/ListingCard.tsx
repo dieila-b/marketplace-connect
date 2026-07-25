@@ -86,7 +86,7 @@ export function ListingCard({ listing }: { listing: ListingRow }) {
   return (
     <article className="group relative min-w-0 overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
       <Link
-        to="/annonces/$slug"
+        to="/annonce/$slug"
         params={{ slug: listing.slug }}
         className="block"
       >
