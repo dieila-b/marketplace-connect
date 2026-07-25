@@ -263,6 +263,42 @@ function RawResponseModal({
 
 
 
+/**
+ * Normalise a Zod issue path by dropping pure-numeric array index segments.
+ * e.g. "sections.0.title" -> "sections.title"
+ */
+function normalizePath(path: string): string {
+  return path
+    .split(".")
+    .filter((seg) => seg.length > 0 && !/^\d+$/.test(seg))
+    .join(".");
+}
+
+/**
+ * Returns true if any issue of the event has a field path matching the query.
+ * Matching is case-insensitive and tolerant of nested/array paths:
+ *   - raw path ("sections.0.title")
+ *   - normalized path ("sections.title")
+ *   - context-qualified ("CmsPage.sections.title", "CmsPage.page")
+ * A search for a leaf like "title" matches "sections.0.title".
+ */
+function eventHasMatchingPath(event: CmsValidationEvent, query: string): boolean {
+  if (!query) return true;
+  const ctx = event.context.toLowerCase();
+  for (const issue of event.issues) {
+    const raw = issue.path.toLowerCase();
+    const norm = normalizePath(issue.path).toLowerCase();
+    const candidates = [
+      raw,
+      norm,
+      `${ctx}.${raw}`,
+      `${ctx}.${norm}`,
+    ];
+    if (candidates.some((c) => c.includes(query))) return true;
+  }
+  return false;
+}
+
 const SCOPE_OPTIONS: Array<CmsValidationEvent["scope"] | "all"> = [
   "all",
   "single",
