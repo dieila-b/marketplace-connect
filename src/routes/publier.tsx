@@ -110,8 +110,11 @@ function PublishPage() {
           is_main: i === 0, sort_order: i,
         });
       }
-      toast.success("Annonce publiée !");
-      navigate({ to: "/annonces/$slug", params: { slug: created.slug } });
+      toast.success("Annonce publiée avec succès !");
+      navigate({
+        to: "/annonce/$slug",
+        params: { slug: created.slug },
+      });
     } catch (err: unknown) {
       toast.error((err as Error).message ?? "Erreur");
     } finally {
