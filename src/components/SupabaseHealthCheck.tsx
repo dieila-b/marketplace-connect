@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { rememberRequestId } from "@/lib/request-id";
+
 
 type FailedStep = { step: string; status: number | null; message: string };
 
@@ -30,8 +32,11 @@ export function SupabaseHealthCheck() {
         const res = await fetch("/api/public/health", {
           headers: { Accept: "application/json" },
         });
+        rememberRequestId(res.headers.get("x-request-id"));
         const json = (await res.json()) as HealthResponse;
+        rememberRequestId(json.requestId);
         if (!cancelled) setData(json);
+
       } catch (e) {
         if (!cancelled)
           setFetchError((e as Error).message || "Erreur inconnue");

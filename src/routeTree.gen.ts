@@ -9,60 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PublierRouteImport } from './routes/publier'
-import { Route as MessagesRouteImport } from './routes/messages'
-import { Route as FavorisRouteImport } from './routes/favoris'
-import { Route as FaqRouteImport } from './routes/faq'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as BlogRouteImport } from './routes/blog'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AnnoncesRouteImport } from './routes/annonces'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AnnoncesIndexRouteImport } from './routes/annonces.index'
-import { Route as PageSlugRouteImport } from './routes/page.$slug'
-import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AnnoncesRouteImport } from './routes/annonces'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BlogRouteImport } from './routes/blog'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as FavorisRouteImport } from './routes/favoris'
+import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as PublierRouteImport } from './routes/publier'
 import { Route as AnnonceSlugRouteImport } from './routes/annonce.$slug'
+import { Route as AnnoncesIndexRouteImport } from './routes/annonces.index'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as PageSlugRouteImport } from './routes/page.$slug'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 
-const PublierRoute = PublierRouteImport.update({
-  id: '/publier',
-  path: '/publier',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MessagesRoute = MessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FavorisRoute = FavorisRouteImport.update({
-  id: '/favoris',
-  path: '/favoris',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FaqRoute = FaqRouteImport.update({
-  id: '/faq',
-  path: '/faq',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogRoute = BlogRouteImport.update({
-  id: '/blog',
-  path: '/blog',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AnnoncesRoute = AnnoncesRouteImport.update({
-  id: '/annonces',
-  path: '/annonces',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -70,9 +35,49 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AnnoncesRoute = AnnoncesRouteImport.update({
+  id: '/annonces',
+  path: '/annonces',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavorisRoute = FavorisRouteImport.update({
+  id: '/favoris',
+  path: '/favoris',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublierRoute = PublierRouteImport.update({
+  id: '/publier',
+  path: '/publier',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnnonceSlugRoute = AnnonceSlugRouteImport.update({
+  id: '/annonce/$slug',
+  path: '/annonce/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnnoncesIndexRoute = AnnoncesIndexRouteImport.update({
@@ -80,19 +85,14 @@ const AnnoncesIndexRoute = AnnoncesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AnnoncesRoute,
 } as any)
-const PageSlugRoute = PageSlugRouteImport.update({
-  id: '/page/$slug',
-  path: '/page/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => BlogRoute,
 } as any)
-const AnnonceSlugRoute = AnnonceSlugRouteImport.update({
-  id: '/annonce/$slug',
-  path: '/annonce/$slug',
+const PageSlugRoute = PageSlugRouteImport.update({
+  id: '/page/$slug',
+  path: '/page/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
@@ -223,60 +223,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/publier': {
-      id: '/publier'
-      path: '/publier'
-      fullPath: '/publier'
-      preLoaderRoute: typeof PublierRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/messages': {
-      id: '/messages'
-      path: '/messages'
-      fullPath: '/messages'
-      preLoaderRoute: typeof MessagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/favoris': {
-      id: '/favoris'
-      path: '/favoris'
-      fullPath: '/favoris'
-      preLoaderRoute: typeof FavorisRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/faq': {
-      id: '/faq'
-      path: '/faq'
-      fullPath: '/faq'
-      preLoaderRoute: typeof FaqRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog': {
-      id: '/blog'
-      path: '/blog'
-      fullPath: '/blog'
-      preLoaderRoute: typeof BlogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/annonces': {
-      id: '/annonces'
-      path: '/annonces'
-      fullPath: '/annonces'
-      preLoaderRoute: typeof AnnoncesRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -286,11 +237,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/annonces': {
+      id: '/annonces'
+      path: '/annonces'
+      fullPath: '/annonces'
+      preLoaderRoute: typeof AnnoncesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/favoris': {
+      id: '/favoris'
+      path: '/favoris'
+      fullPath: '/favoris'
+      preLoaderRoute: typeof FavorisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/publier': {
+      id: '/publier'
+      path: '/publier'
+      fullPath: '/publier'
+      preLoaderRoute: typeof PublierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/annonce/$slug': {
+      id: '/annonce/$slug'
+      path: '/annonce/$slug'
+      fullPath: '/annonce/$slug'
+      preLoaderRoute: typeof AnnonceSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/annonces/': {
@@ -300,13 +307,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnnoncesIndexRouteImport
       parentRoute: typeof AnnoncesRoute
     }
-    '/page/$slug': {
-      id: '/page/$slug'
-      path: '/page/$slug'
-      fullPath: '/page/$slug'
-      preLoaderRoute: typeof PageSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/blog/$slug': {
       id: '/blog/$slug'
       path: '/$slug'
@@ -314,11 +314,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRoute
     }
-    '/annonce/$slug': {
-      id: '/annonce/$slug'
-      path: '/annonce/$slug'
-      fullPath: '/annonce/$slug'
-      preLoaderRoute: typeof AnnonceSlugRouteImport
+    '/page/$slug': {
+      id: '/page/$slug'
+      path: '/page/$slug'
+      fullPath: '/page/$slug'
+      preLoaderRoute: typeof PageSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/health': {
