@@ -1,35 +1,23 @@
 import { useEffect, useState } from "react";
 
 import { useSupabase } from "@/integrations/supabase/provider";
+import type {
+  CmsNavigationItemRow,
+  CmsPageReference,
+} from "@/integrations/cms/public-cms";
 
 /* ════════════════════════════════════════════════════════════
    TYPES
 ════════════════════════════════════════════════════════════ */
 
-type CmsPageReference = {
-  slug: string | null;
-  status?: string | null;
+type NavigationItemRow = CmsNavigationItemRow;
+
+type NavigationItem = NavigationItemRow & {
+  children: NavigationItem[];
 };
 
-type NavigationItemRow = {
-  id: string;
-  label: string;
-  url: string | null;
-  target: "_self" | "_blank" | string | null;
-  icon: string | null;
-  sort_order: number;
-  parent_id: string | null;
-
-  /*
-   * Relation optionnelle vers cms_pages.
-   * Selon PostgREST, la relation peut être retournée
-   * comme objet ou comme tableau.
-   */
-  page?:
-    | CmsPageReference
-    | CmsPageReference[]
-    | null;
-};
+// Re-export for local backwards compatibility.
+export type { CmsPageReference };
 
 type NavigationItem = NavigationItemRow & {
   children: NavigationItem[];
