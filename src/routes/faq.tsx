@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 import { HelpCircle } from "lucide-react";
 
 import { useSupabase } from "@/integrations/supabase/provider";
-import { loadPublicFaqs } from "@/integrations/supabase/cms/public-cms";
+import {
+  loadPublicFaqs,
+  type CmsFaq,
+} from "@/integrations/cms/public-cms";
 
 export const Route = createFileRoute("/faq")({
   component: FaqPage,
@@ -11,12 +14,12 @@ export const Route = createFileRoute("/faq")({
 
 function FaqPage() {
   const { supabase } = useSupabase();
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<CmsFaq[]>([]);
 
   useEffect(() => {
     if (!supabase) return;
     void loadPublicFaqs(supabase)
-      .then(setRows)
+      .then((data) => setRows(data))
       .catch((error) => console.error("[FAQ]", error));
   }, [supabase]);
 
