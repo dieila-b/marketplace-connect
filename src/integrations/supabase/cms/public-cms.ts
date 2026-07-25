@@ -63,6 +63,86 @@ export type PublicHomeCmsBundle = {
   settings: PublicSiteSettings;
 };
 
+/* ─── Pages ─────────────────────────────────────────────── */
+export type CmsPage = {
+  id: string;
+  locale: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string | null;
+  cover_image_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  og_image_url: string | null;
+  status: string;
+  published_at: string | null;
+};
+
+export type PublicPageBundle = {
+  page: CmsPage | null;
+  sections: CmsSection[];
+};
+
+/* ─── Posts / Blog ──────────────────────────────────────── */
+export type CmsPost = {
+  id: string;
+  locale: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string | null;
+  cover_image_url: string | null;
+  category: string | null;
+  tags: string[] | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  og_image_url: string | null;
+  status: string;
+  is_featured: boolean | null;
+  published_at: string | null;
+};
+
+/* ─── FAQ ───────────────────────────────────────────────── */
+export type CmsFaq = {
+  id: string;
+  locale: string;
+  question: string;
+  answer: string;
+  category: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+/* ─── SEO metadata ──────────────────────────────────────── */
+export type CmsSeoMetadata = {
+  id: string;
+  locale: string;
+  route: string;
+  title: string | null;
+  description: string | null;
+  og_image_url: string | null;
+  canonical_url: string | null;
+  meta: Record<string, unknown> | null;
+};
+
+/* ─── Navigation ────────────────────────────────────────── */
+export type CmsPageReference = {
+  slug: string | null;
+  status?: string | null;
+};
+
+export type CmsNavigationItemRow = {
+  id: string;
+  label: string;
+  url: string | null;
+  target: "_self" | "_blank" | string | null;
+  icon: string | null;
+  sort_order: number;
+  parent_id: string | null;
+  page?: CmsPageReference | CmsPageReference[] | null;
+};
+
 export const DEFAULT_HOMEPAGE_CMS: CmsHomepage = {
   locale: "fr",
   hero_badge: "Nouvelle marketplace locale en Guinée",
@@ -228,7 +308,7 @@ export async function loadPublicPage(
   supabase: SupabaseClient,
   slug: string,
   locale = "fr",
-) {
+): Promise<PublicPageBundle> {
   const [pageResult, sectionsResult] = await Promise.all([
     supabase
       .from("cms_pages")
@@ -250,12 +330,15 @@ export async function loadPublicPage(
   if (sectionsResult.error) throw sectionsResult.error;
 
   return {
-    page: pageResult.data,
-    sections: sectionsResult.data ?? [],
+    page: (pageResult.data ?? null) as CmsPage | null,
+    sections: (sectionsResult.data ?? []) as CmsSection[],
   };
 }
 
-export async function loadPublicPosts(supabase: SupabaseClient, locale = "fr") {
+export async function loadPublicPosts(
+  supabase: SupabaseClient,
+  locale = "fr",
+): Promise<CmsPost[]> {
   const { data, error } = await supabase
     .from("posts")
     .select("*")
@@ -265,14 +348,14 @@ export async function loadPublicPosts(supabase: SupabaseClient, locale = "fr") {
     .order("published_at", { ascending: false });
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as CmsPost[];
 }
 
 export async function loadPublicPost(
   supabase: SupabaseClient,
   slug: string,
   locale = "fr",
-) {
+): Promise<CmsPost | null> {
   const { data, error } = await supabase
     .from("posts")
     .select("*")
@@ -282,10 +365,13 @@ export async function loadPublicPost(
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+  return (data ?? null) as CmsPost | null;
 }
 
-export async function loadPublicFaqs(supabase: SupabaseClient, locale = "fr") {
+export async function loadPublicFaqs(
+  supabase: SupabaseClient,
+  locale = "fr",
+): Promise<CmsFaq[]> {
   const { data, error } = await supabase
     .from("faqs")
     .select("*")
@@ -294,14 +380,14 @@ export async function loadPublicFaqs(supabase: SupabaseClient, locale = "fr") {
     .order("sort_order");
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as CmsFaq[];
 }
 
 export async function loadPublicSeo(
   supabase: SupabaseClient,
   route: string,
   locale = "fr",
-) {
+): Promise<CmsSeoMetadata | null> {
   const { data, error } = await supabase
     .from("seo_metadata")
     .select("*")
@@ -314,6 +400,6 @@ export async function loadPublicSeo(
     return null;
   }
 
-  return data;
+  return (data ?? null) as CmsSeoMetadata | null;
 }
 
