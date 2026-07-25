@@ -263,31 +263,90 @@ function RawResponseModal({
 
 
 
+const SCOPE_OPTIONS: Array<CmsValidationEvent["scope"] | "all"> = [
+  "all",
+  "single",
+  "array-item",
+  "homepage",
+];
+
 export function CmsDebugPanel() {
   const [enabled, setEnabled] = useCmsDebugEnabled();
   const [events, setEvents] = useState<CmsValidationEvent[]>([]);
   const [open, setOpen] = useState(false);
   const [rawEvent, setRawEvent] = useState<CmsValidationEvent | null>(null);
 
+  // Filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [contextFilter, setContextFilter] = useState<string>("all");
+  const [scopeFilter, setScopeFilter] = useState<string>("all");
+  const [requestIdFilter, setRequestIdFilter] = useState<string>("");
+
   useEffect(() => {
     if (!enabled) return;
     return subscribeCmsValidationEvents(setEvents);
   }, [enabled]);
 
+  // Distinct contexts derived from events (sorted) for the context dropdown.
+  const availableContexts = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of events) set.add(e.context);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [events]);
+
+  const filteredEvents = useMemo(() => {
+    const rid = requestIdFilter.trim().toLowerCase();
+    return events.filter((e) => {
+      if (contextFilter !== "all" && e.context !== contextFilter) return false;
+      if (scopeFilter !== "all" && e.scope !== scopeFilter) return false;
+      if (rid && !(e.requestId ?? "").toLowerCase().includes(rid)) return false;
+      return true;
+    });
+  }, [events, contextFilter, scopeFilter, requestIdFilter]);
+
+  const hasActiveFilter =
+    contextFilter !== "all" ||
+    scopeFilter !== "all" ||
+    requestIdFilter.trim() !== "";
+
+  function resetFilters() {
+    setContextFilter("all");
+    setScopeFilter("all");
+    setRequestIdFilter("");
+  }
+
   if (!enabled) return null;
 
   const count = events.length;
+  const visibleCount = filteredEvents.length;
 
   return (
     <div className="fixed bottom-20 right-4 z-[9999] md:bottom-4">
       {open ? (
-        <div className="flex max-h-[70vh] w-[min(92vw,420px)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+        <div className="flex max-h-[70vh] w-[min(92vw,440px)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
           <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Bug className="h-4 w-4 text-destructive" />
-              CMS Debug ({count})
+              CMS Debug
+              <span className="text-xs font-normal text-muted-foreground">
+                {hasActiveFilter
+                  ? `${visibleCount}/${count}`
+                  : `(${count})`}
+              </span>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setShowFilters((v) => !v)}
+                className={`rounded p-1 hover:bg-muted ${
+                  hasActiveFilter ? "text-destructive" : "text-muted-foreground"
+                }`}
+                title="Filtrer"
+                aria-pressed={showFilters}
+                aria-label="Afficher/masquer les filtres"
+              >
+                <Filter className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 onClick={clearCmsValidationEvents}
@@ -307,13 +366,91 @@ export function CmsDebugPanel() {
             </div>
           </div>
 
+          {showFilters && (
+            <div className="space-y-2 border-b border-border bg-muted/30 px-3 py-2.5">
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="cms-debug-context"
+                  className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Context
+                </label>
+                <select
+                  id="cms-debug-context"
+                  value={contextFilter}
+                  onChange={(e) => setContextFilter(e.target.value)}
+                  className="rounded border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="all">Tous ({count})</option>
+                  {availableContexts.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="cms-debug-scope"
+                  className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Scope
+                </label>
+                <select
+                  id="cms-debug-scope"
+                  value={scopeFilter}
+                  onChange={(e) => setScopeFilter(e.target.value)}
+                  className="rounded border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  {SCOPE_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {s === "all" ? "Tous" : s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="cms-debug-requestid"
+                  className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Request ID
+                </label>
+                <input
+                  id="cms-debug-requestid"
+                  type="text"
+                  value={requestIdFilter}
+                  onChange={(e) => setRequestIdFilter(e.target.value)}
+                  placeholder="Coller/rechercher un requestId…"
+                  className="rounded border border-border bg-background px-2 py-1 font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+
+              {hasActiveFilter && (
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="w-full rounded border border-border bg-background px-2 py-1 text-[11px] font-semibold hover:bg-muted"
+                >
+                  Réinitialiser les filtres
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="flex-1 space-y-2 overflow-y-auto p-3">
             {count === 0 ? (
               <p className="py-6 text-center text-xs text-muted-foreground">
                 Aucune erreur de validation CMS pour le moment.
               </p>
+            ) : visibleCount === 0 ? (
+              <p className="py-6 text-center text-xs text-muted-foreground">
+                Aucune erreur ne correspond aux filtres actifs.
+              </p>
             ) : (
-              events.map((e) => (
+              filteredEvents.map((e) => (
                 <EventRow key={e.id} event={e} onShowRaw={setRawEvent} />
               ))
             )}
