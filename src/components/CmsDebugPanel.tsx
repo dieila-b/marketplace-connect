@@ -281,6 +281,7 @@ export function CmsDebugPanel() {
   const [contextFilter, setContextFilter] = useState<string>("all");
   const [scopeFilter, setScopeFilter] = useState<string>("all");
   const [requestIdFilter, setRequestIdFilter] = useState<string>("");
+  const [pathFilter, setPathFilter] = useState<string>("");
 
   useEffect(() => {
     if (!enabled) return;
