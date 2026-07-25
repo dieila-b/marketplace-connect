@@ -250,6 +250,8 @@ function HomePage() {
   const [cities, setCities] = useState<LocationOption[]>([]);
   const [communes, setCommunes] = useState<LocationOption[]>([]);
   const [recent, setRecent] = useState<ListingRow[]>([]);
+  const [recentLoading, setRecentLoading] = useState(true);
+  const [recentError, setRecentError] = useState("");
 
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
@@ -262,37 +264,87 @@ function HomePage() {
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      setRecentLoading(false);
+      return;
+    }
 
     let cancelled = false;
 
     void (async () => {
-      const [cmsBundle, cats, regionRows, cityRows, communeRows, list] =
-        await Promise.all([
-          loadPublicHomeCms(supabase),
-          supabase
-            .from("categories")
-            .select("id,name,slug,icon")
-            .is("parent_id", null)
-            .eq("is_active", true)
-            .order("sort_order"),
-          supabase.from("regions").select("id,name,slug").order("name"),
-          supabase.from("cities").select("id,name,slug").order("name"),
-          supabase.from("communes").select("id,name,slug").order("name"),
-          loadRecentListings(supabase),
-        ]);
+      setRecentLoading(true);
+      setRecentError("");
 
-      if (cancelled) return;
-
-      setCms(cmsBundle.homepage);
-      setBanners(cmsBundle.banners);
-      setCmsSections(cmsBundle.sections);
-      setCategories((cats.data ?? []) as Category[]);
-      setRegions((regionRows.data ?? []) as LocationOption[]);
-      setCities((cityRows.data ?? []) as LocationOption[]);
-      setCommunes((communeRows.data ?? []) as LocationOption[]);
-      setRecent(list);
+      try {
+        const rows = await loadRecentListings(supabase);
+        if (!cancelled) setRecent(rows);
+      } catch (error) {
+        if (!cancelled) {
+          console.error("[Homepage] Chargement annonces :", error);
+          setRecent([]);
+          setRecentError(
+            error instanceof Error
+              ? error.message
+              : "Impossible de charger les annonces publiées.",
+          );
+        }
+      } finally {
+        if (!cancelled) setRecentLoading(false);
+      }
     })();
+
+    void loadPublicHomeCms(supabase)
+      .then((cmsBundle) => {
+        if (cancelled) return;
+        setCms(cmsBundle.homepage);
+        setBanners(cmsBundle.banners);
+        setCmsSections(cmsBundle.sections);
+      })
+      .catch((error) => {
+        console.warn("[Homepage] CMS indisponible :", error);
+      });
+
+    void supabase
+      .from("categories")
+      .select("id,name,slug,icon")
+      .is("parent_id", null)
+      .eq("is_active", true)
+      .order("sort_order")
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) console.warn("[Homepage] Catégories :", error);
+        else setCategories((data ?? []) as Category[]);
+      });
+
+    void supabase
+      .from("regions")
+      .select("id,name,slug")
+      .order("name")
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) console.warn("[Homepage] Régions :", error);
+        else setRegions((data ?? []) as LocationOption[]);
+      });
+
+    void supabase
+      .from("cities")
+      .select("id,name,slug")
+      .order("name")
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) console.warn("[Homepage] Villes :", error);
+        else setCities((data ?? []) as LocationOption[]);
+      });
+
+    void supabase
+      .from("communes")
+      .select("id,name,slug")
+      .order("name")
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) console.warn("[Homepage] Communes :", error);
+        else setCommunes((data ?? []) as LocationOption[]);
+      });
 
     return () => {
       cancelled = true;
@@ -646,10 +698,22 @@ function HomePage() {
           }
         />
 
-        {recent.length === 0 ? (
+        {recentLoading ? (
+          <div className="mt-6 rounded-3xl border bg-white p-10 text-center shadow-sm">
+            <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+            <p className="mt-4 text-sm font-semibold text-slate-500">
+              Chargement des annonces…
+            </p>
+          </div>
+        ) : recentError ? (
+          <EmptyState
+            title="Impossible de charger les annonces"
+            description={recentError}
+          />
+        ) : recent.length === 0 ? (
           <EmptyState
             title="Aucune annonce publiée"
-            description="Les annonces publiées apparaîtront automatiquement ici."
+            description="Aucune annonce publiée n'est actuellement disponible."
           />
         ) : (
           <div className="kafoo-listing-grid mt-6">
