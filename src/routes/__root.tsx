@@ -16,6 +16,8 @@ import { SupabaseProvider } from "@/integrations/supabase/provider";
 import { AppHeader } from "@/components/AppHeader";
 import { MobileNav } from "@/components/MobileNav";
 import { SupabaseHealthCheck } from "@/components/SupabaseHealthCheck";
+import { ErrorState } from "@/components/ErrorState";
+
 
 function NotFoundComponent() {
   return (
@@ -48,35 +50,17 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <main className="flex min-h-screen w-full items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md text-center">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">
-          Une erreur est survenue
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
-
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90"
-          >
-            Réessayer
-          </button>
-
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-xl border border-input bg-background px-5 py-2.5 text-sm font-bold text-foreground hover:bg-accent"
-          >
-            Accueil
-          </a>
-        </div>
-      </div>
-    </main>
+    <ErrorState
+      title="Une erreur est survenue"
+      message={error.message}
+      onRetry={() => {
+        router.invalidate();
+        reset();
+      }}
+    />
   );
 }
+
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
