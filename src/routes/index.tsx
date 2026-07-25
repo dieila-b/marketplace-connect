@@ -386,30 +386,30 @@ function HomePage() {
           </>
         )}
 
-        <div className="relative mx-auto flex min-h-[620px] w-full max-w-[1800px] flex-col items-center justify-center px-4 py-16 text-center sm:px-6 lg:px-8 xl:px-10">
+        <div className="relative mx-auto flex w-full max-w-[1800px] flex-col items-center justify-center px-4 py-10 text-center sm:px-6 sm:py-11 lg:px-8 lg:py-12 xl:px-10">
           {cms.hero_badge && (
-            <div className="mb-6 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white/90 shadow-lg shadow-black/10 backdrop-blur">
-              <Sparkles className="h-4 w-4 shrink-0 text-yellow-300" />
+            <div className="mb-4 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-3.5 py-1.5 text-[11px] font-bold text-white/90 shadow-sm backdrop-blur-md">
+              <Sparkles className="h-3.5 w-3.5 shrink-0 text-yellow-300" />
               <span className="truncate">{cms.hero_badge}</span>
             </div>
           )}
 
-          <h1 className="mx-auto max-w-[1720px] text-center text-[2.15rem] font-black leading-[1.04] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-[4rem] xl:whitespace-nowrap xl:text-[clamp(3.25rem,3.35vw,4.25rem)] 2xl:text-[clamp(3.5rem,3.55vw,4.65rem)]">
+          <h1 className="mx-auto max-w-[1650px] text-center text-[2rem] font-black leading-[1.05] tracking-[-0.035em] text-white sm:text-[2.6rem] md:text-[3.15rem] lg:text-[3.45rem] xl:whitespace-nowrap xl:text-[clamp(2.85rem,3vw,3.75rem)] 2xl:text-[clamp(3rem,3.1vw,4rem)]">
             {cms.hero_title}
           </h1>
 
-          <p className="mx-auto mt-6 max-w-[1500px] text-center text-sm font-medium leading-7 text-slate-100 sm:text-base lg:text-lg xl:text-[1.05rem]">
-            {[cms.hero_description, cms.hero_subtitle].filter(Boolean).join(" ")}
+          <p className="mx-auto mt-4 max-w-[1180px] text-center text-sm font-medium leading-6 text-slate-200 sm:text-[15px] lg:text-base">
+            {cms.hero_subtitle}
           </p>
 
-          <div className="mt-8 flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
+          <div className="mt-6 flex w-full max-w-md flex-col items-center justify-center gap-2.5 sm:max-w-none sm:flex-row">
             <Button
               asChild
               size="lg"
-              className="h-12 w-full rounded-full bg-white px-7 font-black text-slate-950 shadow-xl shadow-black/10 hover:bg-slate-100 sm:w-auto"
+              className="h-11 w-full rounded-full bg-white px-6 text-sm font-black text-slate-950 shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-slate-100 sm:w-auto"
             >
               <a href={cms.hero_primary_url || "/publier"}>
-                <PlusCircle className="mr-2 h-5 w-5" />
+                <PlusCircle className="mr-2 h-4 w-4" />
                 {cms.hero_primary_label}
               </a>
             </Button>
@@ -418,7 +418,7 @@ function HomePage() {
               asChild
               size="lg"
               variant="outline"
-              className="h-12 w-full rounded-full border-white/25 bg-white/10 px-7 font-black text-white shadow-xl shadow-black/10 backdrop-blur hover:bg-white/20 hover:text-white sm:w-auto"
+              className="h-11 w-full rounded-full border-white/20 bg-white/[0.08] px-6 text-sm font-black text-white shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/15 hover:text-white sm:w-auto"
             >
               <a href={cms.hero_secondary_url || "/annonces"}>
                 {cms.hero_secondary_label}
@@ -427,34 +427,34 @@ function HomePage() {
             </Button>
           </div>
 
-          <div className="mt-10 grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-7 grid w-full max-w-4xl grid-cols-2 gap-2.5 lg:grid-cols-4">
             {stats.map((stat) => (
               <MiniStat key={`${stat.label}-${stat.value}`} value={stat.value} label={stat.label} />
             ))}
           </div>
 
-          <div className="mt-12 w-full max-w-6xl">
+          <div className="mt-7 w-full max-w-5xl">
             <form
               onSubmit={onSearch}
-              className="rounded-[2rem] border border-white/20 bg-white/95 p-3 text-slate-950 shadow-2xl shadow-black/20 backdrop-blur sm:p-4"
+              className="rounded-[1.5rem] border border-white/20 bg-white/[0.97] p-2.5 text-slate-950 shadow-xl shadow-black/15 backdrop-blur-xl sm:p-3"
             >
-              <div className="flex flex-col gap-3 lg:flex-row">
+              <div className="flex flex-col gap-2.5 lg:flex-row">
                 <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
                     value={q}
                     onChange={(event) => setQ(event.target.value)}
                     placeholder={cms.search_placeholder}
-                    className="h-12 w-full rounded-2xl border-slate-200 bg-slate-50 pl-12 text-sm shadow-inner sm:h-14"
+                    className="h-11 w-full rounded-xl border-slate-200 bg-slate-50 pl-11 text-sm shadow-inner sm:h-12"
                   />
                 </div>
 
                 <Button
                   type="submit"
                   size="lg"
-                  className="h-12 w-full rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 px-8 font-black text-white shadow-lg shadow-blue-600/20 sm:h-14 lg:w-auto"
+                  className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 px-7 text-sm font-black text-white shadow-md shadow-blue-600/20 transition hover:-translate-y-0.5 sm:h-12 lg:w-auto"
                 >
-                  <Search className="mr-2 h-5 w-5" />
+                  <Search className="mr-2 h-4 w-4" />
                   Rechercher
                 </Button>
 
@@ -463,15 +463,15 @@ function HomePage() {
                   size="lg"
                   variant="outline"
                   onClick={() => setShowAdvancedSearch((current) => !current)}
-                  className="h-12 w-full rounded-2xl border-slate-200 bg-slate-50 px-6 font-black text-slate-700 shadow-sm hover:bg-slate-100 sm:h-14 lg:w-auto"
+                  className="h-11 w-full rounded-xl border-slate-200 bg-slate-50 px-5 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100 sm:h-12 lg:w-auto"
                 >
-                  <SlidersHorizontal className="mr-2 h-5 w-5" />
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
                   {showAdvancedSearch ? "Fermer" : "Filtres"}
                 </Button>
               </div>
 
               {showAdvancedSearch && (
-                <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-3 grid gap-2.5 border-t border-slate-100 pt-3 sm:grid-cols-2 lg:grid-cols-3">
                   <SelectField label="Catégorie" value={category} onChange={setCategory} rows={categories} />
                   <SelectField label="Région" value={region} onChange={setRegion} rows={regions} />
                   <SelectField label="Ville" value={city} onChange={setCity} rows={cities} />
@@ -498,7 +498,7 @@ function HomePage() {
       </section>
 
       {banners.length > 0 && (
-        <section className="kafoo-container py-7">
+        <section className="kafoo-container py-6">
           <div className="grid gap-4 lg:grid-cols-2">
             {banners.map((banner) => (
               <a
@@ -530,7 +530,7 @@ function HomePage() {
         </section>
       )}
 
-      <section className="kafoo-container py-7">
+      <section className="kafoo-container py-5">
         <div className="grid gap-3 rounded-3xl bg-white p-3 shadow-sm sm:grid-cols-3">
           <TrustItem
             icon={PlusCircle}
@@ -780,9 +780,9 @@ function SectionHeader({
 
 function MiniStat({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="rounded-3xl border border-white/15 bg-white/10 p-5 text-center shadow-xl shadow-black/10 backdrop-blur">
-      <div className="text-2xl font-black text-white">{value}</div>
-      <div className="mt-1 text-xs font-bold text-slate-300">{label}</div>
+    <div className="rounded-2xl border border-white/12 bg-white/[0.08] px-3 py-3 text-center shadow-sm backdrop-blur-md">
+      <div className="text-xl font-black leading-none text-white">{value}</div>
+      <div className="mt-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-300">{label}</div>
     </div>
   );
 }
@@ -799,13 +799,13 @@ function TrustItem({
   color: string;
 }) {
   return (
-    <div className="flex min-w-0 items-start gap-3 rounded-2xl bg-slate-50 p-4">
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${color}`}>
-        <Icon className="h-5 w-5" />
+    <div className="flex min-w-0 items-center gap-3 rounded-2xl bg-slate-50/80 px-4 py-3">
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${color}`}>
+        <Icon className="h-4 w-4" />
       </div>
       <div>
-        <h3 className="text-sm font-black text-slate-950">{title}</h3>
-        <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
+        <h3 className="text-[13px] font-black text-slate-950">{title}</h3>
+        <p className="mt-0.5 text-[11px] leading-4 text-slate-500">{description}</p>
       </div>
     </div>
   );
