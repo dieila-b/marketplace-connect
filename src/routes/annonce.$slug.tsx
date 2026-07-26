@@ -301,6 +301,9 @@ function ListingDetail() {
   const [showMoreShareOptions, setShowMoreShareOptions] = useState(false);
   const [copyingShareLink, setCopyingShareLink] = useState(false);
 
+  const [callOpen, setCallOpen] = useState(false);
+  const [copyingPhone, setCopyingPhone] = useState(false);
+
   useEffect(() => {
     if (!supabase) return;
 
@@ -538,6 +541,65 @@ function ListingDetail() {
     }
 
     toast.success("Signalement envoyé");
+  };
+
+  const getSellerPhone = () => {
+    return listing?.seller?.phone?.trim() ?? "";
+  };
+
+  const copySellerPhone = async () => {
+    const phone = getSellerPhone();
+
+    if (!phone) {
+      toast.error("Le vendeur n'a pas renseigné de numéro de téléphone.");
+      return;
+    }
+
+    setCopyingPhone(true);
+
+    try {
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.clipboard &&
+        window.isSecureContext
+      ) {
+        await navigator.clipboard.writeText(phone);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = phone;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        const copied = document.execCommand("copy");
+        document.body.removeChild(textarea);
+
+        if (!copied) throw new Error("Copie impossible");
+      }
+
+      toast.success("Numéro du vendeur copié.");
+    } catch (error) {
+      console.error("[Annonce] Copie téléphone impossible :", error);
+      window.prompt("Copiez le numéro du vendeur :", phone);
+    } finally {
+      setCopyingPhone(false);
+    }
+  };
+
+  const callSeller = () => {
+    const phone = getSellerPhone();
+
+    if (!phone) {
+      toast.error("Le vendeur n'a pas renseigné de numéro de téléphone.");
+      return;
+    }
+
+    const normalizedPhone = phone.replace(/[^\d+]/g, "");
+
+    window.location.href = `tel:${normalizedPhone}`;
   };
 
   const getShareUrl = () => {
@@ -918,11 +980,14 @@ function ListingDetail() {
                 </Button>
 
                 {listing.phone_visible && listing.seller?.phone && (
-                  <Button asChild variant="outline" className="rounded-xl">
-                    <a href={`tel:${listing.seller.phone}`}>
-                      <Phone className="mr-2 h-4 w-4" />
-                      Appeler
-                    </a>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCallOpen(true)}
+                    className="rounded-xl"
+                  >
+                    <Phone className="mr-2 h-4 w-4" />
+                    Appeler
                   </Button>
                 )}
 
@@ -981,6 +1046,103 @@ function ListingDetail() {
           </aside>
         </div>
       </div>
+
+      {callOpen && listing && listing.seller?.phone && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-[3px]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="call-seller-title"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) {
+              setCallOpen(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-md overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl shadow-slate-950/25">
+            <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                  <Phone className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h2
+                    id="call-seller-title"
+                    className="text-lg font-black text-slate-950"
+                  >
+                    Contacter le vendeur
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Vérifiez le numéro avant de lancer l'appel.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Fermer"
+                  onClick={() => setCallOpen(false)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl leading-none text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="px-5 py-5 sm:px-6">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                  Vendeur
+                </p>
+
+                <p className="mt-1 text-base font-black text-slate-950">
+                  {sellerName}
+                </p>
+
+                <div className="mt-4 flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
+                  <Phone className="h-5 w-5 shrink-0 text-emerald-600" />
+                  <span className="min-w-0 flex-1 truncate text-lg font-black tracking-wide text-slate-950">
+                    {listing.seller.phone}
+                  </span>
+                </div>
+              </div>
+
+              <p className="mt-4 text-xs leading-5 text-slate-500">
+                Sur téléphone, « Appeler maintenant » ouvre l'application
+                Téléphone. Sur ordinateur, le navigateur peut demander quelle
+                application utiliser pour passer l'appel.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:grid-cols-2 sm:px-6">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={copyingPhone}
+                onClick={() => void copySellerPhone()}
+                className="h-11 rounded-xl font-black"
+              >
+                {copyingPhone ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Copy className="mr-2 h-4 w-4" />
+                )}
+                Copier le numéro
+              </Button>
+
+              <Button
+                type="button"
+                onClick={callSeller}
+                className="h-11 rounded-xl bg-emerald-600 font-black text-white shadow-md shadow-emerald-600/15 hover:bg-emerald-700"
+              >
+                <Phone className="mr-2 h-4 w-4" />
+                Appeler maintenant
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {shareOpen && listing && (
         <div
