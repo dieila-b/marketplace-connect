@@ -11,10 +11,13 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  ExternalLink,
   Flag,
   Heart,
   MapPin,
   Loader2,
+  Mail,
   MessageCircle,
   Phone,
   Send,
@@ -294,6 +297,9 @@ function ListingDetail() {
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
 
+  const [shareOpen, setShareOpen] = useState(false);
+  const [copyingShareLink, setCopyingShareLink] = useState(false);
+
   useEffect(() => {
     if (!supabase) return;
 
@@ -533,24 +539,113 @@ function ListingDetail() {
     toast.success("Signalement envoyé");
   };
 
-  const share = async () => {
-    if (!listing) return;
+  const getShareUrl = () => {
+    if (typeof window === "undefined") {
+      return `/annonce/${listing?.slug ?? ""}`;
+    }
+
+    return `${window.location.origin}/annonce/${listing?.slug ?? ""}`;
+  };
+
+  const getShareText = () => {
+    if (!listing) return "Découvrez cette annonce sur Kafoo.";
+
+    return `${listing.title} — ${formatPrice(
+      listing.price,
+      listing.currency,
+    )} sur Kafoo`;
+  };
+
+  const copyShareLink = async () => {
+    const url = getShareUrl();
+
+    setCopyingShareLink(true);
 
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: listing.title,
-          text: listing.description ?? undefined,
-          url: window.location.href,
-        });
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.clipboard &&
+        window.isSecureContext
+      ) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = url;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        textarea.style.pointerEvents = "none";
+
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        const copied = document.execCommand("copy");
+        document.body.removeChild(textarea);
+
+        if (!copied) {
+          throw new Error("Copie impossible");
+        }
+      }
+
+      toast.success("Lien de l'annonce copié.");
+      setShareOpen(false);
+    } catch (error) {
+      console.error("[Annonce] Copie du lien impossible :", error);
+
+      window.prompt(
+        "Copiez le lien de l'annonce :",
+        url,
+      );
+    } finally {
+      setCopyingShareLink(false);
+    }
+  };
+
+  const nativeShare = async () => {
+    if (!listing) return;
+
+    const shareData = {
+      title: listing.title,
+      text: getShareText(),
+      url: getShareUrl(),
+    };
+
+    if (!navigator.share) {
+      await copyShareLink();
+      return;
+    }
+
+    try {
+      await navigator.share(shareData);
+      setShareOpen(false);
+    } catch (error) {
+      if (
+        error instanceof DOMException &&
+        error.name === "AbortError"
+      ) {
         return;
       }
 
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success("Lien copié");
-    } catch {
-      // Partage annulé.
+      console.warn(
+        "[Annonce] Partage système indisponible, copie du lien :",
+        error,
+      );
+
+      await copyShareLink();
     }
+  };
+
+  const openExternalShare = (url: string) => {
+    window.open(
+      url,
+      "_blank",
+      "noopener,noreferrer,width=720,height=640",
+    );
+  };
+
+  const share = () => {
+    if (!listing) return;
+    setShareOpen(true);
   };
 
   if (loading) {
@@ -847,7 +942,7 @@ function ListingDetail() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => void share()}
+                  onClick={share}
                   className="rounded-xl"
                 >
                   <Share2 className="mr-2 h-4 w-4" />
@@ -884,6 +979,168 @@ function ListingDetail() {
           </aside>
         </div>
       </div>
+
+      {shareOpen && listing && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-[3px]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="share-listing-title"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) {
+              setShareOpen(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl shadow-slate-950/25">
+            <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                  <Share2 className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h2
+                    id="share-listing-title"
+                    className="text-lg font-black text-slate-950"
+                  >
+                    Partager cette annonce
+                  </h2>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Envoyez cette annonce à vos proches ou copiez son lien.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Fermer"
+                  onClick={() => setShareOpen(false)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl leading-none text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-5 px-5 py-5 sm:px-6">
+              <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
+                {currentImage ? (
+                  <img
+                    src={currentImage.image_url}
+                    alt=""
+                    className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-slate-400">
+                    <Box className="h-5 w-5" />
+                  </div>
+                )}
+
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-950">
+                    {listing.title}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-blue-600">
+                    {formatPrice(listing.price, listing.currency)}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-slate-400">
+                    {getShareUrl()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    openExternalShare(
+                      `https://wa.me/?text=${encodeURIComponent(
+                        `${getShareText()}\n${getShareUrl()}`,
+                      )}`,
+                    )
+                  }
+                  className="flex min-h-[88px] flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-3 text-center transition hover:-translate-y-0.5 hover:bg-emerald-100"
+                >
+                  <MessageCircle className="h-5 w-5 text-emerald-600" />
+                  <span className="mt-2 text-sm font-black text-emerald-800">
+                    WhatsApp
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    openExternalShare(
+                      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                        getShareUrl(),
+                      )}`,
+                    )
+                  }
+                  className="flex min-h-[88px] flex-col items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-3 text-center transition hover:-translate-y-0.5 hover:bg-blue-100"
+                >
+                  <ExternalLink className="h-5 w-5 text-blue-600" />
+                  <span className="mt-2 text-sm font-black text-blue-800">
+                    Facebook
+                  </span>
+                </button>
+
+                <a
+                  href={`mailto:?subject=${encodeURIComponent(
+                    listing.title,
+                  )}&body=${encodeURIComponent(
+                    `${getShareText()}\n\n${getShareUrl()}`,
+                  )}`}
+                  className="flex min-h-[88px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-center transition hover:-translate-y-0.5 hover:bg-slate-50"
+                >
+                  <Mail className="h-5 w-5 text-slate-600" />
+                  <span className="mt-2 text-sm font-black text-slate-800">
+                    E-mail
+                  </span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => void nativeShare()}
+                  className="flex min-h-[88px] flex-col items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 px-3 text-center transition hover:-translate-y-0.5 hover:bg-violet-100"
+                >
+                  <Share2 className="h-5 w-5 text-violet-600" />
+                  <span className="mt-2 text-sm font-black text-violet-800">
+                    Plus d'options
+                  </span>
+                </button>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+                  Lien de l'annonce
+                </p>
+
+                <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2">
+                  <div className="min-w-0 flex-1 truncate px-2 text-xs font-medium text-slate-500">
+                    {getShareUrl()}
+                  </div>
+
+                  <Button
+                    type="button"
+                    disabled={copyingShareLink}
+                    onClick={() => void copyShareLink()}
+                    className="h-10 shrink-0 rounded-xl bg-slate-950 px-4 text-xs font-black text-white hover:bg-slate-800"
+                  >
+                    {copyingShareLink ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Copy className="mr-2 h-4 w-4" />
+                    )}
+
+                    Copier
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {messageOpen && listing && (
         <div
