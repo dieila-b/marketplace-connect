@@ -298,6 +298,7 @@ function ListingDetail() {
   const [messageSending, setMessageSending] = useState(false);
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [showMoreShareOptions, setShowMoreShareOptions] = useState(false);
   const [copyingShareLink, setCopyingShareLink] = useState(false);
 
   useEffect(() => {
@@ -645,6 +646,7 @@ function ListingDetail() {
 
   const share = () => {
     if (!listing) return;
+    setShowMoreShareOptions(false);
     setShareOpen(true);
   };
 
@@ -989,6 +991,7 @@ function ListingDetail() {
           onMouseDown={(event) => {
             if (event.currentTarget === event.target) {
               setShareOpen(false);
+              setShowMoreShareOptions(false);
             }
           }}
         >
@@ -1015,7 +1018,7 @@ function ListingDetail() {
                 <button
                   type="button"
                   aria-label="Fermer"
-                  onClick={() => setShareOpen(false)}
+                  onClick={() => { setShareOpen(false); setShowMoreShareOptions(false); }}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl leading-none text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                 >
                   ×
@@ -1101,15 +1104,95 @@ function ListingDetail() {
 
                 <button
                   type="button"
-                  onClick={() => void nativeShare()}
-                  className="flex min-h-[88px] flex-col items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 px-3 text-center transition hover:-translate-y-0.5 hover:bg-violet-100"
+                  onClick={() =>
+                    setShowMoreShareOptions((current) => !current)
+                  }
+                  className={`flex min-h-[88px] flex-col items-center justify-center rounded-2xl border px-3 text-center transition hover:-translate-y-0.5 ${
+                    showMoreShareOptions
+                      ? "border-violet-300 bg-violet-100"
+                      : "border-violet-200 bg-violet-50 hover:bg-violet-100"
+                  }`}
                 >
                   <Share2 className="h-5 w-5 text-violet-600" />
                   <span className="mt-2 text-sm font-black text-violet-800">
-                    Plus d'options
+                    {showMoreShareOptions ? "Masquer" : "Plus d'options"}
                   </span>
                 </button>
               </div>
+
+              {showMoreShareOptions && (
+                <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-3">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-violet-700">
+                    Autres options de partage
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openExternalShare(
+                          `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                            `${getShareText()}\n${getShareUrl()}`,
+                          )}`,
+                        )
+                      }
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs font-black text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                    >
+                      X / Twitter
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openExternalShare(
+                          `https://t.me/share/url?url=${encodeURIComponent(
+                            getShareUrl(),
+                          )}&text=${encodeURIComponent(getShareText())}`,
+                        )
+                      }
+                      className="rounded-xl border border-sky-200 bg-white px-3 py-3 text-xs font-black text-sky-700 transition hover:bg-sky-50"
+                    >
+                      Telegram
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openExternalShare(
+                          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                            getShareUrl(),
+                          )}`,
+                        )
+                      }
+                      className="rounded-xl border border-blue-200 bg-white px-3 py-3 text-xs font-black text-blue-700 transition hover:bg-blue-50"
+                    >
+                      LinkedIn
+                    </button>
+
+                    <a
+                      href={`sms:?&body=${encodeURIComponent(
+                        `${getShareText()}\n${getShareUrl()}`,
+                      )}`}
+                      className="rounded-xl border border-emerald-200 bg-white px-3 py-3 text-center text-xs font-black text-emerald-700 transition hover:bg-emerald-50"
+                    >
+                      SMS
+                    </a>
+                  </div>
+
+                  {typeof navigator !== "undefined" &&
+                    typeof navigator.share === "function" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void nativeShare()}
+                        className="mt-3 h-10 w-full rounded-xl border-violet-200 bg-white text-xs font-black text-violet-700 hover:bg-violet-50"
+                      >
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Ouvrir le partage système
+                      </Button>
+                    )}
+                </div>
+              )}
 
               <div>
                 <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
