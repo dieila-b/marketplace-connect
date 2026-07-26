@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Crosshair, Loader2, MapPin, Navigation, Trash2 } from "lucide-react";
 import { useSupabase } from "@/integrations/supabase/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,13 @@ function PublishPage() {
   });
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [geoPosition, setGeoPosition] = useState<{
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+  } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [geoError, setGeoError] = useState("");
 
   useEffect(() => { if (!user) navigate({ to: "/auth" }); }, [user, navigate]);
 
@@ -67,6 +75,60 @@ function PublishPage() {
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((p) => ({ ...p, [k]: v }));
 
+  const detectLocation = () => {
+    setGeoError("");
+
+    if (!("geolocation" in navigator)) {
+      const message = "La géolocalisation n'est pas disponible sur cet appareil.";
+      setGeoError(message);
+      toast.error(message);
+      return;
+    }
+
+    setLocating(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGeoPosition({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: Number.isFinite(position.coords.accuracy)
+            ? position.coords.accuracy
+            : null,
+        });
+        setLocating(false);
+        toast.success("Position actuelle détectée.");
+      },
+      (error) => {
+        let message = "Impossible de récupérer votre position.";
+
+        if (error.code === error.PERMISSION_DENIED) {
+          message = "Autorisez l'accès à votre position dans les réglages du navigateur.";
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          message = "Votre position est momentanément indisponible.";
+        } else if (error.code === error.TIMEOUT) {
+          message = "La détection de position a pris trop de temps. Réessayez.";
+        }
+
+        setGeoPosition(null);
+        setGeoError(message);
+        setLocating(false);
+        toast.error(message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 60000,
+      },
+    );
+  };
+
+  const clearLocation = () => {
+    setGeoPosition(null);
+    setGeoError("");
+    toast.success("Position GPS retirée de l'annonce.");
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -90,12 +152,15 @@ function PublishPage() {
         commune_id: form.commune_id || null,
         district_id: form.district_id || null,
         address_text: form.address_text || null,
+        latitude: geoPosition?.latitude ?? null,
+        longitude: geoPosition?.longitude ?? null,
+        location_accuracy: geoPosition?.accuracy ?? null,
         negotiable: form.negotiable,
         phone_visible: form.phone_visible,
         whatsapp_enabled: form.whatsapp_enabled,
         status: "published",
         published_at: new Date().toISOString(),
-      }).select("id,slug").maybeSingle();
+      }).select("id,slug").single();
       if (error || !created) throw error ?? new Error("Création échouée");
 
       // Upload images
@@ -185,7 +250,75 @@ function PublishPage() {
             </select>
           </div>
         </div>
-        <div><Label>Adresse approximative</Label><Input value={form.address_text} onChange={(e) => set("address_text", e.target.value)} /></div>
+        <div>
+          <Label>Adresse approximative</Label>
+          <Input
+            value={form.address_text}
+            onChange={(e) => set("address_text", e.target.value)}
+            placeholder="Ex. près du carrefour, côté station-service..."
+          />
+        </div>
+
+        <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                <Navigation className="h-4 w-4 text-blue-600" />
+                Position actuelle
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Ajoutez votre position GPS pour permettre les recherches autour de vous.
+                Les coordonnées exactes n'ont pas besoin d'être affichées publiquement.
+              </p>
+            </div>
+
+            {!geoPosition ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={detectLocation}
+                disabled={locating}
+                className="shrink-0 rounded-xl border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
+              >
+                {locating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Crosshair className="mr-2 h-4 w-4" />
+                )}
+                {locating ? "Localisation..." : "Utiliser ma position"}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={clearLocation}
+                className="shrink-0 rounded-xl border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Retirer
+              </Button>
+            )}
+          </div>
+
+          {geoPosition && (
+            <div className="mt-3 rounded-xl bg-white p-3 text-xs text-slate-600">
+              <p className="flex items-center gap-2 font-bold text-emerald-600">
+                <MapPin className="h-4 w-4" />
+                Position détectée
+              </p>
+              <p className="mt-1">
+                Précision estimée :{" "}
+                {geoPosition.accuracy != null
+                  ? `${Math.round(geoPosition.accuracy)} m`
+                  : "non disponible"}
+              </p>
+            </div>
+          )}
+
+          {geoError && (
+            <p className="mt-3 text-xs font-semibold text-red-600">{geoError}</p>
+          )}
+        </div>
         <div>
           <Label>Photos (la 1ère sera principale)</Label>
           <Input type="file" accept="image/*" multiple onChange={(e) => setFiles(Array.from(e.target.files ?? []).slice(0, 8))} />
@@ -196,7 +329,10 @@ function PublishPage() {
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.phone_visible} onChange={(e) => set("phone_visible", e.target.checked)} /> Afficher mon téléphone</label>
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.whatsapp_enabled} onChange={(e) => set("whatsapp_enabled", e.target.checked)} /> Activer WhatsApp</label>
         </div>
-        <Button type="submit" className="w-full" disabled={submitting}>{submitting ? "Publication…" : "Publier l'annonce"}</Button>
+        <Button type="submit" className="w-full" disabled={submitting}>
+          {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {submitting ? "Publication…" : "Publier l'annonce"}
+        </Button>
       </form>
     </main>
   );
