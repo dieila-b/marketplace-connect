@@ -14,8 +14,10 @@ import {
   Flag,
   Heart,
   MapPin,
+  Loader2,
   MessageCircle,
   Phone,
+  Send,
   Share2,
   Tag,
   User,
@@ -23,6 +25,7 @@ import {
 
 import { useSupabase } from "@/integrations/supabase/provider";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { formatPrice } from "@/components/ListingCard";
 import { toast } from "sonner";
 
@@ -287,6 +290,10 @@ function ListingDetail() {
   const [isFav, setIsFav] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
+  const [messageOpen, setMessageOpen] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [messageSending, setMessageSending] = useState(false);
+
   useEffect(() => {
     if (!supabase) return;
 
@@ -416,7 +423,7 @@ function ListingDetail() {
     toast.success("Ajouté aux favoris");
   };
 
-  const contactSeller = async () => {
+  const contactSeller = () => {
     if (!listing) return;
 
     if (!user) {
@@ -429,48 +436,74 @@ function ListingDetail() {
       return;
     }
 
-    const content = window.prompt("Votre message au vendeur :");
+    setMessageText(
+      `Bonjour, je suis intéressé(e) par votre annonce « ${listing.title} ». Est-elle toujours disponible ?`,
+    );
+    setMessageOpen(true);
+  };
 
-    if (!content?.trim()) return;
+  const sendSellerMessage = async () => {
+    if (!listing || !user) return;
 
-    const message = content.trim();
+    const message = messageText.trim();
 
-    const { data: conversation, error: conversationError } = await supabase
-      .from("conversations")
-      .upsert(
-        {
-          listing_id: listing.id,
-          buyer_id: user.id,
-          seller_id: listing.user_id,
-          last_message: message,
-          last_message_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "listing_id,buyer_id,seller_id",
-        },
-      )
-      .select("id")
-      .maybeSingle();
-
-    if (conversationError || !conversation) {
-      toast.error(conversationError?.message ?? "Erreur");
+    if (!message) {
+      toast.error("Écrivez un message avant de l'envoyer.");
       return;
     }
 
-    const { error: messageError } = await supabase.from("messages").insert({
-      conversation_id: conversation.id,
-      sender_id: user.id,
-      receiver_id: listing.user_id,
-      content: message,
-    });
-
-    if (messageError) {
-      toast.error(messageError.message);
+    if (message.length > 1000) {
+      toast.error("Votre message ne peut pas dépasser 1 000 caractères.");
       return;
     }
 
-    toast.success("Message envoyé");
-    navigate({ to: "/messages" });
+    setMessageSending(true);
+
+    try {
+      const { data: conversation, error: conversationError } = await supabase
+        .from("conversations")
+        .upsert(
+          {
+            listing_id: listing.id,
+            buyer_id: user.id,
+            seller_id: listing.user_id,
+            last_message: message,
+            last_message_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "listing_id,buyer_id,seller_id",
+          },
+        )
+        .select("id")
+        .maybeSingle();
+
+      if (conversationError || !conversation) {
+        toast.error(
+          conversationError?.message ?? "Impossible de créer la conversation.",
+        );
+        return;
+      }
+
+      const { error: messageError } = await supabase.from("messages").insert({
+        conversation_id: conversation.id,
+        sender_id: user.id,
+        receiver_id: listing.user_id,
+        content: message,
+      });
+
+      if (messageError) {
+        toast.error(messageError.message);
+        return;
+      }
+
+      setMessageOpen(false);
+      setMessageText("");
+      toast.success("Message envoyé au vendeur.");
+
+      navigate({ to: "/messages" });
+    } finally {
+      setMessageSending(false);
+    }
   };
 
   const report = async () => {
@@ -780,7 +813,7 @@ function ListingDetail() {
               <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 <Button
                   type="button"
-                  onClick={() => void contactSeller()}
+                  onClick={contactSeller}
                   className="rounded-xl bg-blue-600 font-bold hover:bg-blue-700"
                 >
                   <MessageCircle className="mr-2 h-4 w-4" />
@@ -851,6 +884,168 @@ function ListingDetail() {
           </aside>
         </div>
       </div>
+
+      {messageOpen && listing && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-[3px]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="message-seller-title"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target && !messageSending) {
+              setMessageOpen(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-xl overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl shadow-slate-950/25">
+            <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                  <MessageCircle className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h2
+                    id="message-seller-title"
+                    className="text-lg font-black text-slate-950"
+                  >
+                    Contacter le vendeur
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Envoyez un message à{" "}
+                    <span className="font-bold text-slate-700">
+                      {sellerName}
+                    </span>
+                    .
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Fermer"
+                  disabled={messageSending}
+                  onClick={() => setMessageOpen(false)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl leading-none text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-5 px-5 py-5 sm:px-6">
+              <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
+                {currentImage ? (
+                  <img
+                    src={currentImage.image_url}
+                    alt=""
+                    className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-slate-400">
+                    <Box className="h-5 w-5" />
+                  </div>
+                )}
+
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-950">
+                    {listing.title}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-blue-600">
+                    {formatPrice(listing.price, listing.currency)}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="seller-message"
+                  className="mb-2 block text-sm font-bold text-slate-700"
+                >
+                  Votre message
+                </label>
+
+                <Textarea
+                  id="seller-message"
+                  autoFocus
+                  value={messageText}
+                  maxLength={1000}
+                  rows={5}
+                  onChange={(event) => setMessageText(event.target.value)}
+                  placeholder="Bonjour, votre annonce est-elle toujours disponible ?"
+                  className="min-h-[130px] resize-none rounded-2xl border-slate-200 bg-white p-4 text-sm leading-6 focus-visible:ring-blue-500"
+                />
+
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <p className="text-[11px] text-slate-400">
+                    Évitez de partager des informations sensibles.
+                  </p>
+                  <span
+                    className={`shrink-0 text-[11px] font-semibold ${
+                      messageText.length > 900
+                        ? "text-orange-600"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    {messageText.length}/1000
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+                  Messages rapides
+                </p>
+
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Bonjour, l'annonce est-elle toujours disponible ?",
+                    "Le prix est-il négociable ?",
+                    "Quand peut-on se rencontrer ?",
+                  ].map((quickMessage) => (
+                    <button
+                      key={quickMessage}
+                      type="button"
+                      disabled={messageSending}
+                      onClick={() => setMessageText(quickMessage)}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50"
+                    >
+                      {quickMessage}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={messageSending}
+                onClick={() => setMessageOpen(false)}
+                className="h-11 rounded-xl px-5 font-bold"
+              >
+                Annuler
+              </Button>
+
+              <Button
+                type="button"
+                disabled={messageSending || !messageText.trim()}
+                onClick={() => void sendSellerMessage()}
+                className="h-11 rounded-xl bg-blue-600 px-6 font-black text-white shadow-md shadow-blue-600/15 hover:bg-blue-700"
+              >
+                {messageSending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+
+                {messageSending ? "Envoi..." : "Envoyer le message"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
