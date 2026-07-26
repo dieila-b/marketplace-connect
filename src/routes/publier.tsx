@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Crosshair, Loader2, MapPin, Navigation, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock3, Crosshair, Loader2, MapPin, Navigation, Trash2 } from "lucide-react";
 import { useSupabase } from "@/integrations/supabase/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,11 @@ function PublishPage() {
   });
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [submittedListing, setSubmittedListing] = useState<{
+    id: string;
+    slug: string;
+    title: string;
+  } | null>(null);
   const [geoPosition, setGeoPosition] = useState<{
     latitude: number;
     longitude: number;
@@ -158,8 +163,8 @@ function PublishPage() {
         negotiable: form.negotiable,
         phone_visible: form.phone_visible,
         whatsapp_enabled: form.whatsapp_enabled,
-        status: "published",
-        published_at: new Date().toISOString(),
+        // Une annonce n'est visible publiquement qu'après validation admin.
+        status: "pending",
       }).select("id,slug").single();
       if (error || !created) throw error ?? new Error("Création échouée");
 
@@ -175,10 +180,16 @@ function PublishPage() {
           is_main: i === 0, sort_order: i,
         });
       }
-      toast.success("Annonce publiée avec succès !");
-      navigate({
-        to: "/annonce/$slug",
-        params: { slug: created.slug },
+      setSubmittedListing({
+        id: created.id,
+        slug: created.slug,
+        title: form.title.trim(),
+      });
+
+      toast.success("Annonce envoyée pour validation", {
+        description:
+          "La validation par l'équipe Kafoo peut prendre jusqu'à 24 heures.",
+        duration: 8000,
       });
     } catch (err: unknown) {
       toast.error((err as Error).message ?? "Erreur");
@@ -187,9 +198,130 @@ function PublishPage() {
     }
   };
 
+  if (submittedListing) {
+    return (
+      <main className="min-h-[70vh] bg-slate-50 px-4 py-10 sm:py-16">
+        <div className="mx-auto w-full max-w-2xl">
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/60">
+            <div className="border-b border-emerald-100 bg-emerald-50/70 px-6 py-7 text-center sm:px-8">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
+
+              <h1 className="mt-4 text-2xl font-black text-slate-950">
+                Annonce envoyée avec succès
+              </h1>
+
+              <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">
+                Votre annonce « {submittedListing.title} » a bien été enregistrée.
+              </p>
+            </div>
+
+            <div className="space-y-5 px-6 py-7 sm:px-8">
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
+                    <Clock3 className="h-5 w-5" />
+                  </div>
+
+                  <div>
+                    <h2 className="text-sm font-black text-slate-950">
+                      Validation administrative obligatoire
+                    </h2>
+
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      Avant d'apparaître publiquement sur Kafoo, votre annonce
+                      doit être vérifiée et approuvée par un administrateur.
+                      Cette validation peut prendre jusqu'à 24 heures.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-sm font-black text-slate-800">
+                  Que se passe-t-il maintenant ?
+                </p>
+
+                <div className="mt-3 space-y-2.5 text-sm leading-6 text-slate-600">
+                  <p>
+                    • Votre annonce est actuellement au statut
+                    <strong> « En attente de validation »</strong>.
+                  </p>
+                  <p>
+                    • L'équipe Kafoo vérifie les informations, le contenu et les photos.
+                  </p>
+                  <p>
+                    • Après approbation, l'annonce devient automatiquement visible
+                    dans la liste des annonces.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-center text-xs leading-5 text-slate-400">
+                Vous pouvez suivre son statut depuis votre espace personnel,
+                dans « Mes annonces ».
+              </p>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-xl font-black"
+                  onClick={() => {
+                    setSubmittedListing(null);
+                    setForm({
+                      title: "",
+                      description: "",
+                      price: "",
+                      currency: "GNF",
+                      condition: "bon",
+                      listing_type: "vente",
+                      category_id: "",
+                      region_id: "",
+                      city_id: "",
+                      commune_id: "",
+                      district_id: "",
+                      address_text: "",
+                      negotiable: false,
+                      phone_visible: true,
+                      whatsapp_enabled: true,
+                    });
+                    setFiles([]);
+                    setGeoPosition(null);
+                    setGeoError("");
+                    setCities([]);
+                    setCommunes([]);
+                    setDistricts([]);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                >
+                  Publier une autre annonce
+                </Button>
+
+                <Button
+                  type="button"
+                  className="h-11 rounded-xl bg-blue-600 font-black hover:bg-blue-700"
+                  onClick={() => navigate({ to: "/dashboard" })}
+                >
+                  Voir mes annonces
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">Publier une annonce</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-black text-slate-950">Publier une annonce</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Votre annonce sera soumise à validation avant d'être visible publiquement.
+        </p>
+      </div>
       <form onSubmit={submit} className="space-y-4 rounded-lg border bg-card p-6">
         <div><Label>Titre *</Label><Input value={form.title} onChange={(e) => set("title", e.target.value)} maxLength={120} required /></div>
         <div><Label>Description *</Label><Textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={5} required /></div>
@@ -329,9 +461,24 @@ function PublishPage() {
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.phone_visible} onChange={(e) => set("phone_visible", e.target.checked)} /> Afficher mon téléphone</label>
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.whatsapp_enabled} onChange={(e) => set("whatsapp_enabled", e.target.checked)} /> Activer WhatsApp</label>
         </div>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div>
+              <p className="text-sm font-black text-amber-950">
+                Validation avant publication
+              </p>
+              <p className="mt-1 text-xs leading-5 text-amber-800">
+                Après l'envoi, votre annonce sera contrôlée par un administrateur.
+                Son apparition sur Kafoo peut prendre jusqu'à 24 heures.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {submitting ? "Publication…" : "Publier l'annonce"}
+          {submitting ? "Envoi pour validation…" : "Envoyer pour validation"}
         </Button>
       </form>
     </main>
