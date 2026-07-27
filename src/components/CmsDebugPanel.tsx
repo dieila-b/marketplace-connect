@@ -374,24 +374,37 @@ const PAGE_SIZE = 10;
 export function CmsDebugPanel() {
   const [enabled, setEnabled] = useCmsDebugEnabled();
   const [events, setEvents] = useState<CmsValidationEvent[]>([]);
-  const [open, setOpen] = useState(false);
+
+  // Load persisted state once (synchronously) so hydration matches user's
+  // previous session immediately.
+  const persistedRef = useRef<PersistedDebugState>(loadPersistedState());
+  const initial = persistedRef.current;
+
+  const [open, setOpen] = useState(initial.open);
   const [rawEvent, setRawEvent] = useState<CmsValidationEvent | null>(null);
   const [selectedRowIndex, setSelectedRowIndex] = useState(-1);
 
   // Filters
-  const [showFilters, setShowFilters] = useState(false);
-  const [contextFilter, setContextFilter] = useState<string>("all");
-  const [scopeFilter, setScopeFilter] = useState<string>("all");
-  const [requestIdFilter, setRequestIdFilter] = useState<string>("");
-  const [pathFilter, setPathFilter] = useState<string>("");
+  const [showFilters, setShowFilters] = useState(initial.showFilters);
+  const [contextFilter, setContextFilter] = useState<string>(initial.contextFilter);
+  const [scopeFilter, setScopeFilter] = useState<string>(initial.scopeFilter);
+  const [requestIdFilter, setRequestIdFilter] = useState<string>(initial.requestIdFilter);
+  const [pathFilter, setPathFilter] = useState<string>(initial.pathFilter);
 
   // Pagination
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initial.page);
+
+  // The last-known persisted selected id — used to restore selection once
+  // events arrive (in-memory store starts empty after a reload).
+  const pendingSelectedIdRef = useRef<string | null>(initial.selectedEventId);
+  const restoredSelectionRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
     return subscribeCmsValidationEvents(setEvents);
   }, [enabled]);
+
+
 
   // Distinct contexts derived from events (sorted) for the context dropdown.
   const availableContexts = useMemo(() => {
