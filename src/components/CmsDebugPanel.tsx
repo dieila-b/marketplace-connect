@@ -17,6 +17,50 @@ import {
 } from "@/integrations/supabase/cms/validation-reporter";
 
 const STORAGE_KEY = "kafoo_cms_debug";
+const STATE_STORAGE_KEY = "kafoo_cms_debug_state";
+
+type PersistedDebugState = {
+  contextFilter: string;
+  scopeFilter: string;
+  requestIdFilter: string;
+  pathFilter: string;
+  page: number;
+  selectedEventId: string | null;
+  showFilters: boolean;
+  open: boolean;
+};
+
+const DEFAULT_STATE: PersistedDebugState = {
+  contextFilter: "all",
+  scopeFilter: "all",
+  requestIdFilter: "",
+  pathFilter: "",
+  page: 1,
+  selectedEventId: null,
+  showFilters: false,
+  open: false,
+};
+
+function loadPersistedState(): PersistedDebugState {
+  if (typeof window === "undefined") return DEFAULT_STATE;
+  try {
+    const raw = window.localStorage.getItem(STATE_STORAGE_KEY);
+    if (!raw) return DEFAULT_STATE;
+    const parsed = JSON.parse(raw) as Partial<PersistedDebugState>;
+    return { ...DEFAULT_STATE, ...parsed };
+  } catch {
+    return DEFAULT_STATE;
+  }
+}
+
+function savePersistedState(state: PersistedDebugState) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    /* ignore */
+  }
+}
 
 function useCmsDebugEnabled() {
   const [enabled, setEnabled] = useState(false);
@@ -330,24 +374,37 @@ const PAGE_SIZE = 10;
 export function CmsDebugPanel() {
   const [enabled, setEnabled] = useCmsDebugEnabled();
   const [events, setEvents] = useState<CmsValidationEvent[]>([]);
-  const [open, setOpen] = useState(false);
+
+  // Load persisted state once (synchronously) so hydration matches user's
+  // previous session immediately.
+  const persistedRef = useRef<PersistedDebugState>(loadPersistedState());
+  const initial = persistedRef.current;
+
+  const [open, setOpen] = useState(initial.open);
   const [rawEvent, setRawEvent] = useState<CmsValidationEvent | null>(null);
   const [selectedRowIndex, setSelectedRowIndex] = useState(-1);
 
   // Filters
-  const [showFilters, setShowFilters] = useState(false);
-  const [contextFilter, setContextFilter] = useState<string>("all");
-  const [scopeFilter, setScopeFilter] = useState<string>("all");
-  const [requestIdFilter, setRequestIdFilter] = useState<string>("");
-  const [pathFilter, setPathFilter] = useState<string>("");
+  const [showFilters, setShowFilters] = useState(initial.showFilters);
+  const [contextFilter, setContextFilter] = useState<string>(initial.contextFilter);
+  const [scopeFilter, setScopeFilter] = useState<string>(initial.scopeFilter);
+  const [requestIdFilter, setRequestIdFilter] = useState<string>(initial.requestIdFilter);
+  const [pathFilter, setPathFilter] = useState<string>(initial.pathFilter);
 
   // Pagination
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initial.page);
+
+  // The last-known persisted selected id — used to restore selection once
+  // events arrive (in-memory store starts empty after a reload).
+  const pendingSelectedIdRef = useRef<string | null>(initial.selectedEventId);
+  const restoredSelectionRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
     return subscribeCmsValidationEvents(setEvents);
   }, [enabled]);
+
+
 
   // Distinct contexts derived from events (sorted) for the context dropdown.
   const availableContexts = useMemo(() => {
@@ -369,10 +426,56 @@ export function CmsDebugPanel() {
   }, [events, contextFilter, scopeFilter, requestIdFilter, pathFilter]);
 
   // Reset to the first page whenever the active filters change.
+  // Skip the first run so we preserve the persisted page + selection at mount.
+  const filterResetSkipRef = useRef(true);
   useEffect(() => {
+    if (filterResetSkipRef.current) {
+      filterResetSkipRef.current = false;
+      return;
+    }
     setPage(1);
     setSelectedRowIndex(-1);
+    pendingSelectedIdRef.current = null;
   }, [contextFilter, scopeFilter, requestIdFilter, pathFilter]);
+
+  // Restore the selected row from the persisted event id once matching
+  // events show up. The in-memory store is empty after a reload, so this
+  // usually only fires if the same events reappear (rare) — otherwise the
+  // pending id stays until the user selects something new.
+  useEffect(() => {
+    if (restoredSelectionRef.current) return;
+    const targetId = pendingSelectedIdRef.current;
+    if (!targetId) {
+      restoredSelectionRef.current = true;
+      return;
+    }
+    // Wait for at least one event to arrive before giving up.
+    if (events.length === 0) return;
+    restoredSelectionRef.current = true;
+    // We can't yet know the paged slice here; the render loop below will
+    // compute pagedEvents and clamp the index. We locate the event and
+    // adjust `page` + `selectedRowIndex` accordingly.
+    const idx = events.findIndex((e) => e.id === targetId);
+    if (idx === -1) return;
+    // Recompute filtered index — but filters are already applied by the
+    // memo. Use a lightweight recomputation matching filteredEvents logic.
+    const rid = requestIdFilter.trim().toLowerCase();
+    const pathQ = pathFilter.trim().toLowerCase();
+    const filteredIdx = events
+      .filter((e) => {
+        if (contextFilter !== "all" && e.context !== contextFilter) return false;
+        if (scopeFilter !== "all" && e.scope !== scopeFilter) return false;
+        if (rid && !(e.requestId ?? "").toLowerCase().includes(rid)) return false;
+        if (pathQ && !eventHasMatchingPath(e, pathQ)) return false;
+        return true;
+      })
+      .findIndex((e) => e.id === targetId);
+    if (filteredIdx === -1) return;
+    setPage(Math.floor(filteredIdx / PAGE_SIZE) + 1);
+    setSelectedRowIndex(filteredIdx % PAGE_SIZE);
+  }, [events, contextFilter, scopeFilter, requestIdFilter, pathFilter]);
+
+
 
   // Latest-values snapshot for the keyboard handler. Keeping it in a ref
   // avoids re-binding the window listener on every render.
@@ -460,7 +563,39 @@ export function CmsDebugPanel() {
     setPathFilter("");
   }
 
+  // Persist filters, page, selected event id, and panel visibility so the
+  // user finds the exact same view after a reload.
+  useEffect(() => {
+    const selectedEvent =
+      selectedRowIndex >= 0
+        ? filteredEvents[(page - 1) * PAGE_SIZE + selectedRowIndex] ?? null
+        : null;
+    const selectedEventId =
+      selectedEvent?.id ?? pendingSelectedIdRef.current ?? null;
+    savePersistedState({
+      contextFilter,
+      scopeFilter,
+      requestIdFilter,
+      pathFilter,
+      page,
+      selectedEventId,
+      showFilters,
+      open,
+    });
+  }, [
+    contextFilter,
+    scopeFilter,
+    requestIdFilter,
+    pathFilter,
+    page,
+    selectedRowIndex,
+    showFilters,
+    open,
+    filteredEvents,
+  ]);
+
   if (!enabled) return null;
+
 
   const count = events.length;
   const visibleCount = filteredEvents.length;
