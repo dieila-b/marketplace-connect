@@ -563,7 +563,39 @@ export function CmsDebugPanel() {
     setPathFilter("");
   }
 
+  // Persist filters, page, selected event id, and panel visibility so the
+  // user finds the exact same view after a reload.
+  useEffect(() => {
+    const selectedEvent =
+      selectedRowIndex >= 0
+        ? filteredEvents[(page - 1) * PAGE_SIZE + selectedRowIndex] ?? null
+        : null;
+    const selectedEventId =
+      selectedEvent?.id ?? pendingSelectedIdRef.current ?? null;
+    savePersistedState({
+      contextFilter,
+      scopeFilter,
+      requestIdFilter,
+      pathFilter,
+      page,
+      selectedEventId,
+      showFilters,
+      open,
+    });
+  }, [
+    contextFilter,
+    scopeFilter,
+    requestIdFilter,
+    pathFilter,
+    page,
+    selectedRowIndex,
+    showFilters,
+    open,
+    filteredEvents,
+  ]);
+
   if (!enabled) return null;
+
 
   const count = events.length;
   const visibleCount = filteredEvents.length;
