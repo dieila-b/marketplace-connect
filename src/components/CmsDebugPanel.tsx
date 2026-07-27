@@ -17,6 +17,50 @@ import {
 } from "@/integrations/supabase/cms/validation-reporter";
 
 const STORAGE_KEY = "kafoo_cms_debug";
+const STATE_STORAGE_KEY = "kafoo_cms_debug_state";
+
+type PersistedDebugState = {
+  contextFilter: string;
+  scopeFilter: string;
+  requestIdFilter: string;
+  pathFilter: string;
+  page: number;
+  selectedEventId: string | null;
+  showFilters: boolean;
+  open: boolean;
+};
+
+const DEFAULT_STATE: PersistedDebugState = {
+  contextFilter: "all",
+  scopeFilter: "all",
+  requestIdFilter: "",
+  pathFilter: "",
+  page: 1,
+  selectedEventId: null,
+  showFilters: false,
+  open: false,
+};
+
+function loadPersistedState(): PersistedDebugState {
+  if (typeof window === "undefined") return DEFAULT_STATE;
+  try {
+    const raw = window.localStorage.getItem(STATE_STORAGE_KEY);
+    if (!raw) return DEFAULT_STATE;
+    const parsed = JSON.parse(raw) as Partial<PersistedDebugState>;
+    return { ...DEFAULT_STATE, ...parsed };
+  } catch {
+    return DEFAULT_STATE;
+  }
+}
+
+function savePersistedState(state: PersistedDebugState) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    /* ignore */
+  }
+}
 
 function useCmsDebugEnabled() {
   const [enabled, setEnabled] = useState(false);
